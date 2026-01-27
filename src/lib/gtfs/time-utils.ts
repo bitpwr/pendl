@@ -1,0 +1,107 @@
+/**
+ * GTFS Time Utilities
+ *
+ * GTFS times can exceed 24:00:00 for trips running past midnight.
+ * These utilities handle parsing and converting GTFS times.
+ */
+
+export interface ParsedGtfsTime {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  totalSeconds: number;
+  isNextDay: boolean;
+}
+
+/**
+ * Parse a GTFS time string (HH:MM:SS) which can exceed 24:00:00
+ */
+export function parseGtfsTime(timeStr: string): ParsedGtfsTime {
+  const parts = timeStr.split(':');
+  if (parts.length !== 3) {
+    throw new Error(`Invalid GTFS time format: ${timeStr}`);
+  }
+
+  const [h, m, s] = parts.map(Number);
+
+  if (isNaN(h) || isNaN(m) || isNaN(s)) {
+    throw new Error(`Invalid GTFS time values: ${timeStr}`);
+  }
+
+  const isNextDay = h >= 24;
+  const normalizedHours = h % 24;
+  const totalSeconds = h * 3600 + m * 60 + s;
+
+  return {
+    hours: normalizedHours,
+    minutes: m,
+    seconds: s,
+    totalSeconds,
+    isNextDay,
+  };
+}
+
+/**
+ * Convert a GTFS time to a Date object for a given service date
+ */
+export function gtfsTimeToDate(timeStr: string, serviceDate: Date): Date {
+  const parsed = parseGtfsTime(timeStr);
+
+  const result = new Date(serviceDate);
+  result.setHours(parsed.hours, parsed.minutes, parsed.seconds, 0);
+
+  if (parsed.isNextDay) {
+    result.setDate(result.getDate() + 1);
+  }
+
+  return result;
+}
+
+/**
+ * Format a Date as HH:mm (24-hour format)
+ */
+export function formatTime(date: Date): string {
+  return date.toLocaleTimeString('sv-SE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+}
+
+/**
+ * Format minutes until departure
+ */
+export function formatMinutesUntil(minutes: number): string {
+  if (minutes <= 0) {
+    return 'Nu';
+  }
+  if (minutes < 60) {
+    return `${minutes} min`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours} h ${mins} min` : `${hours} h`;
+}
+
+/**
+ * Calculate minutes until a given time from now
+ */
+export function minutesUntil(targetTime: Date, now: Date = new Date()): number {
+  const diffMs = targetTime.getTime() - now.getTime();
+  return Math.round(diffMs / 60000);
+}
+
+/**
+ * Get current time as GTFS-compatible seconds since midnight
+ * Accounts for times after midnight (can return > 86400)
+ */
+export function getCurrentGtfsSeconds(now: Date = new Date()): number {
+  return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+}
+
+/**
+ * Convert GTFS time string to seconds since midnight
+ */
+export function gtfsTimeToSeconds(timeStr: string): number {
+  return parseGtfsTime(timeStr).totalSeconds;
+}
