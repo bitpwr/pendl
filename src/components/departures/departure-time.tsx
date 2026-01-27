@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { cn } from '@/lib/utils';
-import { formatTime, formatMinutesUntil, minutesUntil } from '@/lib/gtfs/time-utils';
+import { cn } from "@/lib/utils";
+import {
+  formatTime,
+  formatMinutesUntil,
+  minutesUntil,
+} from "@/lib/gtfs/time-utils";
 
 interface DepartureTimeProps {
   scheduledTime: Date;
@@ -29,7 +33,9 @@ export function DepartureTime({
         <span className="text-destructive font-medium line-through">
           {formatTime(scheduledTime)}
         </span>
-        <span className="block text-xs text-destructive font-medium">Inställd</span>
+        <span className="block text-xs text-destructive font-medium">
+          Inställd
+        </span>
       </div>
     );
   }
@@ -40,8 +46,8 @@ export function DepartureTime({
       <div className="text-right">
         <span
           className={cn(
-            'font-semibold text-lg',
-            isRealtime ? 'text-green-600 dark:text-green-400' : ''
+            "font-semibold text-lg",
+            isRealtime ? "text-green-600 dark:text-green-400" : "",
           )}
         >
           {formatMinutesUntil(minutesRemaining)}
@@ -49,8 +55,10 @@ export function DepartureTime({
         {delayMinutes !== 0 && (
           <span
             className={cn(
-              'block text-xs',
-              delayMinutes > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
+              "block text-xs",
+              delayMinutes > 0
+                ? "text-orange-600 dark:text-orange-400"
+                : "text-green-600 dark:text-green-400",
             )}
           >
             {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes} min
@@ -65,8 +73,8 @@ export function DepartureTime({
     <div className="text-right">
       <span
         className={cn(
-          'font-medium',
-          isRealtime ? 'text-green-600 dark:text-green-400' : ''
+          "font-medium",
+          isRealtime ? "text-green-600 dark:text-green-400" : "",
         )}
       >
         {formatTime(displayTime)}
@@ -74,15 +82,19 @@ export function DepartureTime({
       {delayMinutes !== 0 && (
         <span
           className={cn(
-            'block text-xs',
-            delayMinutes > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-green-600 dark:text-green-400'
+            "block text-xs",
+            delayMinutes > 0
+              ? "text-orange-600 dark:text-orange-400"
+              : "text-green-600 dark:text-green-400",
           )}
         >
           {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes} min
         </span>
       )}
       {isRealtime && delayMinutes === 0 && (
-        <span className="block text-xs text-green-600 dark:text-green-400">I tid</span>
+        <span className="block text-xs text-green-600 dark:text-green-400">
+          I tid
+        </span>
       )}
     </div>
   );

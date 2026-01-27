@@ -1,2 +1,2 @@
-export * from './time-utils';
-export * from './service-day';
+export * from "./time-utils";
+export * from "./service-day";

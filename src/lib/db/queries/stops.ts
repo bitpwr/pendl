@@ -1,5 +1,5 @@
-import { query, queryOne } from '../index';
-import type { Stop } from '@/types/gtfs';
+import { query, queryOne } from "../index";
+import type { Stop } from "@/types/gtfs";
 
 export interface StopSearchResult {
   stopId: string;
@@ -15,17 +15,17 @@ export interface StopSearchResult {
  */
 export async function searchStops(
   searchQuery: string,
-  limit = 10
+  limit = 10,
 ): Promise<StopSearchResult[]> {
   // Convert search query to tsquery format
   const tsQuery = searchQuery
     .trim()
     .split(/\s+/)
-    .map((word) => word + ':*')
-    .join(' & ');
+    .map((word) => word + ":*")
+    .join(" & ");
 
   const sql = `
-    SELECT 
+    SELECT
       s.stop_id as "stopId",
       s.stop_name as "stopName",
       s.stop_lat as "latitude",
@@ -55,10 +55,10 @@ export async function findNearbyStops(
   latitude: number,
   longitude: number,
   radiusMeters = 500,
-  limit = 10
+  limit = 10,
 ): Promise<StopSearchResult[]> {
   const sql = `
-    SELECT 
+    SELECT
       s.stop_id as "stopId",
       s.stop_name as "stopName",
       s.stop_lat as "latitude",
@@ -89,7 +89,12 @@ export async function findNearbyStops(
     LIMIT $4
   `;
 
-  return query<StopSearchResult>(sql, [latitude, longitude, radiusMeters, limit]);
+  return query<StopSearchResult>(sql, [
+    latitude,
+    longitude,
+    radiusMeters,
+    limit,
+  ]);
 }
 
 /**
@@ -97,7 +102,7 @@ export async function findNearbyStops(
  */
 export async function getStop(stopId: string): Promise<Stop | null> {
   const sql = `
-    SELECT 
+    SELECT
       stop_id as "stopId",
       stop_code as "stopCode",
       stop_name as "stopName",
@@ -123,7 +128,7 @@ export async function getStop(stopId: string): Promise<Stop | null> {
  */
 export async function getChildStops(parentStationId: string): Promise<Stop[]> {
   const sql = `
-    SELECT 
+    SELECT
       stop_id as "stopId",
       stop_code as "stopCode",
       stop_name as "stopName",
@@ -148,12 +153,14 @@ export async function getChildStops(parentStationId: string): Promise<Stop[]> {
 /**
  * Get multiple stops by IDs (for favorites)
  */
-export async function getStopsByIds(stopIds: string[]): Promise<StopSearchResult[]> {
+export async function getStopsByIds(
+  stopIds: string[],
+): Promise<StopSearchResult[]> {
   if (stopIds.length === 0) return [];
 
-  const placeholders = stopIds.map((_, i) => `$${i + 1}`).join(', ');
+  const placeholders = stopIds.map((_, i) => `$${i + 1}`).join(", ");
   const sql = `
-    SELECT 
+    SELECT
       s.stop_id as "stopId",
       s.stop_name as "stopName",
       s.stop_lat as "latitude",

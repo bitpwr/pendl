@@ -1,12 +1,12 @@
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolConfig } from "pg";
 
 const poolConfig: PoolConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  database: process.env.DB_NAME || 'pendl',
-  user: process.env.DB_USER || 'pendl',
-  password: process.env.DB_PASSWORD || 'pendl',
-  max: parseInt(process.env.DB_POOL_SIZE || '10', 10),
+  host: process.env.DB_HOST || "localhost",
+  port: parseInt(process.env.DB_PORT || "5432", 10),
+  database: process.env.DB_NAME || "pendl",
+  user: process.env.DB_USER || "pendl",
+  password: process.env.DB_PASSWORD || "pendl",
+  max: parseInt(process.env.DB_POOL_SIZE || "10", 10),
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 };
@@ -19,8 +19,8 @@ export function getPool(): Pool {
     pool = new Pool(poolConfig);
 
     // Log connection errors
-    pool.on('error', (err) => {
-      console.error('Unexpected database pool error:', err);
+    pool.on("error", (err) => {
+      console.error("Unexpected database pool error:", err);
     });
   }
   return pool;
@@ -38,7 +38,7 @@ export async function query<T>(text: string, params?: unknown[]): Promise<T[]> {
 
 export async function queryOne<T>(
   text: string,
-  params?: unknown[]
+  params?: unknown[],
 ): Promise<T | null> {
   const rows = await query<T>(text, params);
   return rows[0] || null;

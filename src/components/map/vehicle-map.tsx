@@ -1,30 +1,29 @@
-'use client';
+"use client";
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { RefreshCw, Locate } from 'lucide-react';
-import type { Vehicle } from '@/types/api';
+import { useEffect, useState, useMemo, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { RefreshCw, Locate } from "lucide-react";
+import type { Vehicle } from "@/types/api";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false },
 );
 const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false },
 );
 const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
+  () => import("react-leaflet").then((mod) => mod.Marker),
+  { ssr: false },
 );
-const Popup = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Popup),
-  { ssr: false }
-);
+const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
+  ssr: false,
+});
 
 interface VehicleMapProps {
   routeId?: string;
@@ -41,7 +40,7 @@ export function VehicleMap({
   routeId,
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
-  height = '400px',
+  height = "400px",
 }: VehicleMapProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,18 +60,18 @@ export function VehicleMap({
     try {
       const url = routeId
         ? `/api/vehicles?routeId=${encodeURIComponent(routeId)}`
-        : '/api/vehicles';
+        : "/api/vehicles";
 
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Kunde inte hämta fordonspositioner');
+        throw new Error("Kunde inte hämta fordonspositioner");
       }
 
       const data = await response.json();
       setVehicles(data.vehicles || []);
       setLastUpdated(new Date(data.updatedAt));
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Okänt fel'));
+      setError(err instanceof Error ? err : new Error("Okänt fel"));
     } finally {
       setIsLoading(false);
     }
@@ -87,14 +86,14 @@ export function VehicleMap({
   }, [fetchVehicles]);
 
   const handleLocateMe = () => {
-    if ('geolocation' in navigator) {
+    if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setMapCenter([position.coords.latitude, position.coords.longitude]);
         },
         (err) => {
-          console.error('Geolocation error:', err);
-        }
+          console.error("Geolocation error:", err);
+        },
       );
     }
   };
@@ -140,7 +139,11 @@ export function VehicleMap({
           <div className="flex items-center gap-2">
             {lastUpdated && (
               <span className="text-xs text-muted-foreground">
-                Uppdaterad {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+                Uppdaterad{" "}
+                {lastUpdated.toLocaleTimeString("sv-SE", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </span>
             )}
             <Button
@@ -159,17 +162,22 @@ export function VehicleMap({
               onClick={fetchVehicles}
               disabled={isLoading}
             >
-              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
-        <div style={{ height }} className="relative rounded-b-lg overflow-hidden">
+        <div
+          style={{ height }}
+          className="relative rounded-b-lg overflow-hidden"
+        >
           <MapContainer
             center={mapCenter}
             zoom={zoom}
-            style={{ height: '100%', width: '100%' }}
+            style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
           >
             <TileLayer
@@ -195,7 +203,9 @@ function VehicleMarker({ vehicle }: VehicleMarkerProps) {
     <Marker position={[vehicle.latitude, vehicle.longitude]}>
       <Popup>
         <div className="text-sm">
-          <p className="font-bold">{vehicle.routeShortName || vehicle.routeId}</p>
+          <p className="font-bold">
+            {vehicle.routeShortName || vehicle.routeId}
+          </p>
           <p>{vehicle.headsign}</p>
           <p className="text-muted-foreground">Fordon: {vehicle.vehicleId}</p>
         </div>

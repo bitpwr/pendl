@@ -1,13 +1,13 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Star, MapPin } from 'lucide-react';
-import { useFavorites } from '@/hooks/use-favorites';
-import type { StopSearchResult } from '@/types/api';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Star, MapPin } from "lucide-react";
+import { useFavorites } from "@/hooks/use-favorites";
+import type { StopSearchResult } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 interface SearchResultsProps {
   results: StopSearchResult[];
@@ -47,13 +47,13 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
   return (
     <div className="space-y-2">
       {results.map((stop) => (
-        <Card key={stop.stopId} className="group transition-colors hover:bg-accent/50">
+        <Card
+          key={stop.stopId}
+          className="group transition-colors hover:bg-accent/50"
+        >
           <CardContent className="p-0">
             <div className="flex items-center">
-              <Link
-                href={`/stop/${stop.stopId}`}
-                className="flex-1 p-4"
-              >
+              <Link href={`/stop/${stop.stopId}`} className="flex-1 p-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium">{stop.stopName}</h3>
@@ -82,7 +82,7 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
                           backgroundColor: route.routeColor
                             ? `#${route.routeColor}`
                             : undefined,
-                          color: route.routeColor ? '#fff' : undefined,
+                          color: route.routeColor ? "#fff" : undefined,
                         }}
                       >
                         {route.routeShortName}
@@ -101,14 +101,18 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
                 size="icon"
                 className="mr-2"
                 onClick={() => toggleFavorite(stop.stopId, stop.stopName)}
-                title={isFavorite(stop.stopId) ? 'Ta bort favorit' : 'Lägg till favorit'}
+                title={
+                  isFavorite(stop.stopId)
+                    ? "Ta bort favorit"
+                    : "Lägg till favorit"
+                }
               >
                 <Star
                   className={cn(
-                    'h-4 w-4',
+                    "h-4 w-4",
                     isFavorite(stop.stopId)
-                      ? 'fill-yellow-400 text-yellow-400'
-                      : 'text-muted-foreground'
+                      ? "fill-yellow-400 text-yellow-400"
+                      : "text-muted-foreground",
                   )}
                 />
               </Button>

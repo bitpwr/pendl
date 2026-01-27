@@ -1,6 +1,6 @@
 /**
  * GTFS Realtime Proto Schema
- * 
+ *
  * This is a simplified TypeScript representation of the GTFS Realtime protobuf schema.
  * The actual parsing is done using protobufjs with the official .proto file.
  */

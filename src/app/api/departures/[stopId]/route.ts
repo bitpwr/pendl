@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getScheduledDepartures } from '@/lib/db/queries/departures';
-import { getStop, getChildStops } from '@/lib/db/queries/stops';
-import { getTripUpdates } from '@/lib/redis/realtime';
-import { gtfsTimeToDate } from '@/lib/gtfs/time-utils';
-import type { Departure } from '@/types/api';
+import { NextRequest, NextResponse } from "next/server";
+import { getScheduledDepartures } from "@/lib/db/queries/departures";
+import { getStop, getChildStops } from "@/lib/db/queries/stops";
+import { getTripUpdates } from "@/lib/redis/realtime";
+import { gtfsTimeToDate } from "@/lib/gtfs/time-utils";
+import type { Departure } from "@/types/api";
 
 interface Props {
   params: Promise<{ stopId: string }>;
@@ -12,16 +12,16 @@ interface Props {
 export async function GET(request: NextRequest, { params }: Props) {
   const { stopId } = await params;
   const searchParams = request.nextUrl.searchParams;
-  const limit = parseInt(searchParams.get('limit') || '30', 10);
-  const hoursAhead = parseInt(searchParams.get('hours') || '2', 10);
+  const limit = parseInt(searchParams.get("limit") || "30", 10);
+  const hoursAhead = parseInt(searchParams.get("hours") || "2", 10);
 
   try {
     // Get the stop information
     const stop = await getStop(stopId);
     if (!stop) {
       return NextResponse.json(
-        { error: 'Hållplatsen hittades inte' },
-        { status: 404 }
+        { error: "Hållplatsen hittades inte" },
+        { status: 404 },
       );
     }
 
@@ -55,16 +55,21 @@ export async function GET(request: NextRequest, { params }: Props) {
       if (tripUpdate) {
         // Find the stop time update for this stop
         const stopUpdate = tripUpdate.stopTimeUpdates?.find(
-          (stu) => stu.stopId === dep.stopId || childStopIds.includes(stu.stopId)
+          (stu) =>
+            stu.stopId === dep.stopId || childStopIds.includes(stu.stopId),
         );
 
         if (stopUpdate?.departure) {
           if (stopUpdate.departure.delay !== undefined) {
             delaySeconds = stopUpdate.departure.delay;
-            realtimeTime = new Date(scheduledTime.getTime() + delaySeconds * 1000);
+            realtimeTime = new Date(
+              scheduledTime.getTime() + delaySeconds * 1000,
+            );
           } else if (stopUpdate.departure.time) {
             realtimeTime = new Date(stopUpdate.departure.time * 1000);
-            delaySeconds = Math.round((realtimeTime.getTime() - scheduledTime.getTime()) / 1000);
+            delaySeconds = Math.round(
+              (realtimeTime.getTime() - scheduledTime.getTime()) / 1000,
+            );
           }
         }
       }
@@ -81,7 +86,7 @@ export async function GET(request: NextRequest, { params }: Props) {
         scheduledDeparture: scheduledTime.toISOString(),
         realtimeDeparture: realtimeTime?.toISOString(),
         delaySeconds,
-        isCancelled: tripUpdate?.scheduleRelationship === 'CANCELED',
+        isCancelled: tripUpdate?.scheduleRelationship === "CANCELED",
         stopId: dep.stopId,
         directionId: dep.directionId,
       };
@@ -112,10 +117,10 @@ export async function GET(request: NextRequest, { params }: Props) {
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Error fetching departures:', error);
+    console.error("Error fetching departures:", error);
     return NextResponse.json(
-      { error: 'Kunde inte hämta avgångar' },
-      { status: 500 }
+      { error: "Kunde inte hämta avgångar" },
+      { status: 500 },
     );
   }
 }

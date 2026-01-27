@@ -28,8 +28,8 @@ CREATE TABLE stops (
 );
 
 -- Add foreign key after table creation to allow self-reference
-ALTER TABLE stops ADD CONSTRAINT fk_stops_parent 
-    FOREIGN KEY (parent_station) REFERENCES stops(stop_id) 
+ALTER TABLE stops ADD CONSTRAINT fk_stops_parent
+    FOREIGN KEY (parent_station) REFERENCES stops(stop_id)
     ON DELETE SET NULL;
 
 CREATE INDEX idx_stops_geom ON stops USING GIST(geom);

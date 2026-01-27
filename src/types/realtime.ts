@@ -1,6 +1,10 @@
 // GTFS Realtime Types
 
-export type TripScheduleRelationship = 'SCHEDULED' | 'ADDED' | 'UNSCHEDULED' | 'CANCELED';
+export type TripScheduleRelationship =
+  | "SCHEDULED"
+  | "ADDED"
+  | "UNSCHEDULED"
+  | "CANCELED";
 
 export interface TripUpdate {
   tripId: string;
@@ -25,7 +29,7 @@ export interface StopTimeUpdate {
   scheduleRelationship: ScheduleRelationship;
 }
 
-export type ScheduleRelationship = 'SCHEDULED' | 'SKIPPED' | 'NO_DATA';
+export type ScheduleRelationship = "SCHEDULED" | "SKIPPED" | "NO_DATA";
 
 export interface VehiclePosition {
   vehicleId: string;
@@ -40,7 +44,7 @@ export interface VehiclePosition {
   timestamp: number;
 }
 
-export type VehicleStatus = 'INCOMING_AT' | 'STOPPED_AT' | 'IN_TRANSIT_TO';
+export type VehicleStatus = "INCOMING_AT" | "STOPPED_AT" | "IN_TRANSIT_TO";
 
 export interface ServiceAlert {
   alertId: string;

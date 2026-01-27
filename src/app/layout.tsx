@@ -15,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Pendl - Avgångar i realtid",
-  description: "Se avgångar och fordon i realtid för SL och kollektivtrafiken i Stockholm",
+  description:
+    "Se avgångar och fordon i realtid för SL och kollektivtrafiken i Stockholm",
 };
 
 export default function RootLayout({
@@ -29,9 +30,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
       >
         <Header />
-        <main className="container mx-auto px-4 py-6">
-          {children}
-        </main>
+        <main className="container mx-auto px-4 py-6">{children}</main>
       </body>
     </html>
   );

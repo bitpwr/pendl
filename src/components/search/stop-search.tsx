@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, MapPin, Loader2 } from 'lucide-react';
+import { useState, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Search, MapPin, Loader2 } from "lucide-react";
 
 interface StopSearchProps {
   onSearch: (query: string) => void;
@@ -12,8 +12,13 @@ interface StopSearchProps {
   isLocating?: boolean;
 }
 
-export function StopSearch({ onSearch, onNearby, isLoading, isLocating }: StopSearchProps) {
-  const [query, setQuery] = useState('');
+export function StopSearch({
+  onSearch,
+  onNearby,
+  isLoading,
+  isLocating,
+}: StopSearchProps) {
+  const [query, setQuery] = useState("");
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -22,7 +27,7 @@ export function StopSearch({ onSearch, onNearby, isLoading, isLocating }: StopSe
         onSearch(query.trim());
       }
     },
-    [query, onSearch]
+    [query, onSearch],
   );
 
   const handleInputChange = useCallback(
@@ -34,7 +39,7 @@ export function StopSearch({ onSearch, onNearby, isLoading, isLocating }: StopSe
         onSearch(value.trim());
       }
     },
-    [onSearch]
+    [onSearch],
   );
 
   return (

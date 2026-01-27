@@ -1,5 +1,9 @@
-import protobuf from 'protobufjs';
-import type { TripUpdate, VehiclePosition, ServiceAlert } from '@/types/realtime';
+import protobuf from "protobufjs";
+import type {
+  TripUpdate,
+  VehiclePosition,
+  ServiceAlert,
+} from "@/types/realtime";
 import type {
   FeedMessage,
   TripUpdateProto,
@@ -7,8 +11,8 @@ import type {
   AlertProto,
   VehicleStopStatus,
   StopTimeScheduleRelationship,
-} from './realtime-proto';
-import { GTFS_CONFIG } from './config';
+} from "./realtime-proto";
+import { GTFS_CONFIG } from "./config";
 
 // GTFS Realtime proto definition (inline for simplicity)
 const protoDefinition = `
@@ -25,7 +29,7 @@ message FeedHeader {
   required string gtfs_realtime_version = 1;
   optional Incrementality incrementality = 2 [default = FULL_DATASET];
   optional uint64 timestamp = 3;
-  
+
   enum Incrementality {
     FULL_DATASET = 0;
     DIFFERENTIAL = 1;
@@ -46,21 +50,21 @@ message TripUpdate {
   repeated StopTimeUpdate stop_time_update = 2;
   optional uint64 timestamp = 4;
   optional int32 delay = 5;
-  
+
   message StopTimeUpdate {
     optional uint32 stop_sequence = 1;
     optional string stop_id = 4;
     optional StopTimeEvent arrival = 2;
     optional StopTimeEvent departure = 3;
     optional ScheduleRelationship schedule_relationship = 5 [default = SCHEDULED];
-    
+
     enum ScheduleRelationship {
       SCHEDULED = 0;
       SKIPPED = 1;
       NO_DATA = 2;
     }
   }
-  
+
   message StopTimeEvent {
     optional int32 delay = 1;
     optional int64 time = 2;
@@ -76,7 +80,7 @@ message VehiclePosition {
   optional string stop_id = 7;
   optional VehicleStopStatus current_status = 4 [default = IN_TRANSIT_TO];
   optional uint64 timestamp = 5;
-  
+
   enum VehicleStopStatus {
     INCOMING_AT = 0;
     STOPPED_AT = 1;
@@ -92,7 +96,7 @@ message Alert {
   optional TranslatedString url = 8;
   optional TranslatedString header_text = 10;
   optional TranslatedString description_text = 11;
-  
+
   enum Cause {
     UNKNOWN_CAUSE = 1;
     OTHER_CAUSE = 2;
@@ -107,7 +111,7 @@ message Alert {
     POLICE_ACTIVITY = 11;
     MEDICAL_EMERGENCY = 12;
   }
-  
+
   enum Effect {
     NO_SERVICE = 1;
     REDUCED_SERVICE = 2;
@@ -128,7 +132,7 @@ message TripDescriptor {
   optional string start_time = 2;
   optional string start_date = 3;
   optional ScheduleRelationship schedule_relationship = 4 [default = SCHEDULED];
-  
+
   enum ScheduleRelationship {
     SCHEDULED = 0;
     ADDED = 1;
@@ -166,7 +170,7 @@ message EntitySelector {
 
 message TranslatedString {
   repeated Translation translation = 1;
-  
+
   message Translation {
     required string text = 1;
     optional string language = 2;
@@ -183,7 +187,7 @@ async function getProtoType(): Promise<protobuf.Type> {
   }
 
   root = protobuf.parse(protoDefinition).root;
-  FeedMessageType = root.lookupType('transit_realtime.FeedMessage');
+  FeedMessageType = root.lookupType("transit_realtime.FeedMessage");
   return FeedMessageType;
 }
 
@@ -215,7 +219,7 @@ export async function fetchRealtimeFeed(url: string): Promise<FeedMessage> {
 export async function fetchTripUpdates(): Promise<TripUpdate[]> {
   const url = GTFS_CONFIG.realtimeUrls.tripUpdates;
   if (!url) {
-    console.warn('GTFS_RT_TRIP_UPDATES_URL not configured');
+    console.warn("GTFS_RT_TRIP_UPDATES_URL not configured");
     return [];
   }
 
@@ -231,7 +235,7 @@ export async function fetchTripUpdates(): Promise<TripUpdate[]> {
 export async function fetchVehiclePositions(): Promise<VehiclePosition[]> {
   const url = GTFS_CONFIG.realtimeUrls.vehiclePositions;
   if (!url) {
-    console.warn('GTFS_RT_VEHICLE_POSITIONS_URL not configured');
+    console.warn("GTFS_RT_VEHICLE_POSITIONS_URL not configured");
     return [];
   }
 
@@ -247,7 +251,7 @@ export async function fetchVehiclePositions(): Promise<VehiclePosition[]> {
 export async function fetchServiceAlerts(): Promise<ServiceAlert[]> {
   const url = GTFS_CONFIG.realtimeUrls.serviceAlerts;
   if (!url) {
-    console.warn('GTFS_RT_SERVICE_ALERTS_URL not configured');
+    console.warn("GTFS_RT_SERVICE_ALERTS_URL not configured");
     return [];
   }
 
@@ -258,27 +262,34 @@ export async function fetchServiceAlerts(): Promise<ServiceAlert[]> {
 }
 
 function convertTripUpdate(proto: TripUpdateProto): TripUpdate {
-  const scheduleRelationshipMap: Record<number, TripUpdate['scheduleRelationship']> = {
-    0: 'SCHEDULED',
-    1: 'ADDED',
-    2: 'UNSCHEDULED',
-    3: 'CANCELED',
+  const scheduleRelationshipMap: Record<
+    number,
+    TripUpdate["scheduleRelationship"]
+  > = {
+    0: "SCHEDULED",
+    1: "ADDED",
+    2: "UNSCHEDULED",
+    3: "CANCELED",
   };
 
-  const stopScheduleRelationshipMap: Record<number, 'SCHEDULED' | 'SKIPPED' | 'NO_DATA'> = {
-    0: 'SCHEDULED',
-    1: 'SKIPPED',
-    2: 'NO_DATA',
+  const stopScheduleRelationshipMap: Record<
+    number,
+    "SCHEDULED" | "SKIPPED" | "NO_DATA"
+  > = {
+    0: "SCHEDULED",
+    1: "SKIPPED",
+    2: "NO_DATA",
   };
 
   return {
-    tripId: proto.trip?.tripId || '',
-    routeId: proto.trip?.routeId || '',
+    tripId: proto.trip?.tripId || "",
+    routeId: proto.trip?.routeId || "",
     vehicleId: proto.vehicle?.id,
     timestamp: proto.timestamp || Date.now(),
-    scheduleRelationship: scheduleRelationshipMap[proto.trip?.scheduleRelationship || 0],
+    scheduleRelationship:
+      scheduleRelationshipMap[proto.trip?.scheduleRelationship || 0],
     stopTimeUpdates: (proto.stopTimeUpdate || []).map((stu) => ({
-      stopId: stu.stopId || '',
+      stopId: stu.stopId || "",
       stopSequence: stu.stopSequence || 0,
       arrival: stu.arrival
         ? {
@@ -292,24 +303,27 @@ function convertTripUpdate(proto: TripUpdateProto): TripUpdate {
             time: stu.departure.time,
           }
         : undefined,
-      scheduleRelationship: stopScheduleRelationshipMap[
-        (stu.scheduleRelationship as unknown as StopTimeScheduleRelationship) || 0
-      ],
+      scheduleRelationship:
+        stopScheduleRelationshipMap[
+          (stu.scheduleRelationship as unknown as StopTimeScheduleRelationship) ||
+            0
+        ],
     })),
   };
 }
 
 function convertVehiclePosition(proto: VehiclePositionProto): VehiclePosition {
-  const statusMap: Record<VehicleStopStatus, VehiclePosition['currentStatus']> = {
-    0: 'INCOMING_AT',
-    1: 'STOPPED_AT',
-    2: 'IN_TRANSIT_TO',
-  };
+  const statusMap: Record<VehicleStopStatus, VehiclePosition["currentStatus"]> =
+    {
+      0: "INCOMING_AT",
+      1: "STOPPED_AT",
+      2: "IN_TRANSIT_TO",
+    };
 
   return {
-    vehicleId: proto.vehicle?.id || '',
-    tripId: proto.trip?.tripId || '',
-    routeId: proto.trip?.routeId || '',
+    vehicleId: proto.vehicle?.id || "",
+    tripId: proto.trip?.tripId || "",
+    routeId: proto.trip?.routeId || "",
     latitude: proto.position?.latitude || 0,
     longitude: proto.position?.longitude || 0,
     bearing: proto.position?.bearing,
@@ -321,19 +335,21 @@ function convertVehiclePosition(proto: VehiclePositionProto): VehiclePosition {
 }
 
 function convertServiceAlert(proto: AlertProto, id: string): ServiceAlert {
-  const getTranslation = (ts?: { translation?: { text: string; language?: string }[] }): string => {
-    if (!ts?.translation?.length) return '';
+  const getTranslation = (ts?: {
+    translation?: { text: string; language?: string }[];
+  }): string => {
+    if (!ts?.translation?.length) return "";
     // Prefer Swedish translation
-    const sv = ts.translation.find((t) => t.language === 'sv');
-    return sv?.text || ts.translation[0]?.text || '';
+    const sv = ts.translation.find((t) => t.language === "sv");
+    return sv?.text || ts.translation[0]?.text || "";
   };
 
   return {
     alertId: id,
     headerText: getTranslation(proto.headerText),
     descriptionText: getTranslation(proto.descriptionText),
-    cause: String(proto.cause || 'UNKNOWN_CAUSE'),
-    effect: String(proto.effect || 'UNKNOWN_EFFECT'),
+    cause: String(proto.cause || "UNKNOWN_CAUSE"),
+    effect: String(proto.effect || "UNKNOWN_EFFECT"),
     activePeriods: (proto.activePeriod || []).map((ap) => ({
       start: ap.start || 0,
       end: ap.end,

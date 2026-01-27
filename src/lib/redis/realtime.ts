@@ -1,5 +1,9 @@
-import { getRedis, REDIS_KEYS, buildKey } from './index';
-import type { TripUpdate, VehiclePosition, ServiceAlert } from '@/types/realtime';
+import { getRedis, REDIS_KEYS, buildKey } from "./index";
+import type {
+  TripUpdate,
+  VehiclePosition,
+  ServiceAlert,
+} from "@/types/realtime";
 
 const REALTIME_TTL = 120; // 2 minutes TTL for realtime data
 
@@ -15,7 +19,9 @@ export async function storeTripUpdate(tripUpdate: TripUpdate): Promise<void> {
 /**
  * Store multiple trip updates in a pipeline
  */
-export async function storeTripUpdates(tripUpdates: TripUpdate[]): Promise<void> {
+export async function storeTripUpdates(
+  tripUpdates: TripUpdate[],
+): Promise<void> {
   if (tripUpdates.length === 0) return;
 
   const redis = getRedis();
@@ -32,7 +38,9 @@ export async function storeTripUpdates(tripUpdates: TripUpdate[]): Promise<void>
 /**
  * Get a trip update by trip ID
  */
-export async function getTripUpdate(tripId: string): Promise<TripUpdate | null> {
+export async function getTripUpdate(
+  tripId: string,
+): Promise<TripUpdate | null> {
   const redis = getRedis();
   const key = buildKey(REDIS_KEYS.TRIP_UPDATE, tripId);
   const data = await redis.get(key);
@@ -42,7 +50,9 @@ export async function getTripUpdate(tripId: string): Promise<TripUpdate | null> 
 /**
  * Get multiple trip updates at once
  */
-export async function getTripUpdates(tripIds: string[]): Promise<Map<string, TripUpdate>> {
+export async function getTripUpdates(
+  tripIds: string[],
+): Promise<Map<string, TripUpdate>> {
   if (tripIds.length === 0) return new Map();
 
   const redis = getRedis();
@@ -62,7 +72,9 @@ export async function getTripUpdates(tripIds: string[]): Promise<Map<string, Tri
 /**
  * Store a vehicle position in Redis
  */
-export async function storeVehiclePosition(vehicle: VehiclePosition): Promise<void> {
+export async function storeVehiclePosition(
+  vehicle: VehiclePosition,
+): Promise<void> {
   const redis = getRedis();
   const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
   await redis.setex(key, REALTIME_TTL, JSON.stringify(vehicle));
@@ -78,7 +90,9 @@ export async function storeVehiclePosition(vehicle: VehiclePosition): Promise<vo
 /**
  * Store multiple vehicle positions in a pipeline
  */
-export async function storeVehiclePositions(vehicles: VehiclePosition[]): Promise<void> {
+export async function storeVehiclePositions(
+  vehicles: VehiclePosition[],
+): Promise<void> {
   if (vehicles.length === 0) return;
 
   const redis = getRedis();
@@ -114,7 +128,9 @@ export async function storeVehiclePositions(vehicles: VehiclePosition[]): Promis
 /**
  * Get a vehicle position by vehicle ID
  */
-export async function getVehiclePosition(vehicleId: string): Promise<VehiclePosition | null> {
+export async function getVehiclePosition(
+  vehicleId: string,
+): Promise<VehiclePosition | null> {
   const redis = getRedis();
   const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicleId);
   const data = await redis.get(key);
@@ -124,14 +140,18 @@ export async function getVehiclePosition(vehicleId: string): Promise<VehiclePosi
 /**
  * Get all vehicles for a route
  */
-export async function getVehiclesByRoute(routeId: string): Promise<VehiclePosition[]> {
+export async function getVehiclesByRoute(
+  routeId: string,
+): Promise<VehiclePosition[]> {
   const redis = getRedis();
   const routeKey = buildKey(REDIS_KEYS.VEHICLES_BY_ROUTE, routeId);
   const vehicleIds = await redis.smembers(routeKey);
 
   if (vehicleIds.length === 0) return [];
 
-  const keys = vehicleIds.map((id) => buildKey(REDIS_KEYS.VEHICLE_POSITION, id));
+  const keys = vehicleIds.map((id) =>
+    buildKey(REDIS_KEYS.VEHICLE_POSITION, id),
+  );
   const values = await redis.mget(...keys);
 
   return values
@@ -144,7 +164,7 @@ export async function getVehiclesByRoute(routeId: string): Promise<VehiclePositi
  */
 export async function getAllVehiclePositions(): Promise<VehiclePosition[]> {
   const redis = getRedis();
-  const pattern = buildKey(REDIS_KEYS.VEHICLE_POSITION, '*');
+  const pattern = buildKey(REDIS_KEYS.VEHICLE_POSITION, "*");
   const keys = await redis.keys(pattern);
 
   if (keys.length === 0) return [];
@@ -168,7 +188,9 @@ export async function storeServiceAlert(alert: ServiceAlert): Promise<void> {
 /**
  * Store multiple service alerts
  */
-export async function storeServiceAlerts(alerts: ServiceAlert[]): Promise<void> {
+export async function storeServiceAlerts(
+  alerts: ServiceAlert[],
+): Promise<void> {
   if (alerts.length === 0) return;
 
   const redis = getRedis();
@@ -187,7 +209,7 @@ export async function storeServiceAlerts(alerts: ServiceAlert[]): Promise<void> 
  */
 export async function getServiceAlerts(): Promise<ServiceAlert[]> {
   const redis = getRedis();
-  const pattern = buildKey(REDIS_KEYS.SERVICE_ALERT, '*');
+  const pattern = buildKey(REDIS_KEYS.SERVICE_ALERT, "*");
   const keys = await redis.keys(pattern);
 
   if (keys.length === 0) return [];

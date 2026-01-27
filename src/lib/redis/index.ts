@@ -1,8 +1,8 @@
-import Redis from 'ioredis';
+import Redis from "ioredis";
 
 const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  host: process.env.REDIS_HOST || "localhost",
+  port: parseInt(process.env.REDIS_PORT || "6379", 10),
   password: process.env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: 3,
   retryStrategy: (times: number) => {
@@ -18,8 +18,8 @@ export function getRedis(): Redis {
   if (!redis) {
     redis = new Redis(redisConfig);
 
-    redis.on('error', (err) => {
-      console.error('Redis connection error:', err);
+    redis.on("error", (err) => {
+      console.error("Redis connection error:", err);
     });
   }
   return redis;
@@ -35,17 +35,17 @@ export async function closeRedis(): Promise<void> {
 // Key prefixes for organizing data
 export const REDIS_KEYS = {
   // Trip updates: tripUpdate:{tripId}
-  TRIP_UPDATE: 'tripUpdate',
+  TRIP_UPDATE: "tripUpdate",
   // Vehicle positions: vehicle:{vehicleId}
-  VEHICLE_POSITION: 'vehicle',
+  VEHICLE_POSITION: "vehicle",
   // Service alerts: alert:{alertId}
-  SERVICE_ALERT: 'alert',
+  SERVICE_ALERT: "alert",
   // Stop departures cache: stopDepartures:{stopId}
-  STOP_DEPARTURES: 'stopDepartures',
+  STOP_DEPARTURES: "stopDepartures",
   // Last update timestamp
-  LAST_REALTIME_UPDATE: 'lastRealtimeUpdate',
+  LAST_REALTIME_UPDATE: "lastRealtimeUpdate",
   // Vehicle positions by route: vehiclesByRoute:{routeId}
-  VEHICLES_BY_ROUTE: 'vehiclesByRoute',
+  VEHICLES_BY_ROUTE: "vehiclesByRoute",
 } as const;
 
 /**

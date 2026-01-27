@@ -1,4 +1,4 @@
-import { query } from '../index';
+import { query } from "../index";
 
 export interface ScheduledDeparture {
   tripId: string;
@@ -27,26 +27,23 @@ export async function getScheduledDepartures(
     startTime?: string;
     limit?: number;
     hoursAhead?: number;
-  } = {}
+  } = {},
 ): Promise<ScheduledDeparture[]> {
-  const {
-    date = new Date(),
-    limit = 50,
-    hoursAhead = 2,
-  } = options;
+  const { date = new Date(), limit = 50, hoursAhead = 2 } = options;
 
   // Calculate the GTFS time window
   // GTFS times can exceed 24:00 for services running past midnight
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  const startTime = options.startTime || 
-    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-  
+  const startTime =
+    options.startTime ||
+    `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+
   const endHour = hours + hoursAhead;
-  const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+  const endTime = `${endHour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
 
   const sql = `
-    SELECT 
+    SELECT
       t.trip_id as "tripId",
       r.route_id as "routeId",
       r.route_short_name as "routeShortName",
@@ -99,28 +96,26 @@ export async function getScheduledDeparturesForStops(
     startTime?: string;
     limit?: number;
     hoursAhead?: number;
-  } = {}
+  } = {},
 ): Promise<ScheduledDeparture[]> {
   if (stopIds.length === 0) return [];
 
-  const {
-    limit = 50,
-    hoursAhead = 2,
-  } = options;
+  const { limit = 50, hoursAhead = 2 } = options;
 
   const now = new Date();
   const hours = now.getHours();
   const minutes = now.getMinutes();
-  const startTime = options.startTime || 
-    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
-  
-  const endHour = hours + hoursAhead;
-  const endTime = `${endHour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+  const startTime =
+    options.startTime ||
+    `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
 
-  const stopIdPlaceholders = stopIds.map((_, i) => `$${i + 4}`).join(', ');
+  const endHour = hours + hoursAhead;
+  const endTime = `${endHour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+
+  const stopIdPlaceholders = stopIds.map((_, i) => `$${i + 4}`).join(", ");
 
   const sql = `
-    SELECT 
+    SELECT
       t.trip_id as "tripId",
       r.route_id as "routeId",
       r.route_short_name as "routeShortName",

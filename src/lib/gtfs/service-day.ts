@@ -1,19 +1,38 @@
-import type { Calendar, CalendarDate } from '@/types/gtfs';
+import type { Calendar, CalendarDate } from "@/types/gtfs";
 
 /**
  * Get the day of week name for a given date
  */
 function getDayOfWeek(
-  date: Date
-): 'sunday' | 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+  date: Date,
+):
+  | "sunday"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday" {
+  const days = [
+    "sunday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+  ] as const;
   return days[date.getDay()];
 }
 
 /**
  * Check if a date falls within a calendar's date range
  */
-function isWithinDateRange(date: Date, startDate: Date, endDate: Date): boolean {
+function isWithinDateRange(
+  date: Date,
+  startDate: Date,
+  endDate: Date,
+): boolean {
   const d = date.getTime();
   return d >= startDate.getTime() && d <= endDate.getTime();
 }
@@ -28,21 +47,21 @@ function isWithinDateRange(date: Date, startDate: Date, endDate: Date): boolean 
 export function getActiveServiceIds(
   date: Date,
   calendars: Calendar[],
-  calendarDates: CalendarDate[]
+  calendarDates: CalendarDate[],
 ): string[] {
-  const dateStr = date.toISOString().split('T')[0];
+  const dateStr = date.toISOString().split("T")[0];
   const dayOfWeek = getDayOfWeek(date);
 
   // Get regular services running on this day of week
   const regularServices = calendars
     .filter(
-      (c) => c[dayOfWeek] && isWithinDateRange(date, c.startDate, c.endDate)
+      (c) => c[dayOfWeek] && isWithinDateRange(date, c.startDate, c.endDate),
     )
     .map((c) => c.serviceId);
 
   // Find exceptions for this date
   const exceptionsForDate = calendarDates.filter(
-    (cd) => cd.date.toISOString().split('T')[0] === dateStr
+    (cd) => cd.date.toISOString().split("T")[0] === dateStr,
   );
 
   // Services added by exception (exception_type = 1)
@@ -52,7 +71,9 @@ export function getActiveServiceIds(
 
   // Services removed by exception (exception_type = 2)
   const removedServices = new Set(
-    exceptionsForDate.filter((cd) => cd.exceptionType === 2).map((cd) => cd.serviceId)
+    exceptionsForDate
+      .filter((cd) => cd.exceptionType === 2)
+      .map((cd) => cd.serviceId),
   );
 
   // Combine and deduplicate
@@ -73,7 +94,7 @@ export function isServiceActive(
   serviceId: string,
   date: Date,
   calendars: Calendar[],
-  calendarDates: CalendarDate[]
+  calendarDates: CalendarDate[],
 ): boolean {
   const activeIds = getActiveServiceIds(date, calendars, calendarDates);
   return activeIds.includes(serviceId);

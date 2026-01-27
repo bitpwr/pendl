@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { RouteBadge } from './route-badge';
-import { DepartureTime } from './departure-time';
-import type { Departure } from '@/types/api';
-import { cn } from '@/lib/utils';
+import Link from "next/link";
+import { RouteBadge } from "./route-badge";
+import { DepartureTime } from "./departure-time";
+import type { Departure } from "@/types/api";
+import { cn } from "@/lib/utils";
 
 interface DepartureRowProps {
   departure: Departure;
@@ -21,8 +21,8 @@ export function DepartureRow({ departure }: DepartureRowProps) {
     <Link
       href={`/trip/${departure.tripId}`}
       className={cn(
-        'flex items-center gap-4 p-4 transition-colors hover:bg-accent/50',
-        departure.isCancelled && 'opacity-60'
+        "flex items-center gap-4 p-4 transition-colors hover:bg-accent/50",
+        departure.isCancelled && "opacity-60",
       )}
     >
       <RouteBadge
@@ -35,7 +35,9 @@ export function DepartureRow({ departure }: DepartureRowProps) {
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{departure.headsign}</p>
         {departure.platform && (
-          <p className="text-sm text-muted-foreground">Läge {departure.platform}</p>
+          <p className="text-sm text-muted-foreground">
+            Läge {departure.platform}
+          </p>
         )}
       </div>
 

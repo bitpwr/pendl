@@ -1,5 +1,5 @@
 // API Response Types
-import type { RouteType } from './gtfs';
+import type { RouteType } from "./gtfs";
 
 export interface DepartureResponse {
   stop: {
@@ -99,6 +99,6 @@ export interface TripStop {
 }
 
 export interface GeoJSONLineString {
-  type: 'LineString';
+  type: "LineString";
   coordinates: [number, number][]; // [lon, lat]
 }

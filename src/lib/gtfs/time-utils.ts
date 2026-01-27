@@ -17,7 +17,7 @@ export interface ParsedGtfsTime {
  * Parse a GTFS time string (HH:MM:SS) which can exceed 24:00:00
  */
 export function parseGtfsTime(timeStr: string): ParsedGtfsTime {
-  const parts = timeStr.split(':');
+  const parts = timeStr.split(":");
   if (parts.length !== 3) {
     throw new Error(`Invalid GTFS time format: ${timeStr}`);
   }
@@ -61,9 +61,9 @@ export function gtfsTimeToDate(timeStr: string, serviceDate: Date): Date {
  * Format a Date as HH:mm (24-hour format)
  */
 export function formatTime(date: Date): string {
-  return date.toLocaleTimeString('sv-SE', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return date.toLocaleTimeString("sv-SE", {
+    hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   });
 }
@@ -73,7 +73,7 @@ export function formatTime(date: Date): string {
  */
 export function formatMinutesUntil(minutes: number): string {
   if (minutes <= 0) {
-    return 'Nu';
+    return "Nu";
   }
   if (minutes < 60) {
     return `${minutes} min`;

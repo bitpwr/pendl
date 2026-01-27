@@ -1,7 +1,7 @@
-import { createReadStream } from 'fs';
-import { parse } from 'csv-parse';
-import * as unzipper from 'unzipper';
-import type { GtfsFileName } from './config';
+import { createReadStream } from "fs";
+import { parse } from "csv-parse";
+import * as unzipper from "unzipper";
+import type { GtfsFileName } from "./config";
 
 export interface ParseOptions {
   /** Filter rows during parsing */
@@ -18,7 +18,7 @@ export interface ParseOptions {
 export async function parseGtfsFile<T extends Record<string, string>>(
   zipPath: string,
   fileName: GtfsFileName,
-  options: ParseOptions = {}
+  options: ParseOptions = {},
 ): Promise<T[]> {
   const { filter, transform, limit } = options;
   const results: T[] = [];
@@ -26,7 +26,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
   return new Promise((resolve, reject) => {
     const zipStream = createReadStream(zipPath).pipe(unzipper.Parse());
 
-    zipStream.on('entry', async (entry) => {
+    zipStream.on("entry", async (entry) => {
       if (entry.path === fileName) {
         const parser = parse({
           columns: true,
@@ -37,7 +37,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
 
         entry.pipe(parser);
 
-        parser.on('data', (row: Record<string, string>) => {
+        parser.on("data", (row: Record<string, string>) => {
           if (limit && results.length >= limit) {
             return;
           }
@@ -52,18 +52,18 @@ export async function parseGtfsFile<T extends Record<string, string>>(
           }
         });
 
-        parser.on('end', () => {
+        parser.on("end", () => {
           resolve(results);
         });
 
-        parser.on('error', reject);
+        parser.on("error", reject);
       } else {
         entry.autodrain();
       }
     });
 
-    zipStream.on('error', reject);
-    zipStream.on('close', () => {
+    zipStream.on("error", reject);
+    zipStream.on("close", () => {
       // File not found in zip
       if (results.length === 0) {
         resolve([]);
@@ -80,7 +80,7 @@ export async function parseGtfsZip(
   options: {
     agencyFilter?: (agencyId: string) => boolean;
     limit?: number;
-  } = {}
+  } = {},
 ): Promise<{
   agencies: Record<string, string>[];
   stops: Record<string, string>[];
@@ -93,31 +93,25 @@ export async function parseGtfsZip(
 }> {
   const { agencyFilter, limit } = options;
 
-  console.log('Parsing agencies...');
-  const agencies = await parseGtfsFile(zipPath, 'agency.txt', {
-    filter: agencyFilter
-      ? (row) => agencyFilter(row.agency_id)
-      : undefined,
+  console.log("Parsing agencies...");
+  const agencies = await parseGtfsFile(zipPath, "agency.txt", {
+    filter: agencyFilter ? (row) => agencyFilter(row.agency_id) : undefined,
     limit,
   });
   const agencyIds = new Set(agencies.map((a) => a.agency_id));
   console.log(`Found ${agencies.length} agencies`);
 
-  console.log('Parsing routes...');
-  const routes = await parseGtfsFile(zipPath, 'routes.txt', {
-    filter: agencyFilter
-      ? (row) => agencyIds.has(row.agency_id)
-      : undefined,
+  console.log("Parsing routes...");
+  const routes = await parseGtfsFile(zipPath, "routes.txt", {
+    filter: agencyFilter ? (row) => agencyIds.has(row.agency_id) : undefined,
     limit,
   });
   const routeIds = new Set(routes.map((r) => r.route_id));
   console.log(`Found ${routes.length} routes`);
 
-  console.log('Parsing trips...');
-  const trips = await parseGtfsFile(zipPath, 'trips.txt', {
-    filter: agencyFilter
-      ? (row) => routeIds.has(row.route_id)
-      : undefined,
+  console.log("Parsing trips...");
+  const trips = await parseGtfsFile(zipPath, "trips.txt", {
+    filter: agencyFilter ? (row) => routeIds.has(row.route_id) : undefined,
     limit,
   });
   const tripIds = new Set(trips.map((t) => t.trip_id));
@@ -125,17 +119,15 @@ export async function parseGtfsZip(
   const shapeIds = new Set(trips.map((t) => t.shape_id).filter(Boolean));
   console.log(`Found ${trips.length} trips`);
 
-  console.log('Parsing stop_times...');
-  const stopTimes = await parseGtfsFile(zipPath, 'stop_times.txt', {
-    filter: agencyFilter
-      ? (row) => tripIds.has(row.trip_id)
-      : undefined,
+  console.log("Parsing stop_times...");
+  const stopTimes = await parseGtfsFile(zipPath, "stop_times.txt", {
+    filter: agencyFilter ? (row) => tripIds.has(row.trip_id) : undefined,
   });
   const stopIds = new Set(stopTimes.map((st) => st.stop_id));
   console.log(`Found ${stopTimes.length} stop times`);
 
-  console.log('Parsing stops...');
-  const stops = await parseGtfsFile(zipPath, 'stops.txt', {
+  console.log("Parsing stops...");
+  const stops = await parseGtfsFile(zipPath, "stops.txt", {
     filter: agencyFilter
       ? (row) => stopIds.has(row.stop_id) || stopIds.has(row.parent_station)
       : undefined,
@@ -143,29 +135,23 @@ export async function parseGtfsZip(
   });
   console.log(`Found ${stops.length} stops`);
 
-  console.log('Parsing calendar...');
-  const calendar = await parseGtfsFile(zipPath, 'calendar.txt', {
-    filter: agencyFilter
-      ? (row) => serviceIds.has(row.service_id)
-      : undefined,
+  console.log("Parsing calendar...");
+  const calendar = await parseGtfsFile(zipPath, "calendar.txt", {
+    filter: agencyFilter ? (row) => serviceIds.has(row.service_id) : undefined,
     limit,
   });
   console.log(`Found ${calendar.length} calendar entries`);
 
-  console.log('Parsing calendar_dates...');
-  const calendarDates = await parseGtfsFile(zipPath, 'calendar_dates.txt', {
-    filter: agencyFilter
-      ? (row) => serviceIds.has(row.service_id)
-      : undefined,
+  console.log("Parsing calendar_dates...");
+  const calendarDates = await parseGtfsFile(zipPath, "calendar_dates.txt", {
+    filter: agencyFilter ? (row) => serviceIds.has(row.service_id) : undefined,
     limit,
   });
   console.log(`Found ${calendarDates.length} calendar date exceptions`);
 
-  console.log('Parsing shapes...');
-  const shapes = await parseGtfsFile(zipPath, 'shapes.txt', {
-    filter: agencyFilter
-      ? (row) => shapeIds.has(row.shape_id)
-      : undefined,
+  console.log("Parsing shapes...");
+  const shapes = await parseGtfsFile(zipPath, "shapes.txt", {
+    filter: agencyFilter ? (row) => shapeIds.has(row.shape_id) : undefined,
   });
   console.log(`Found ${shapes.length} shape points`);
 

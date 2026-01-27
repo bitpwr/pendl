@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Skeleton } from '@/components/ui/skeleton';
-import { DepartureRow } from './departure-row';
-import { RefreshCw, AlertTriangle, Clock } from 'lucide-react';
-import type { DepartureResponse } from '@/types/api';
-import { formatTime } from '@/lib/gtfs/time-utils';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { DepartureRow } from "./departure-row";
+import { RefreshCw, AlertTriangle, Clock } from "lucide-react";
+import type { DepartureResponse } from "@/types/api";
+import { formatTime } from "@/lib/gtfs/time-utils";
 
 interface DepartureBoardProps {
   data?: DepartureResponse;
@@ -35,7 +35,12 @@ export function DepartureBoard({
           <p className="font-medium">Kunde inte ladda avgångar</p>
           <p className="text-sm text-muted-foreground mt-1">{error.message}</p>
           {onRefresh && (
-            <Button variant="outline" size="sm" className="mt-4" onClick={onRefresh}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={onRefresh}
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Försök igen
             </Button>
@@ -51,7 +56,9 @@ export function DepartureBoard({
         <CardContent className="p-6 text-center text-muted-foreground">
           <Clock className="mx-auto h-8 w-8 mb-2 opacity-50" />
           <p>Inga avgångar hittades</p>
-          <p className="text-sm mt-1">Det finns inga avgångar de närmaste timmarna</p>
+          <p className="text-sm mt-1">
+            Det finns inga avgångar de närmaste timmarna
+          </p>
         </CardContent>
       </Card>
     );
@@ -76,7 +83,9 @@ export function DepartureBoard({
                 onClick={onRefresh}
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                />
               </Button>
             )}
           </div>

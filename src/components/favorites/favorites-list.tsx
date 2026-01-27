@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Star, ChevronRight, Trash2 } from 'lucide-react';
-import { useFavorites } from '@/hooks/use-favorites';
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Star, ChevronRight, Trash2 } from "lucide-react";
+import { useFavorites } from "@/hooks/use-favorites";
 
 export function FavoritesList() {
   const { favorites, removeFavorite } = useFavorites();
@@ -26,7 +26,10 @@ export function FavoritesList() {
   return (
     <div className="space-y-2">
       {favorites.map((favorite) => (
-        <Card key={favorite.stopId} className="group transition-colors hover:bg-accent/50">
+        <Card
+          key={favorite.stopId}
+          className="group transition-colors hover:bg-accent/50"
+        >
           <CardContent className="p-0">
             <div className="flex items-center">
               <Link

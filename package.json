@@ -10,7 +10,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "gtfs:import": "npx tsx scripts/import-gtfs.ts",
-    "gtfs:realtime": "npx tsx scripts/realtime-worker.ts"
+    "gtfs:realtime": "npx tsx scripts/realtime-worker.ts",
+    "format": "npx prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\""
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
