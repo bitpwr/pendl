@@ -1,0 +1,221 @@
+'use client';
+
+import { useEffect, useState, useMemo, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { RefreshCw, Locate } from 'lucide-react';
+import type { Vehicle } from '@/types/api';
+
+// Dynamically import Leaflet components to avoid SSR issues
+const MapContainer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+const TileLayer = dynamic(
+  () => import('react-leaflet').then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Marker),
+  { ssr: false }
+);
+const Popup = dynamic(
+  () => import('react-leaflet').then((mod) => mod.Popup),
+  { ssr: false }
+);
+
+interface VehicleMapProps {
+  routeId?: string;
+  center?: [number, number];
+  zoom?: number;
+  height?: string;
+}
+
+// Stockholm default center
+const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
+const DEFAULT_ZOOM = 12;
+
+export function VehicleMap({
+  routeId,
+  center = DEFAULT_CENTER,
+  zoom = DEFAULT_ZOOM,
+  height = '400px',
+}: VehicleMapProps) {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [mapCenter, setMapCenter] = useState(center);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  const fetchVehicles = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const url = routeId
+        ? `/api/vehicles?routeId=${encodeURIComponent(routeId)}`
+        : '/api/vehicles';
+
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Kunde inte hämta fordonspositioner');
+      }
+
+      const data = await response.json();
+      setVehicles(data.vehicles || []);
+      setLastUpdated(new Date(data.updatedAt));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Okänt fel'));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [routeId]);
+
+  useEffect(() => {
+    fetchVehicles();
+
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchVehicles, 10000);
+    return () => clearInterval(interval);
+  }, [fetchVehicles]);
+
+  const handleLocateMe = () => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setMapCenter([position.coords.latitude, position.coords.longitude]);
+        },
+        (err) => {
+          console.error('Geolocation error:', err);
+        }
+      );
+    }
+  };
+
+  // Create vehicle markers only on client
+  const vehicleMarkers = useMemo(() => {
+    if (!isClient) return null;
+    return vehicles.map((vehicle) => (
+      <VehicleMarker key={vehicle.vehicleId} vehicle={vehicle} />
+    ));
+  }, [vehicles, isClient]);
+
+  if (!isClient) {
+    return <MapSkeleton height={height} />;
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center justify-center p-6">
+          <p className="text-destructive mb-2">Kunde inte ladda karta</p>
+          <Button variant="outline" size="sm" onClick={fetchVehicles}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Försök igen
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg">
+            Fordon i realtid
+            {vehicles.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                ({vehicles.length} fordon)
+              </span>
+            )}
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            {lastUpdated && (
+              <span className="text-xs text-muted-foreground">
+                Uppdaterad {lastUpdated.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleLocateMe}
+              title="Min position"
+            >
+              <Locate className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={fetchVehicles}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <div style={{ height }} className="relative rounded-b-lg overflow-hidden">
+          <MapContainer
+            center={mapCenter}
+            zoom={zoom}
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={true}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {vehicleMarkers}
+          </MapContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface VehicleMarkerProps {
+  vehicle: Vehicle;
+}
+
+function VehicleMarker({ vehicle }: VehicleMarkerProps) {
+  // Create custom icon based on vehicle type/route
+  // For now, using default marker
+  return (
+    <Marker position={[vehicle.latitude, vehicle.longitude]}>
+      <Popup>
+        <div className="text-sm">
+          <p className="font-bold">{vehicle.routeShortName || vehicle.routeId}</p>
+          <p>{vehicle.headsign}</p>
+          <p className="text-muted-foreground">Fordon: {vehicle.vehicleId}</p>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
+function MapSkeleton({ height }: { height: string }) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-8 w-8" />
+        </div>
+      </CardHeader>
+      <CardContent className="p-0">
+        <Skeleton style={{ height }} className="rounded-b-lg" />
+      </CardContent>
+    </Card>
+  );
+}

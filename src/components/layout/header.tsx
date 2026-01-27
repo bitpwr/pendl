@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Train } from 'lucide-react';
+import { Train, Map } from 'lucide-react';
 
 export function Header() {
   return (
@@ -21,6 +21,13 @@ export function Header() {
             className="text-muted-foreground transition-colors hover:text-foreground"
           >
             Favoriter
+          </Link>
+          <Link
+            href="/karta"
+            className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1"
+          >
+            <Map className="h-4 w-4" />
+            Karta
           </Link>
         </nav>
       </div>
