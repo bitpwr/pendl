@@ -2,30 +2,35 @@
 import type { RouteType } from './gtfs';
 
 export interface DepartureResponse {
-  stopId: string;
-  stopName: string;
+  stop: {
+    stopId: string;
+    stopName: string;
+    latitude: number;
+    longitude: number;
+  };
   departures: Departure[];
-  generatedAt: string;
+  updatedAt: string;
 }
 
 export interface Departure {
   tripId: string;
   routeId: string;
   routeShortName: string;
-  routeColor: string;
+  routeLongName: string;
   routeType: RouteType;
+  routeColor: string | null;
+  routeTextColor: string | null;
   headsign: string;
   scheduledDeparture: string; // ISO datetime
-  predictedDeparture?: string; // ISO datetime (if realtime available)
-  delayMinutes?: number;
-  status: DepartureStatus;
-  isRealtime: boolean;
+  realtimeDeparture?: string; // ISO datetime (if realtime available)
+  delaySeconds?: number;
+  isCancelled?: boolean;
+  stopId: string;
+  directionId: number;
   platform?: string;
   vehicleId?: string;
   alerts?: AlertSummary[];
 }
-
-export type DepartureStatus = 'on-time' | 'delayed' | 'early' | 'cancelled' | 'scheduled';
 
 export interface AlertSummary {
   alertId: string;

@@ -61,7 +61,7 @@ export function DepartureBoard({
     <Card>
       <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">{data.stopName}</CardTitle>
+          <CardTitle className="text-lg">{data.stop.stopName}</CardTitle>
           <div className="flex items-center gap-2">
             {lastUpdated && (
               <span className="text-xs text-muted-foreground">

@@ -12,21 +12,22 @@ interface DepartureRowProps {
 
 export function DepartureRow({ departure }: DepartureRowProps) {
   const scheduledTime = new Date(departure.scheduledDeparture);
-  const predictedTime = departure.predictedDeparture
-    ? new Date(departure.predictedDeparture)
+  const realtimeTime = departure.realtimeDeparture
+    ? new Date(departure.realtimeDeparture)
     : undefined;
+  const isRealtime = !!departure.realtimeDeparture;
 
   return (
     <Link
       href={`/trip/${departure.tripId}`}
       className={cn(
         'flex items-center gap-4 p-4 transition-colors hover:bg-accent/50',
-        departure.status === 'cancelled' && 'opacity-60'
+        departure.isCancelled && 'opacity-60'
       )}
     >
       <RouteBadge
         shortName={departure.routeShortName}
-        color={departure.routeColor}
+        color={departure.routeColor || undefined}
         routeType={departure.routeType}
         size="md"
       />
@@ -40,9 +41,9 @@ export function DepartureRow({ departure }: DepartureRowProps) {
 
       <DepartureTime
         scheduledTime={scheduledTime}
-        predictedTime={predictedTime}
-        isRealtime={departure.isRealtime}
-        isCancelled={departure.status === 'cancelled'}
+        predictedTime={realtimeTime}
+        isRealtime={isRealtime}
+        isCancelled={departure.isCancelled}
       />
     </Link>
   );

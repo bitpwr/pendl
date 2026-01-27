@@ -1,10 +1,13 @@
 // GTFS Realtime Types
 
+export type TripScheduleRelationship = 'SCHEDULED' | 'ADDED' | 'UNSCHEDULED' | 'CANCELED';
+
 export interface TripUpdate {
   tripId: string;
   routeId: string;
   vehicleId?: string;
   timestamp: number;
+  scheduleRelationship?: TripScheduleRelationship;
   stopTimeUpdates: StopTimeUpdate[];
 }
 
