@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
       tripId: pos.tripId,
       routeId: pos.routeId,
       routeShortName: "", // Would need to join with route data
-      routeColor: "", // Would need to join with route data
       headsign: "", // Would need to join with trip data
       latitude: pos.latitude,
       longitude: pos.longitude,

@@ -6,8 +6,6 @@ export interface ScheduledDeparture {
   routeShortName: string;
   routeLongName: string;
   routeType: number;
-  routeColor: string | null;
-  routeTextColor: string | null;
   tripHeadsign: string;
   stopSequence: number;
   departureTime: string; // GTFS time format (HH:MM:SS, can exceed 24:00)
@@ -49,8 +47,6 @@ export async function getScheduledDepartures(
       r.route_short_name as "routeShortName",
       r.route_long_name as "routeLongName",
       r.route_type as "routeType",
-      r.route_color as "routeColor",
-      r.route_text_color as "routeTextColor",
       COALESCE(st.stop_headsign, t.trip_headsign, r.route_long_name) as "tripHeadsign",
       st.stop_sequence as "stopSequence",
       st.departure_time as "departureTime",
@@ -121,8 +117,6 @@ export async function getScheduledDeparturesForStops(
       r.route_short_name as "routeShortName",
       r.route_long_name as "routeLongName",
       r.route_type as "routeType",
-      r.route_color as "routeColor",
-      r.route_text_color as "routeTextColor",
       COALESCE(st.stop_headsign, t.trip_headsign, r.route_long_name) as "tripHeadsign",
       st.stop_sequence as "stopSequence",
       st.departure_time as "departureTime",

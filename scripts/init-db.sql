@@ -14,26 +14,21 @@ CREATE TABLE agencies (
 -- Stops with geographic location
 CREATE TABLE stops (
     stop_id TEXT PRIMARY KEY,
-    stop_code TEXT,
     stop_name TEXT NOT NULL,
-    stop_desc TEXT,
     stop_lat DOUBLE PRECISION NOT NULL,
     stop_lon DOUBLE PRECISION NOT NULL,
     location_type INTEGER DEFAULT 0,
     parent_station TEXT,
     platform_code TEXT,
+    search_vector TSVECTOR,
     geom GEOMETRY(Point, 4326) GENERATED ALWAYS AS (
         ST_SetSRID(ST_MakePoint(stop_lon, stop_lat), 4326)
     ) STORED
 );
 
--- Add foreign key after table creation to allow self-reference
-ALTER TABLE stops ADD CONSTRAINT fk_stops_parent
-    FOREIGN KEY (parent_station) REFERENCES stops(stop_id)
-    ON DELETE SET NULL;
-
 CREATE INDEX idx_stops_geom ON stops USING GIST(geom);
 CREATE INDEX idx_stops_name ON stops USING GIN(to_tsvector('simple', stop_name));
+CREATE INDEX idx_stops_search ON stops USING GIN(search_vector);
 CREATE INDEX idx_stops_parent ON stops(parent_station);
 
 -- Routes
@@ -43,10 +38,7 @@ CREATE TABLE routes (
     route_short_name TEXT,
     route_long_name TEXT,
     route_desc TEXT,
-    route_type INTEGER NOT NULL,
-    route_color TEXT,
-    route_text_color TEXT,
-    route_sort_order INTEGER
+    route_type INTEGER NOT NULL
 );
 
 CREATE INDEX idx_routes_agency ON routes(agency_id);
@@ -145,16 +137,33 @@ SELECT DISTINCT
     r.route_id,
     r.route_short_name,
     r.route_long_name,
-    r.route_type,
-    r.route_color
+    r.route_type
 FROM stop_times st
 JOIN trips t ON st.trip_id = t.trip_id
 JOIN routes r ON t.route_id = r.route_id;
+
+-- Materialized view for route types per stop (for quick lookups)
+CREATE MATERIALIZED VIEW stop_route_types AS
+SELECT
+    s.stop_id,
+    COALESCE(
+        ARRAY_AGG(DISTINCT r.route_type ORDER BY r.route_type) FILTER (WHERE r.route_type IS NOT NULL),
+        ARRAY[]::integer[]
+    ) AS route_types
+FROM stops s
+LEFT JOIN stop_times st ON st.stop_id = s.stop_id
+LEFT JOIN trips t ON t.trip_id = st.trip_id
+LEFT JOIN routes r ON r.route_id = t.route_id
+WHERE s.location_type = 1
+GROUP BY s.stop_id;
+
+CREATE UNIQUE INDEX idx_stop_route_types_id ON stop_route_types(stop_id);
 
 -- Function to refresh materialized views
 CREATE OR REPLACE FUNCTION refresh_gtfs_views()
 RETURNS void AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY shape_lines;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY stop_route_types;
 END;
 $$ LANGUAGE plpgsql;

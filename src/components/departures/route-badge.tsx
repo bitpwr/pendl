@@ -5,8 +5,6 @@ import { Bus, Train, TramFront, Ship } from "lucide-react";
 
 interface RouteBadgeProps {
   shortName: string;
-  color?: string;
-  textColor?: string;
   routeType: RouteType;
   size?: "sm" | "md" | "lg";
 }
@@ -29,8 +27,6 @@ function getRouteIcon(routeType: RouteType) {
 
 export function RouteBadge({
   shortName,
-  color,
-  textColor,
   routeType,
   size = "md",
 }: RouteBadgeProps) {
@@ -62,12 +58,8 @@ export function RouteBadge({
     [RouteType.Monorail]: { bg: "#7C3AED", text: "#FFFFFF" },
   };
 
-  const bgColor = color
-    ? `#${color}`
-    : defaultColors[routeType]?.bg || "#6B7280";
-  const txtColor = textColor
-    ? `#${textColor}`
-    : defaultColors[routeType]?.text || "#FFFFFF";
+  const bgColor = defaultColors[routeType]?.bg || "#6B7280";
+  const txtColor = defaultColors[routeType]?.text || "#FFFFFF";
 
   return (
     <Badge

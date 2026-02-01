@@ -18,8 +18,6 @@ export interface Departure {
   routeShortName: string;
   routeLongName: string;
   routeType: RouteType;
-  routeColor: string | null;
-  routeTextColor: string | null;
   headsign: string;
   scheduledDeparture: string; // ISO datetime
   realtimeDeparture?: string; // ISO datetime (if realtime available)
@@ -48,7 +46,6 @@ export interface Vehicle {
   tripId: string;
   routeId: string;
   routeShortName: string;
-  routeColor: string;
   headsign: string;
   latitude: number;
   longitude: number;
@@ -75,7 +72,6 @@ export interface StopSearchResult {
 export interface RouteSummary {
   routeId: string;
   routeShortName: string;
-  routeColor: string;
   routeType: RouteType;
 }
 
@@ -83,7 +79,6 @@ export interface TripDetails {
   tripId: string;
   routeId: string;
   routeShortName: string;
-  routeColor: string;
   headsign: string;
   stops: TripStop[];
   shape?: GeoJSONLineString;

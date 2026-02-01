@@ -80,8 +80,6 @@ export async function GET(request: NextRequest, { params }: Props) {
         routeShortName: dep.routeShortName,
         routeLongName: dep.routeLongName,
         routeType: dep.routeType,
-        routeColor: dep.routeColor,
-        routeTextColor: dep.routeTextColor,
         headsign: dep.tripHeadsign,
         scheduledDeparture: scheduledTime.toISOString(),
         realtimeDeparture: realtimeTime?.toISOString(),

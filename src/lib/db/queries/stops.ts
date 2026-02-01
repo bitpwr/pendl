@@ -104,17 +104,11 @@ export async function getStop(stopId: string): Promise<Stop | null> {
   const sql = `
     SELECT
       stop_id as "stopId",
-      stop_code as "stopCode",
       stop_name as "stopName",
-      stop_desc as "stopDesc",
       stop_lat as "stopLat",
       stop_lon as "stopLon",
-      zone_id as "zoneId",
-      stop_url as "stopUrl",
       location_type as "locationType",
       parent_station as "parentStation",
-      stop_timezone as "stopTimezone",
-      wheelchair_boarding as "wheelchairBoarding",
       platform_code as "platformCode"
     FROM stops
     WHERE stop_id = $1
@@ -130,17 +124,11 @@ export async function getChildStops(parentStationId: string): Promise<Stop[]> {
   const sql = `
     SELECT
       stop_id as "stopId",
-      stop_code as "stopCode",
       stop_name as "stopName",
-      stop_desc as "stopDesc",
       stop_lat as "stopLat",
       stop_lon as "stopLon",
-      zone_id as "zoneId",
-      stop_url as "stopUrl",
       location_type as "locationType",
       parent_station as "parentStation",
-      stop_timezone as "stopTimezone",
-      wheelchair_boarding as "wheelchairBoarding",
       platform_code as "platformCode"
     FROM stops
     WHERE parent_station = $1

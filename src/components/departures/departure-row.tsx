@@ -27,7 +27,6 @@ export function DepartureRow({ departure }: DepartureRowProps) {
     >
       <RouteBadge
         shortName={departure.routeShortName}
-        color={departure.routeColor || undefined}
         routeType={departure.routeType}
         size="md"
       />

@@ -11,9 +11,7 @@ export interface Agency {
 
 export interface Stop {
   stopId: string;
-  stopCode?: string;
   stopName: string;
-  stopDesc?: string;
   stopLat: number;
   stopLon: number;
   locationType: number;
@@ -28,9 +26,6 @@ export interface Route {
   routeLongName?: string;
   routeDesc?: string;
   routeType: RouteType;
-  routeColor?: string;
-  routeTextColor?: string;
-  routeSortOrder?: number;
 }
 
 export enum RouteType {

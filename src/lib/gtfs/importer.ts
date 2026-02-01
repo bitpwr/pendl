@@ -54,15 +54,16 @@ export async function importGtfsToDatabase(data: ImportData): Promise<void> {
     await client.query(`
       UPDATE stops SET search_vector =
         setweight(to_tsvector('swedish', COALESCE(stop_name, '')), 'A') ||
-        setweight(to_tsvector('swedish', COALESCE(stop_code, '')), 'B')
+        setweight(to_tsvector('swedish', COALESCE(platform_code, '')), 'B')
     `);
 
-    console.log("Refreshing materialized views...");
-    await client.query(
-      "REFRESH MATERIALIZED VIEW CONCURRENTLY stop_route_types",
-    );
-
     await client.query("COMMIT");
+    console.log("Transaction committed.");
+
+    console.log("Refreshing materialized views...");
+    await client.query("REFRESH MATERIALIZED VIEW stop_route_types");
+    await client.query("REFRESH MATERIALIZED VIEW shape_lines");
+
     console.log("Import completed successfully!");
   } catch (error) {
     await client.query("ROLLBACK");
@@ -105,29 +106,23 @@ async function importStops(
     const placeholders: string[] = [];
 
     batch.forEach((s, idx) => {
-      const offset = idx * 13;
+      const offset = idx * 7;
       placeholders.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8}, $${offset + 9}, $${offset + 10}, $${offset + 11}, $${offset + 12}, ST_SetSRID(ST_MakePoint($${offset + 13}, $${offset + 5}), 4326))`,
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`,
       );
       values.push(
         s.stop_id,
-        s.stop_code || null,
         s.stop_name,
-        s.stop_desc || null,
         parseFloat(s.stop_lat) || null,
         parseFloat(s.stop_lon) || null,
-        s.zone_id || null,
-        s.stop_url || null,
         parseInt(s.location_type) || 0,
         s.parent_station || null,
-        s.stop_timezone || null,
-        parseInt(s.wheelchair_boarding) || 0,
-        parseFloat(s.stop_lon) || null,
+        s.platform_code || null,
       );
     });
 
     await client.query(
-      `INSERT INTO stops (stop_id, stop_code, stop_name, stop_desc, stop_lat, stop_lon, zone_id, stop_url, location_type, parent_station, stop_timezone, wheelchair_boarding, geom)
+      `INSERT INTO stops (stop_id, stop_name, stop_lat, stop_lon, location_type, parent_station, platform_code)
        VALUES ${placeholders.join(", ")}
        ON CONFLICT (stop_id) DO NOTHING`,
       values,
@@ -142,8 +137,8 @@ async function importRoutes(
 ): Promise<void> {
   for (const r of routes) {
     await client.query(
-      `INSERT INTO routes (route_id, agency_id, route_short_name, route_long_name, route_desc, route_type, route_url, route_color, route_text_color, route_sort_order)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO routes (route_id, agency_id, route_short_name, route_long_name, route_desc, route_type)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (route_id) DO NOTHING`,
       [
         r.route_id,
@@ -152,10 +147,6 @@ async function importRoutes(
         r.route_long_name || null,
         r.route_desc || null,
         parseInt(r.route_type) || 3,
-        r.route_url || null,
-        r.route_color || null,
-        r.route_text_color || null,
-        parseInt(r.route_sort_order) || null,
       ],
     );
   }

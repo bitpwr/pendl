@@ -78,12 +78,6 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
                         key={route.routeId}
                         variant="secondary"
                         className="text-xs"
-                        style={{
-                          backgroundColor: route.routeColor
-                            ? `#${route.routeColor}`
-                            : undefined,
-                          color: route.routeColor ? "#fff" : undefined,
-                        }}
                       >
                         {route.routeShortName}
                       </Badge>

@@ -15,12 +15,11 @@ const mockResults: StopSearchResult[] = [
     latitude: 59.3314,
     longitude: 18.0603,
     routes: [
-      { routeId: "1", routeShortName: "1", routeColor: "E74C3C", routeType: 1 },
-      { routeId: "2", routeShortName: "2", routeColor: "9B59B6", routeType: 1 },
+      { routeId: "1", routeShortName: "1", routeType: 1 },
+      { routeId: "2", routeShortName: "2", routeType: 1 },
       {
         routeId: "14",
         routeShortName: "14",
-        routeColor: "3498DB",
         routeType: 1,
       },
     ],
@@ -32,11 +31,10 @@ const mockResults: StopSearchResult[] = [
     latitude: 59.3195,
     longitude: 18.0716,
     routes: [
-      { routeId: "1", routeShortName: "1", routeColor: "E74C3C", routeType: 1 },
+      { routeId: "1", routeShortName: "1", routeType: 1 },
       {
         routeId: "14",
         routeShortName: "14",
-        routeColor: "3498DB",
         routeType: 1,
       },
     ],
@@ -47,11 +45,10 @@ const mockResults: StopSearchResult[] = [
     latitude: 59.3429,
     longitude: 18.0498,
     routes: [
-      { routeId: "2", routeShortName: "2", routeColor: "9B59B6", routeType: 1 },
+      { routeId: "2", routeShortName: "2", routeType: 1 },
       {
         routeId: "42",
         routeShortName: "42",
-        routeColor: "2ECC71",
         routeType: 3,
       },
     ],
