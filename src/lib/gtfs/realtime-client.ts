@@ -195,7 +195,17 @@ async function getProtoType(): Promise<protobuf.Type> {
  * Fetch and parse GTFS Realtime feed
  */
 export async function fetchRealtimeFeed(url: string): Promise<FeedMessage> {
-  const response = await fetch(url);
+  const request = new URL(url);
+  if (GTFS_CONFIG.realtimeApiKey) {
+    request.searchParams.set("key", GTFS_CONFIG.realtimeApiKey);
+  }
+
+  const response = await fetch(request.toString(), {
+    headers: {
+      accept: "application/octet-stream",
+      "Accept-encoding": "br, gzip, deflate",
+    },
+  });
 
   if (!response.ok) {
     throw new Error(`Failed to fetch realtime feed: ${response.status}`);

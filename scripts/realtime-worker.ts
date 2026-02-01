@@ -31,18 +31,34 @@ import { GTFS_CONFIG } from "@/lib/gtfs/config";
 
 let isRunning = true;
 
-async function updateRealtime(): Promise<void> {
+async function updateVehiclePositions(): Promise<void> {
   const startTime = Date.now();
 
   try {
-    // Fetch all feeds in parallel
-    const [tripUpdates, vehiclePositions, serviceAlerts] = await Promise.all([
+    const vehiclePositions = await fetchVehiclePositions().catch((err) => {
+      console.error("Failed to fetch vehicle positions:", err.message);
+      return [];
+    });
+
+    await storeVehiclePositions(vehiclePositions);
+
+    const duration = Date.now() - startTime;
+    console.log(
+      `[${new Date().toISOString()}] Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
+    );
+  } catch (error) {
+    console.error("Error updating vehicle positions:", error);
+  }
+}
+
+async function updateTripUpdatesAndAlerts(): Promise<void> {
+  const startTime = Date.now();
+
+  try {
+    // Fetch trip updates and service alerts in parallel
+    const [tripUpdates, serviceAlerts] = await Promise.all([
       fetchTripUpdates().catch((err) => {
         console.error("Failed to fetch trip updates:", err.message);
-        return [];
-      }),
-      fetchVehiclePositions().catch((err) => {
-        console.error("Failed to fetch vehicle positions:", err.message);
         return [];
       }),
       fetchServiceAlerts().catch((err) => {
@@ -54,7 +70,6 @@ async function updateRealtime(): Promise<void> {
     // Store in Redis
     await Promise.all([
       storeTripUpdates(tripUpdates),
-      storeVehiclePositions(vehiclePositions),
       storeServiceAlerts(serviceAlerts),
     ]);
 
@@ -62,16 +77,21 @@ async function updateRealtime(): Promise<void> {
 
     const duration = Date.now() - startTime;
     console.log(
-      `[${new Date().toISOString()}] Updated: ${tripUpdates.length} trip updates, ${vehiclePositions.length} vehicles, ${serviceAlerts.length} alerts (${duration}ms)`,
+      `[${new Date().toISOString()}] Updated: ${tripUpdates.length} trip updates, ${serviceAlerts.length} alerts (${duration}ms)`,
     );
   } catch (error) {
-    console.error("Error updating realtime data:", error);
+    console.error("Error updating trip updates and alerts:", error);
   }
 }
 
 async function runWorker(): Promise<void> {
   console.log("=== GTFS Realtime Worker ===");
-  console.log(`Update interval: ${GTFS_CONFIG.realtimeUpdateInterval}ms`);
+  console.log(
+    `Vehicle update interval: ${GTFS_CONFIG.realtimeVehicleUpdateInterval}ms`,
+  );
+  console.log(
+    `Trip/Alert update interval: ${GTFS_CONFIG.realtimeTripUpdateInterval}ms`,
+  );
   console.log(
     `Trip updates URL: ${GTFS_CONFIG.realtimeUrls.tripUpdates || "not configured"}`,
   );
@@ -85,21 +105,29 @@ async function runWorker(): Promise<void> {
   console.log("Starting worker...");
   console.log("");
 
-  // Initial update
-  await updateRealtime();
+  // Initial updates
+  await updateVehiclePositions();
+  await updateTripUpdatesAndAlerts();
 
-  // Set up interval
-  const interval = setInterval(async () => {
+  // Set up intervals
+  const vehicleInterval = setInterval(async () => {
     if (isRunning) {
-      await updateRealtime();
+      await updateVehiclePositions();
     }
-  }, GTFS_CONFIG.realtimeUpdateInterval);
+  }, GTFS_CONFIG.realtimeVehicleUpdateInterval);
+
+  const tripAlertInterval = setInterval(async () => {
+    if (isRunning) {
+      await updateTripUpdatesAndAlerts();
+    }
+  }, GTFS_CONFIG.realtimeTripUpdateInterval);
 
   // Handle graceful shutdown
   const shutdown = async () => {
     console.log("\nShutting down...");
     isRunning = false;
-    clearInterval(interval);
+    clearInterval(vehicleInterval);
+    clearInterval(tripAlertInterval);
     await closeRedis();
     process.exit(0);
   };
