@@ -20,11 +20,17 @@ export async function downloadGtfsStatic(): Promise<string> {
   console.log(`Downloading GTFS data from ${GTFS_CONFIG.staticUrl}...`);
 
   const url = new URL(GTFS_CONFIG.staticUrl);
-  if (GTFS_CONFIG.apiKey) {
-    url.searchParams.set("key", GTFS_CONFIG.apiKey);
+  if (GTFS_CONFIG.staticApiKey) {
+    url.searchParams.set("key", GTFS_CONFIG.staticApiKey);
   }
 
-  const response = await fetch(url.toString());
+  const response = await fetch(url.toString(), {
+    headers: {
+      accept: "application/zip",
+      "Accept-encoding": "gzip",
+      "If-Modified-Since": "Mon, 13 Jul 2020 04:24:36 GMT",
+    },
+  });
 
   if (!response.ok) {
     throw new Error(

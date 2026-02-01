@@ -3,19 +3,18 @@
 
 export const GTFS_CONFIG = {
   // GTFS Static data URL - requires API key from Trafiklab
-  staticUrl:
-    process.env.GTFS_STATIC_URL ||
-    "https://opendata.samtrafiken.se/gtfs/sl/sl.zip",
+  staticUrl: process.env.GTFS_STATIC_URL || "",
 
   // GTFS Realtime endpoints - requires API key from Trafiklab
   realtimeUrls: {
-    tripUpdates: process.env.GTFS_RT_TRIP_UPDATES_URL || "",
-    vehiclePositions: process.env.GTFS_RT_VEHICLE_POSITIONS_URL || "",
-    serviceAlerts: process.env.GTFS_RT_SERVICE_ALERTS_URL || "",
+    tripUpdates: process.env.GTFS_REALTIME_TRIP_UPDATES_URL || "",
+    vehiclePositions: process.env.GTFS_REALTIME_VEHICLE_POSITIONS_URL || "",
+    serviceAlerts: process.env.GTFS_REALTIME_ALERTS_URL || "",
   },
 
   // API keys (get from Trafiklab)
-  apiKey: process.env.TRAFIKLAB_API_KEY || "",
+  staticApiKey: process.env.GTFS_STATIC_KEY || "",
+  realtimeApiKey: process.env.GTFS_REALTIME_KEY || "",
 
   // Update intervals
   staticUpdateInterval: 7 * 24 * 60 * 60 * 1000, // 7 days
