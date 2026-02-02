@@ -6,102 +6,82 @@ import { SearchResults } from "@/components/search/search-results";
 import { FavoritesSection } from "@/components/favorites/favorites-list";
 import type { StopSearchResult } from "@/types/api";
 
-// Mock data for initial UI development
-const mockResults: StopSearchResult[] = [
-  {
-    stopId: "1",
-    stopName: "T-Centralen",
-    stopCode: "1051",
-    latitude: 59.3314,
-    longitude: 18.0603,
-    routes: [
-      { routeId: "1", routeShortName: "1", routeType: 1 },
-      { routeId: "2", routeShortName: "2", routeType: 1 },
-      {
-        routeId: "14",
-        routeShortName: "14",
-        routeType: 1,
-      },
-    ],
-  },
-  {
-    stopId: "2",
-    stopName: "Slussen",
-    stopCode: "1511",
-    latitude: 59.3195,
-    longitude: 18.0716,
-    routes: [
-      { routeId: "1", routeShortName: "1", routeType: 1 },
-      {
-        routeId: "14",
-        routeShortName: "14",
-        routeType: 1,
-      },
-    ],
-  },
-  {
-    stopId: "3",
-    stopName: "Odenplan",
-    latitude: 59.3429,
-    longitude: 18.0498,
-    routes: [
-      { routeId: "2", routeShortName: "2", routeType: 1 },
-      {
-        routeId: "42",
-        routeShortName: "42",
-        routeType: 3,
-      },
-    ],
-  },
-];
-
 export default function HomePage() {
   const [searchResults, setSearchResults] = useState<StopSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = useCallback((query: string) => {
+  const handleSearch = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
+
     setIsSearching(true);
     setHasSearched(true);
+    setError(null);
 
-    // Simulate API call - will be replaced with real API
-    setTimeout(() => {
-      const filtered = mockResults.filter((stop) =>
-        stop.stopName.toLowerCase().includes(query.toLowerCase()),
+    try {
+      const response = await fetch(
+        `/api/stops/search?q=${encodeURIComponent(query)}`,
       );
-      setSearchResults(filtered);
+
+      if (!response.ok) {
+        throw new Error("Kunde inte söka efter hållplatser");
+      }
+
+      const data = await response.json();
+      setSearchResults(data.stops || []);
+    } catch (err) {
+      console.error("Search error:", err);
+      setError(err instanceof Error ? err.message : "Ett fel uppstod");
+      setSearchResults([]);
+    } finally {
       setIsSearching(false);
-    }, 300);
+    }
   }, []);
 
-  const handleNearby = useCallback(() => {
+  const handleNearby = useCallback(async () => {
+    if (!("geolocation" in navigator)) {
+      alert("Din webbläsare stödjer inte positionering");
+      return;
+    }
+
     setIsLocating(true);
     setHasSearched(true);
+    setError(null);
 
-    // Simulate geolocation - will be replaced with real implementation
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log("Location:", position.coords);
-          // For now, just show mock results with distance
-          const resultsWithDistance = mockResults.map((stop, i) => ({
-            ...stop,
-            distance: (i + 1) * 150,
-          }));
-          setSearchResults(resultsWithDistance);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `/api/stops/nearby?lat=${latitude}&lon=${longitude}`,
+          );
+
+          if (!response.ok) {
+            throw new Error("Kunde inte hämta närliggande hållplatser");
+          }
+
+          const data = await response.json();
+          setSearchResults(data.stops || []);
+        } catch (err) {
+          console.error("Nearby search error:", err);
+          setError(err instanceof Error ? err.message : "Ett fel uppstod");
+          setSearchResults([]);
+        } finally {
           setIsLocating(false);
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          setIsLocating(false);
-          alert("Kunde inte hämta din position");
-        },
-      );
-    } else {
-      setIsLocating(false);
-      alert("Din webbläsare stödjer inte positionering");
-    }
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        setIsLocating(false);
+        setError("Kunde inte hämta din position");
+      },
+    );
   }, []);
 
   return (
@@ -115,6 +95,10 @@ export default function HomePage() {
           isLocating={isLocating}
         />
       </section>
+
+      {error && (
+        <div className="p-4 bg-red-50 text-red-800 rounded-lg">{error}</div>
+      )}
 
       {hasSearched ? (
         <section>

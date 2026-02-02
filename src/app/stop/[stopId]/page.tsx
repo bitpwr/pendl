@@ -9,82 +9,6 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { DepartureResponse } from "@/types/api";
-import { RouteType } from "@/types/gtfs";
-
-// Mock data for UI development
-const mockDepartures: DepartureResponse = {
-  stop: {
-    stopId: "1",
-    stopName: "T-Centralen",
-    latitude: 59.3309,
-    longitude: 18.0591,
-  },
-  updatedAt: new Date().toISOString(),
-  departures: [
-    {
-      tripId: "trip-1",
-      routeId: "1",
-      routeShortName: "1",
-      routeLongName: "Fruängen - Ropsten",
-      routeType: RouteType.Subway,
-      headsign: "Fruängen",
-      scheduledDeparture: new Date(Date.now() + 2 * 60000).toISOString(),
-      realtimeDeparture: new Date(Date.now() + 3 * 60000).toISOString(),
-      delaySeconds: 60,
-      stopId: "1",
-      directionId: 0,
-      platform: "1",
-    },
-    {
-      tripId: "trip-2",
-      routeId: "2",
-      routeShortName: "2",
-      routeLongName: "Bagarmossen - Mörby centrum",
-      routeType: RouteType.Subway,
-      headsign: "Bagarmossen",
-      scheduledDeparture: new Date(Date.now() + 5 * 60000).toISOString(),
-      stopId: "1",
-      directionId: 0,
-      platform: "2",
-    },
-    {
-      tripId: "trip-3",
-      routeId: "14",
-      routeShortName: "14",
-      routeLongName: "T-Centralen - Mörby centrum",
-      routeType: RouteType.Subway,
-      headsign: "Mörby centrum",
-      scheduledDeparture: new Date(Date.now() + 8 * 60000).toISOString(),
-      stopId: "1",
-      directionId: 0,
-      platform: "3",
-    },
-    {
-      tripId: "trip-4",
-      routeId: "1",
-      routeShortName: "1",
-      routeLongName: "Fruängen - Ropsten",
-      routeType: RouteType.Subway,
-      headsign: "Fruängen",
-      scheduledDeparture: new Date(Date.now() + 12 * 60000).toISOString(),
-      isCancelled: true,
-      stopId: "1",
-      directionId: 0,
-      platform: "1",
-    },
-    {
-      tripId: "trip-5",
-      routeId: "42",
-      routeShortName: "42",
-      routeLongName: "Linje 42",
-      routeType: RouteType.Bus,
-      headsign: "Centralen",
-      scheduledDeparture: new Date(Date.now() + 45 * 60000).toISOString(),
-      stopId: "1",
-      directionId: 0,
-    },
-  ],
-};
 
 export default function StopPage() {
   const params = useParams();
@@ -101,16 +25,16 @@ export default function StopPage() {
     setError(null);
 
     try {
-      // Simulate API call - will be replaced with real API
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await fetch(
+        `/api/departures/${encodeURIComponent(stopId)}`,
+      );
 
-      // Use mock data with the actual stopId
-      const response = {
-        ...mockDepartures,
-        stopId,
-      };
+      if (!response.ok) {
+        throw new Error("Kunde inte hämta avgångar");
+      }
 
-      setData(response);
+      const responseData = await response.json();
+      setData(responseData);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Ett fel uppstod"));

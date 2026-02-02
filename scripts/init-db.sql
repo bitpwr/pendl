@@ -154,7 +154,7 @@ FROM stops s
 LEFT JOIN stop_times st ON st.stop_id = s.stop_id
 LEFT JOIN trips t ON t.trip_id = st.trip_id
 LEFT JOIN routes r ON r.route_id = t.route_id
-WHERE s.location_type = 1
+WHERE s.location_type = 0
 GROUP BY s.stop_id;
 
 CREATE UNIQUE INDEX idx_stop_route_types_id ON stop_route_types(stop_id);

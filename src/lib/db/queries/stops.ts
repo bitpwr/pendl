@@ -39,7 +39,7 @@ export async function searchStops(
     LEFT JOIN trips t ON t.trip_id = st.trip_id
     LEFT JOIN routes r ON r.route_id = t.route_id
     WHERE s.search_vector @@ to_tsquery('swedish', $1)
-      AND s.location_type = 1
+      AND s.location_type = 0
     GROUP BY s.stop_id, s.stop_name, s.stop_lat, s.stop_lon
     ORDER BY ts_rank(s.search_vector, to_tsquery('swedish', $1)) DESC
     LIMIT $2
@@ -75,7 +75,7 @@ export async function findNearbyStops(
     LEFT JOIN stop_times st ON st.stop_id = s.stop_id
     LEFT JOIN trips t ON t.trip_id = st.trip_id
     LEFT JOIN routes r ON r.route_id = t.route_id
-    WHERE s.location_type = 1
+    WHERE s.location_type = 0
       AND ST_DWithin(
         s.geom::geography,
         ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,

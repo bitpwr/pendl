@@ -49,29 +49,48 @@ export async function getScheduledDepartures(
       r.route_type as "routeType",
       COALESCE(st.stop_headsign, t.trip_headsign, r.route_long_name) as "tripHeadsign",
       st.stop_sequence as "stopSequence",
-      st.departure_time as "departureTime",
-      st.arrival_time as "arrivalTime",
+      st.departure_time::text as "departureTime",
+      st.arrival_time::text as "arrivalTime",
       st.stop_id as "stopId",
       t.direction_id as "directionId"
     FROM stop_times st
     JOIN trips t ON t.trip_id = st.trip_id
     JOIN routes r ON r.route_id = t.route_id
-    JOIN calendar c ON c.service_id = t.service_id
     WHERE (st.stop_id = $1 OR st.stop_id IN (
       SELECT stop_id FROM stops WHERE parent_station = $1
     ))
     AND st.departure_time >= $2
     AND st.departure_time <= $3
     AND (
-      (c.start_date <= CURRENT_DATE AND c.end_date >= CURRENT_DATE)
-      AND (
-        (EXTRACT(DOW FROM CURRENT_DATE) = 0 AND c.sunday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 1 AND c.monday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 2 AND c.tuesday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 3 AND c.wednesday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 4 AND c.thursday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 5 AND c.friday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 6 AND c.saturday = true)
+      -- Check if service is active today via calendar
+      EXISTS (
+        SELECT 1 FROM calendar c
+        WHERE c.service_id = t.service_id
+        AND c.start_date <= CURRENT_DATE
+        AND c.end_date >= CURRENT_DATE
+        AND (
+          (EXTRACT(DOW FROM CURRENT_DATE) = 0 AND c.sunday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 1 AND c.monday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 2 AND c.tuesday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 3 AND c.wednesday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 4 AND c.thursday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 5 AND c.friday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 6 AND c.saturday = true)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM calendar_dates cd
+          WHERE cd.service_id = t.service_id
+          AND cd.date = CURRENT_DATE
+          AND cd.exception_type = 2
+        )
+      )
+      OR
+      -- Or check if service is added for today via calendar_dates
+      EXISTS (
+        SELECT 1 FROM calendar_dates cd
+        WHERE cd.service_id = t.service_id
+        AND cd.date = CURRENT_DATE
+        AND cd.exception_type = 1
       )
     )
     ORDER BY st.departure_time
@@ -119,27 +138,46 @@ export async function getScheduledDeparturesForStops(
       r.route_type as "routeType",
       COALESCE(st.stop_headsign, t.trip_headsign, r.route_long_name) as "tripHeadsign",
       st.stop_sequence as "stopSequence",
-      st.departure_time as "departureTime",
-      st.arrival_time as "arrivalTime",
+      st.departure_time::text as "departureTime",
+      st.arrival_time::text as "arrivalTime",
       st.stop_id as "stopId",
       t.direction_id as "directionId"
     FROM stop_times st
     JOIN trips t ON t.trip_id = st.trip_id
     JOIN routes r ON r.route_id = t.route_id
-    JOIN calendar c ON c.service_id = t.service_id
     WHERE st.stop_id IN (${stopIdPlaceholders})
     AND st.departure_time >= $1
     AND st.departure_time <= $2
     AND (
-      (c.start_date <= CURRENT_DATE AND c.end_date >= CURRENT_DATE)
-      AND (
-        (EXTRACT(DOW FROM CURRENT_DATE) = 0 AND c.sunday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 1 AND c.monday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 2 AND c.tuesday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 3 AND c.wednesday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 4 AND c.thursday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 5 AND c.friday = true) OR
-        (EXTRACT(DOW FROM CURRENT_DATE) = 6 AND c.saturday = true)
+      -- Check if service is active today via calendar
+      EXISTS (
+        SELECT 1 FROM calendar c
+        WHERE c.service_id = t.service_id
+        AND c.start_date <= CURRENT_DATE
+        AND c.end_date >= CURRENT_DATE
+        AND (
+          (EXTRACT(DOW FROM CURRENT_DATE) = 0 AND c.sunday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 1 AND c.monday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 2 AND c.tuesday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 3 AND c.wednesday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 4 AND c.thursday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 5 AND c.friday = true) OR
+          (EXTRACT(DOW FROM CURRENT_DATE) = 6 AND c.saturday = true)
+        )
+        AND NOT EXISTS (
+          SELECT 1 FROM calendar_dates cd
+          WHERE cd.service_id = t.service_id
+          AND cd.date = CURRENT_DATE
+          AND cd.exception_type = 2
+        )
+      )
+      OR
+      -- Or check if service is added for today via calendar_dates
+      EXISTS (
+        SELECT 1 FROM calendar_dates cd
+        WHERE cd.service_id = t.service_id
+        AND cd.date = CURRENT_DATE
+        AND cd.exception_type = 1
       )
     )
     ORDER BY st.departure_time
