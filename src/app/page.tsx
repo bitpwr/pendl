@@ -2,19 +2,19 @@
 
 import { useState, useCallback } from "react";
 import { StopSearch } from "@/components/search/stop-search";
-import { SearchResults } from "@/components/search/search-results";
+import { AreaSearchResults } from "@/components/search/area-search-results";
 import { FavoritesSection } from "@/components/favorites/favorites-list";
-import type { StopSearchResult } from "@/types/api";
+import type { AreaSearchResult } from "@/types/api";
 
 export default function HomePage() {
-  const [searchResults, setSearchResults] = useState<StopSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<AreaSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = useCallback(async (query: string) => {
-    if (!query.trim()) {
+    if (query.trim().length < 3) {
       setSearchResults([]);
       setHasSearched(false);
       return;
@@ -26,15 +26,15 @@ export default function HomePage() {
 
     try {
       const response = await fetch(
-        `/api/stops/search?q=${encodeURIComponent(query)}`,
+        `/api/areas/search?q=${encodeURIComponent(query)}`,
       );
 
       if (!response.ok) {
-        throw new Error("Kunde inte söka efter hållplatser");
+        throw new Error("Kunde inte söka efter hållplats");
       }
 
       const data = await response.json();
-      setSearchResults(data.stops || []);
+      setSearchResults(data.areas || []);
     } catch (err) {
       console.error("Search error:", err);
       setError(err instanceof Error ? err.message : "Ett fel uppstod");
@@ -59,7 +59,7 @@ export default function HomePage() {
         try {
           const { latitude, longitude } = position.coords;
           const response = await fetch(
-            `/api/stops/nearby?lat=${latitude}&lon=${longitude}`,
+            `/api/areas/nearby?lat=${latitude}&lon=${longitude}&radius=600`,
           );
 
           if (!response.ok) {
@@ -67,7 +67,7 @@ export default function HomePage() {
           }
 
           const data = await response.json();
-          setSearchResults(data.stops || []);
+          setSearchResults(data.areas || []);
         } catch (err) {
           console.error("Nearby search error:", err);
           setError(err instanceof Error ? err.message : "Ett fel uppstod");
@@ -103,7 +103,7 @@ export default function HomePage() {
       {hasSearched ? (
         <section>
           <h2 className="text-lg font-semibold mb-3">Sökresultat</h2>
-          <SearchResults results={searchResults} isLoading={isSearching} />
+          <AreaSearchResults results={searchResults} isLoading={isSearching} />
         </section>
       ) : (
         <FavoritesSection />

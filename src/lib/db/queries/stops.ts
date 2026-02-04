@@ -30,6 +30,7 @@ export async function searchStops(
       s.stop_name as "stopName",
       s.stop_lat as "latitude",
       s.stop_lon as "longitude",
+      s.platform_code as "platformCode",
       COALESCE(
         ARRAY_AGG(DISTINCT r.route_type) FILTER (WHERE r.route_type IS NOT NULL),
         ARRAY[]::integer[]

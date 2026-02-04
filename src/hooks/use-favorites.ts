@@ -2,19 +2,19 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "pendl-favorites";
+const STORAGE_KEY = "pendl-area-favorites";
 
-export interface FavoriteStop {
-  stopId: string;
-  stopName: string;
+export interface FavoriteArea {
+  areaId: string;
+  areaName: string;
   addedAt: number;
 }
 
 // Cache for the snapshot to avoid creating new arrays on each call
-let cachedFavorites: FavoriteStop[] = [];
+let cachedFavorites: FavoriteArea[] = [];
 let cachedJson: string | null = null;
 
-function getSnapshot(): FavoriteStop[] {
+function getSnapshot(): FavoriteArea[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -29,8 +29,8 @@ function getSnapshot(): FavoriteStop[] {
   }
 }
 
-const emptyArray: FavoriteStop[] = [];
-function getServerSnapshot(): FavoriteStop[] {
+const emptyArray: FavoriteArea[] = [];
+function getServerSnapshot(): FavoriteArea[] {
   return emptyArray;
 }
 
@@ -50,35 +50,35 @@ export function useFavorites() {
     getServerSnapshot,
   );
 
-  const addFavorite = useCallback((stopId: string, stopName: string) => {
+  const addFavorite = useCallback((areaId: string, areaName: string) => {
     const current = getSnapshot();
-    if (current.some((f) => f.stopId === stopId)) return;
+    if (current.some((f) => f.areaId === areaId)) return;
 
-    const updated = [...current, { stopId, stopName, addedAt: Date.now() }];
+    const updated = [...current, { areaId, areaName, addedAt: Date.now() }];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("favorites-changed"));
   }, []);
 
-  const removeFavorite = useCallback((stopId: string) => {
+  const removeFavorite = useCallback((areaId: string) => {
     const current = getSnapshot();
-    const updated = current.filter((f) => f.stopId !== stopId);
+    const updated = current.filter((f) => f.areaId !== areaId);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     window.dispatchEvent(new Event("favorites-changed"));
   }, []);
 
   const isFavorite = useCallback(
-    (stopId: string) => {
-      return favorites.some((f) => f.stopId === stopId);
+    (areaId: string) => {
+      return favorites.some((f) => f.areaId === areaId);
     },
     [favorites],
   );
 
   const toggleFavorite = useCallback(
-    (stopId: string, stopName: string) => {
-      if (isFavorite(stopId)) {
-        removeFavorite(stopId);
+    (areaId: string, areaName: string) => {
+      if (isFavorite(areaId)) {
+        removeFavorite(areaId);
       } else {
-        addFavorite(stopId, stopName);
+        addFavorite(areaId, areaName);
       }
     },
     [isFavorite, addFavorite, removeFavorite],

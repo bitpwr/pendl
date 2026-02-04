@@ -27,18 +27,18 @@ export function FavoritesList() {
     <div className="space-y-2">
       {favorites.map((favorite) => (
         <Card
-          key={favorite.stopId}
+          key={favorite.areaId}
           className="group transition-colors hover:bg-accent/50"
         >
           <CardContent className="p-0">
             <div className="flex items-center">
               <Link
-                href={`/stop/${favorite.stopId}`}
+                href={`/area/${favorite.areaId}`}
                 className="flex flex-1 items-center justify-between p-4"
               >
                 <div className="flex items-center gap-3">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-medium">{favorite.stopName}</span>
+                  <span className="font-medium">{favorite.areaName}</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
@@ -46,7 +46,7 @@ export function FavoritesList() {
                 variant="ghost"
                 size="icon"
                 className="mr-2 text-muted-foreground hover:text-destructive"
-                onClick={() => removeFavorite(favorite.stopId)}
+                onClick={() => removeFavorite(favorite.areaId)}
                 title="Ta bort favorit"
               >
                 <Trash2 className="h-4 w-4" />
@@ -78,11 +78,11 @@ export function FavoritesSection() {
         <div className="space-y-1">
           {favorites.slice(0, 3).map((favorite) => (
             <Link
-              key={favorite.stopId}
-              href={`/stop/${favorite.stopId}`}
+              key={favorite.areaId}
+              href={`/area/${favorite.areaId}`}
               className="flex items-center justify-between rounded-md p-2 text-sm transition-colors hover:bg-accent"
             >
-              <span>{favorite.stopName}</span>
+              <span>{favorite.areaName}</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           ))}

@@ -42,62 +42,62 @@ describe("useFavorites", () => {
     const { result } = renderHook(() => useFavorites());
 
     await act(async () => {
-      result.current.addFavorite("stop-1", "T-Centralen");
+      result.current.addFavorite("area-1", "T-Centralen");
     });
 
     expect(localStorageMock.setItem).toHaveBeenCalled();
-    const savedData = JSON.parse(store["pendl-favorites"]);
+    const savedData = JSON.parse(store["pendl-area-favorites"]);
     expect(savedData).toHaveLength(1);
-    expect(savedData[0].stopId).toBe("stop-1");
-    expect(savedData[0].stopName).toBe("T-Centralen");
+    expect(savedData[0].areaId).toBe("area-1");
+    expect(savedData[0].areaName).toBe("T-Centralen");
   });
 
   it("should not add duplicate favorites", async () => {
     // Pre-populate with a favorite
-    store["pendl-favorites"] = JSON.stringify([
-      { stopId: "stop-1", stopName: "T-Centralen", addedAt: Date.now() },
+    store["pendl-area-favorites"] = JSON.stringify([
+      { areaId: "area-1", areaName: "T-Centralen", addedAt: Date.now() },
     ]);
 
     const { useFavorites } = await import("./use-favorites");
     const { result } = renderHook(() => useFavorites());
 
     await act(async () => {
-      result.current.addFavorite("stop-1", "T-Centralen");
+      result.current.addFavorite("area-1", "T-Centralen");
     });
 
     // Should still be only one item
-    const savedData = JSON.parse(store["pendl-favorites"]);
+    const savedData = JSON.parse(store["pendl-area-favorites"]);
     expect(savedData).toHaveLength(1);
   });
 
-  it("should check if a stop is favorite", async () => {
-    store["pendl-favorites"] = JSON.stringify([
-      { stopId: "stop-1", stopName: "T-Centralen", addedAt: Date.now() },
+  it("should check if an area is favorite", async () => {
+    store["pendl-area-favorites"] = JSON.stringify([
+      { areaId: "area-1", areaName: "T-Centralen", addedAt: Date.now() },
     ]);
 
     const { useFavorites } = await import("./use-favorites");
     const { result } = renderHook(() => useFavorites());
 
-    expect(result.current.isFavorite("stop-1")).toBe(true);
-    expect(result.current.isFavorite("stop-2")).toBe(false);
+    expect(result.current.isFavorite("area-1")).toBe(true);
+    expect(result.current.isFavorite("area-2")).toBe(false);
   });
 
   it("should remove a favorite", async () => {
-    store["pendl-favorites"] = JSON.stringify([
-      { stopId: "stop-1", stopName: "T-Centralen", addedAt: Date.now() },
-      { stopId: "stop-2", stopName: "Slussen", addedAt: Date.now() },
+    store["pendl-area-favorites"] = JSON.stringify([
+      { areaId: "area-1", areaName: "T-Centralen", addedAt: Date.now() },
+      { areaId: "area-2", areaName: "Slussen", addedAt: Date.now() },
     ]);
 
     const { useFavorites } = await import("./use-favorites");
     const { result } = renderHook(() => useFavorites());
 
     await act(async () => {
-      result.current.removeFavorite("stop-1");
+      result.current.removeFavorite("area-1");
     });
 
-    const savedData = JSON.parse(store["pendl-favorites"]);
+    const savedData = JSON.parse(store["pendl-area-favorites"]);
     expect(savedData).toHaveLength(1);
-    expect(savedData[0].stopId).toBe("stop-2");
+    expect(savedData[0].areaId).toBe("area-2");
   });
 
   it("should toggle favorite on and off", async () => {
@@ -106,16 +106,16 @@ describe("useFavorites", () => {
 
     // Toggle on
     await act(async () => {
-      result.current.toggleFavorite("stop-1", "T-Centralen");
+      result.current.toggleFavorite("area-1", "T-Centralen");
     });
 
-    expect(result.current.isFavorite("stop-1")).toBe(true);
+    expect(result.current.isFavorite("area-1")).toBe(true);
 
     // Toggle off
     await act(async () => {
-      result.current.toggleFavorite("stop-1", "T-Centralen");
+      result.current.toggleFavorite("area-1", "T-Centralen");
     });
 
-    expect(result.current.isFavorite("stop-1")).toBe(false);
+    expect(result.current.isFavorite("area-1")).toBe(false);
   });
 });

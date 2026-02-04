@@ -12,6 +12,24 @@ export interface DepartureResponse {
   updatedAt: string;
 }
 
+export interface AreaDepartureGroup {
+  stopId: string;
+  stopName: string;
+  platformCode: string | null;
+  departures: Departure[];
+}
+
+export interface AreaDepartureResponse {
+  area: {
+    areaId: string;
+    areaName: string;
+    latitude: number;
+    longitude: number;
+  };
+  groups: AreaDepartureGroup[];
+  updatedAt: string;
+}
+
 export interface Departure {
   tripId: string;
   routeId: string;
@@ -24,6 +42,7 @@ export interface Departure {
   delaySeconds?: number;
   isCancelled?: boolean;
   stopId: string;
+  stopName?: string;
   directionId: number;
   platform?: string;
   vehicleId?: string;
@@ -65,8 +84,19 @@ export interface StopSearchResult {
   stopCode?: string;
   latitude: number;
   longitude: number;
+  platformCode?: string;
   distance?: number; // For nearby search (meters)
   routes?: RouteSummary[];
+}
+
+export interface AreaSearchResult {
+  areaId: string;
+  areaName: string;
+  latitude: number;
+  longitude: number;
+  routeTypes: number[];
+  stopIds: string[];
+  distance?: number; // For nearby search (meters)
 }
 
 export interface RouteSummary {
