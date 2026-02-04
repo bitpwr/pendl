@@ -159,11 +159,65 @@ GROUP BY s.stop_id;
 
 CREATE UNIQUE INDEX idx_stop_route_types_id ON stop_route_types(stop_id);
 
+-- Areas (named locations grouping multiple stops)
+CREATE TABLE areas (
+    area_id TEXT PRIMARY KEY,
+    area_name TEXT NOT NULL,
+    search_vector TSVECTOR
+);
+
+CREATE INDEX idx_areas_name ON areas USING GIN(to_tsvector('simple', area_name));
+CREATE INDEX idx_areas_search ON areas USING GIN(search_vector);
+
+-- Stop-Area mapping (which stops belong to which area)
+CREATE TABLE stop_areas (
+    area_id TEXT NOT NULL REFERENCES areas(area_id) ON DELETE CASCADE,
+    stop_id TEXT NOT NULL REFERENCES stops(stop_id) ON DELETE CASCADE,
+    PRIMARY KEY (area_id, stop_id)
+);
+
+CREATE INDEX idx_stop_areas_area ON stop_areas(area_id);
+CREATE INDEX idx_stop_areas_stop ON stop_areas(stop_id);
+
+-- Materialized view for route types per area (for quick lookups)
+CREATE MATERIALIZED VIEW area_route_types AS
+SELECT
+    sa.area_id,
+    COALESCE(
+        ARRAY_AGG(DISTINCT r.route_type ORDER BY r.route_type) FILTER (WHERE r.route_type IS NOT NULL),
+        ARRAY[]::integer[]
+    ) AS route_types
+FROM stop_areas sa
+JOIN stops s ON s.stop_id = sa.stop_id
+LEFT JOIN stop_times st ON st.stop_id = s.stop_id
+LEFT JOIN trips t ON t.trip_id = st.trip_id
+LEFT JOIN routes r ON r.route_id = t.route_id
+WHERE s.location_type = 0
+GROUP BY sa.area_id;
+
+CREATE UNIQUE INDEX idx_area_route_types_id ON area_route_types(area_id);
+
+-- View for area center point (average of all stop locations)
+CREATE MATERIALIZED VIEW area_locations AS
+SELECT
+    sa.area_id,
+    AVG(s.stop_lat) AS latitude,
+    AVG(s.stop_lon) AS longitude,
+    ST_SetSRID(ST_MakePoint(AVG(s.stop_lon), AVG(s.stop_lat)), 4326) AS geom
+FROM stop_areas sa
+JOIN stops s ON s.stop_id = sa.stop_id
+GROUP BY sa.area_id;
+
+CREATE UNIQUE INDEX idx_area_locations_id ON area_locations(area_id);
+CREATE INDEX idx_area_locations_geom ON area_locations USING GIST(geom);
+
 -- Function to refresh materialized views
 CREATE OR REPLACE FUNCTION refresh_gtfs_views()
 RETURNS void AS $$
 BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY shape_lines;
     REFRESH MATERIALIZED VIEW CONCURRENTLY stop_route_types;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY area_route_types;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY area_locations;
 END;
 $$ LANGUAGE plpgsql;

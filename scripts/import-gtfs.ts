@@ -64,14 +64,17 @@ async function main() {
           zipPath = await downloadGtfsStatic();
         }
       } else {
+        console.log("No existing GTFS zip found, downloading...");
         zipPath = await downloadGtfsStatic();
       }
     }
 
     console.log("");
-    console.log("Parsing GTFS data...");
+    console.log(`Parsing GTFS data from '${zipPath}'...`);
+
     const data = await parseGtfsZip(zipPath, {
       agencyFilter: isIncludedAgency,
+      limit: undefined,
     });
 
     console.log("");
@@ -88,6 +91,8 @@ async function main() {
     console.log(`Calendar: ${data.calendar.length}`);
     console.log(`Calendar Dates: ${data.calendarDates.length}`);
     console.log(`Shapes: ${data.shapes.length}`);
+    console.log(`Areas: ${data.areas.length}`);
+    console.log(`Stop-Area Mappings: ${data.stopAreas.length}`);
   } catch (error) {
     console.error("Import failed:", error);
     process.exit(1);

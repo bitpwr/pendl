@@ -90,6 +90,8 @@ export async function parseGtfsZip(
   calendar: Record<string, string>[];
   calendarDates: Record<string, string>[];
   shapes: Record<string, string>[];
+  areas: Record<string, string>[];
+  stopAreas: Record<string, string>[];
 }> {
   const { agencyFilter, limit } = options;
 
@@ -122,6 +124,7 @@ export async function parseGtfsZip(
   console.log("Parsing stop_times...");
   const stopTimes = await parseGtfsFile(zipPath, "stop_times.txt", {
     filter: agencyFilter ? (row) => tripIds.has(row.trip_id) : undefined,
+    limit,
   });
   const stopIds = new Set(stopTimes.map((st) => st.stop_id));
   console.log(`Found ${stopTimes.length} stop times`);
@@ -133,6 +136,12 @@ export async function parseGtfsZip(
       : undefined,
     limit,
   });
+  // Get all stop IDs from the parsed stops for filtering stop_areas
+  const parsedStopIds = new Set(stops.map((s) => s.stop_id));
+  // Also collect parent_station values - stop_areas.txt uses these
+  const parsedParentStations = new Set(
+    stops.map((s) => s.parent_station).filter(Boolean),
+  );
   console.log(`Found ${stops.length} stops`);
 
   console.log("Parsing calendar...");
@@ -155,6 +164,23 @@ export async function parseGtfsZip(
   });
   console.log(`Found ${shapes.length} shape points`);
 
+  // Parse stop_areas first to find which areas contain our stops
+  // stop_areas.txt maps area_id to parent_station IDs (not individual platform stop_ids)
+  console.log("Parsing stop_areas...");
+  const allStopAreas = await parseGtfsFile(zipPath, "stop_areas.txt", {});
+  // Filter to only include stop_areas that reference parent stations we have
+  const stopAreas = agencyFilter
+    ? allStopAreas.filter((row) => parsedParentStations.has(row.stop_id))
+    : allStopAreas;
+  const areaIds = new Set(stopAreas.map((sa) => sa.area_id));
+  console.log(`Found ${stopAreas.length} stop-area mappings`);
+
+  console.log("Parsing areas...");
+  const areas = await parseGtfsFile(zipPath, "areas.txt", {
+    filter: agencyFilter ? (row) => areaIds.has(row.area_id) : undefined,
+  });
+  console.log(`Found ${areas.length} areas`);
+
   return {
     agencies,
     stops,
@@ -164,5 +190,7 @@ export async function parseGtfsZip(
     calendar,
     calendarDates,
     shapes,
+    areas,
+    stopAreas,
   };
 }

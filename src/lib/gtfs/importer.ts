@@ -9,6 +9,8 @@ interface ImportData {
   calendar: Record<string, string>[];
   calendarDates: Record<string, string>[];
   shapes: Record<string, string>[];
+  areas: Record<string, string>[];
+  stopAreas: Record<string, string>[];
 }
 
 /**
@@ -23,7 +25,7 @@ export async function importGtfsToDatabase(data: ImportData): Promise<void> {
 
     console.log("Clearing existing data...");
     await client.query(
-      "TRUNCATE agencies, stops, routes, trips, stop_times, calendar, calendar_dates, shapes CASCADE",
+      "TRUNCATE agencies, stops, routes, trips, stop_times, calendar, calendar_dates, shapes, areas, stop_areas CASCADE",
     );
 
     console.log("Importing agencies...");
@@ -50,11 +52,22 @@ export async function importGtfsToDatabase(data: ImportData): Promise<void> {
     console.log("Importing shapes...");
     await importShapes(client, data.shapes);
 
+    console.log("Importing areas...");
+    await importAreas(client, data.areas);
+
+    console.log("Importing stop_areas...");
+    await importStopAreas(client, data.stopAreas, data.stops);
+
     console.log("Updating search vectors...");
     await client.query(`
       UPDATE stops SET search_vector =
         setweight(to_tsvector('swedish', COALESCE(stop_name, '')), 'A') ||
         setweight(to_tsvector('swedish', COALESCE(platform_code, '')), 'B')
+    `);
+
+    await client.query(`
+      UPDATE areas SET search_vector =
+        setweight(to_tsvector('swedish', COALESCE(area_name, '')), 'A')
     `);
 
     await client.query("COMMIT");
@@ -63,6 +76,8 @@ export async function importGtfsToDatabase(data: ImportData): Promise<void> {
     console.log("Refreshing materialized views...");
     await client.query("REFRESH MATERIALIZED VIEW stop_route_types");
     await client.query("REFRESH MATERIALIZED VIEW shape_lines");
+    await client.query("REFRESH MATERIALIZED VIEW area_route_types");
+    await client.query("REFRESH MATERIALIZED VIEW area_locations");
 
     console.log("Import completed successfully!");
   } catch (error) {
@@ -304,4 +319,84 @@ async function importShapes(
     );
   }
   console.log(`  Imported ${shapes.length} shape points`);
+}
+
+async function importAreas(
+  client: import("pg").PoolClient,
+  areas: Record<string, string>[],
+): Promise<void> {
+  const batchSize = 1000;
+  for (let i = 0; i < areas.length; i += batchSize) {
+    const batch = areas.slice(i, i + batchSize);
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+
+    batch.forEach((a, idx) => {
+      const offset = idx * 2;
+      placeholders.push(`($${offset + 1}, $${offset + 2})`);
+      values.push(a.area_id, a.area_name);
+    });
+
+    await client.query(
+      `INSERT INTO areas (area_id, area_name)
+       VALUES ${placeholders.join(", ")}
+       ON CONFLICT (area_id) DO NOTHING`,
+      values,
+    );
+  }
+  console.log(`  Imported ${areas.length} areas`);
+}
+
+async function importStopAreas(
+  client: import("pg").PoolClient,
+  stopAreas: Record<string, string>[],
+  stops: Record<string, string>[],
+): Promise<void> {
+  // Build a map from parent_station to list of child stop_ids
+  const parentToStops = new Map<string, string[]>();
+  for (const stop of stops) {
+    if (stop.parent_station) {
+      const children = parentToStops.get(stop.parent_station) || [];
+      children.push(stop.stop_id);
+      parentToStops.set(stop.parent_station, children);
+    }
+  }
+
+  // Expand stop_areas: GTFS stop_areas.stop_id is actually a parent_station
+  // We need to insert entries for each actual child stop
+  const expandedStopAreas: { areaId: string; stopId: string }[] = [];
+  for (const sa of stopAreas) {
+    const childStops = parentToStops.get(sa.stop_id);
+    if (childStops) {
+      for (const stopId of childStops) {
+        expandedStopAreas.push({ areaId: sa.area_id, stopId });
+      }
+    }
+  }
+
+  // Insert expanded stop_areas
+  const batchSize = 1000;
+  for (let i = 0; i < expandedStopAreas.length; i += batchSize) {
+    const batch = expandedStopAreas.slice(i, i + batchSize);
+    const values: unknown[] = [];
+    const placeholders: string[] = [];
+
+    batch.forEach((sa, idx) => {
+      const offset = idx * 2;
+      placeholders.push(`($${offset + 1}, $${offset + 2})`);
+      values.push(sa.areaId, sa.stopId);
+    });
+
+    if (placeholders.length > 0) {
+      await client.query(
+        `INSERT INTO stop_areas (area_id, stop_id)
+         VALUES ${placeholders.join(", ")}
+         ON CONFLICT (area_id, stop_id) DO NOTHING`,
+        values,
+      );
+    }
+  }
+  console.log(
+    `  Imported ${expandedStopAreas.length} stop-area mappings (from ${stopAreas.length} GTFS entries)`,
+  );
 }

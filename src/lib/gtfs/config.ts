@@ -39,6 +39,8 @@ export const GTFS_FILES = [
   "shapes.txt",
   "transfers.txt",
   "feed_info.txt",
+  "areas.txt",
+  "stop_areas.txt",
 ] as const;
 
 export type GtfsFileName = (typeof GTFS_FILES)[number];
