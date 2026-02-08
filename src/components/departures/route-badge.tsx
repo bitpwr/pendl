@@ -13,13 +13,13 @@ function getRouteIcon(routeType: RouteType) {
   switch (routeType) {
     case RouteType.Tram:
       return TramFront;
-    case RouteType.Subway:
-    case RouteType.Rail:
+    case RouteType.Metro:
+    case RouteType.Train:
       return Train;
     case RouteType.Ferry:
       return Ship;
     case RouteType.Bus:
-    case RouteType.Trolleybus:
+    case RouteType.Taxi:
     default:
       return Bus;
   }
@@ -47,15 +47,11 @@ export function RouteBadge({
   // Default colors based on route type
   const defaultColors: Record<RouteType, { bg: string; text: string }> = {
     [RouteType.Tram]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.Subway]: { bg: "#1F2937", text: "#FFFFFF" },
-    [RouteType.Rail]: { bg: "#7C3AED", text: "#FFFFFF" },
+    [RouteType.Metro]: { bg: "#1F2937", text: "#FFFFFF" },
+    [RouteType.Train]: { bg: "#7C3AED", text: "#FFFFFF" },
     [RouteType.Bus]: { bg: "#2563EB", text: "#FFFFFF" },
     [RouteType.Ferry]: { bg: "#0891B2", text: "#FFFFFF" },
-    [RouteType.CableTram]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.AerialLift]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.Funicular]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.Trolleybus]: { bg: "#2563EB", text: "#FFFFFF" },
-    [RouteType.Monorail]: { bg: "#7C3AED", text: "#FFFFFF" },
+    [RouteType.Taxi]: { bg: "#F59E0B", text: "#000000" },
   };
 
   const bgColor = defaultColors[routeType]?.bg || "#6B7280";

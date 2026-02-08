@@ -8,7 +8,7 @@ import { Star, MapPin } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import type { AreaSearchResult } from "@/types/api";
 import { cn } from "@/lib/utils";
-import { RouteType } from "@/types/gtfs";
+import { RouteType, toRouteType } from "@/types/gtfs";
 
 interface AreaSearchResultsProps {
   results: AreaSearchResult[];
@@ -74,7 +74,7 @@ export function AreaSearchResults({
                   <div className="mt-2 flex flex-wrap gap-1">
                     {area.routeTypes.map((type) => (
                       <Badge key={type} variant="secondary" className="text-xs">
-                        {getRouteTypeName(type)}
+                        {getRouteTypeName(toRouteType(type))}
                       </Badge>
                     ))}
                   </div>
@@ -108,16 +108,18 @@ export function AreaSearchResults({
   );
 }
 
-function getRouteTypeName(routeType: number): string {
+function getRouteTypeName(routeType: RouteType): string {
   switch (routeType) {
-    case RouteType.Subway:
+    case RouteType.Metro:
       return "Tunnelbana";
-    case RouteType.Rail:
+    case RouteType.Train:
       return "Pendeltåg";
     case RouteType.Tram:
       return "Spårvagn";
     case RouteType.Bus:
       return "Buss";
+    case RouteType.Taxi:
+      return "Taxi";
     case RouteType.Ferry:
       return "Båt";
     default:

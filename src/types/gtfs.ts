@@ -30,15 +30,50 @@ export interface Route {
 
 export enum RouteType {
   Tram = 0,
-  Subway = 1,
-  Rail = 2,
+  Metro = 1,
+  Train = 2,
   Bus = 3,
   Ferry = 4,
-  CableTram = 5,
-  AerialLift = 6,
-  Funicular = 7,
-  Trolleybus = 11,
-  Monorail = 12,
+  Taxi = 5,
+}
+
+/**
+ * Convert numeric route type from database to RouteType enum
+ * Maps SL-specific codes to standardized types
+ */
+export function toRouteType(value: number): RouteType {
+  // Train types (100-110)
+  if (value >= 100 && value <= 110) {
+    return RouteType.Train;
+  }
+
+  switch (value) {
+    case 0: // Standard GTFS Tram
+    case 900: // SL Tram
+      return RouteType.Tram;
+
+    case 1: // Standard GTFS Subway
+    case 401: // SL Metro
+      return RouteType.Metro;
+
+    case 2: // Standard GTFS Rail
+      return RouteType.Train;
+
+    case 3: // Standard GTFS Bus
+    case 700: // SL Bus
+    case 714: // SL Bus
+      return RouteType.Bus;
+
+    case 4: // Standard GTFS Ferry
+    case 1000: // SL Ferry
+      return RouteType.Ferry;
+
+    case 1501: // SL Taxi
+      return RouteType.Taxi;
+
+    default:
+      return RouteType.Bus; // Default fallback
+  }
 }
 
 export interface Calendar {

@@ -1,11 +1,12 @@
 import { query } from "../index";
+import { RouteType, toRouteType } from "@/types/gtfs";
 
 export interface ScheduledDeparture {
   tripId: string;
   routeId: string;
   routeShortName: string;
   routeLongName: string;
-  routeType: number;
+  routeType: RouteType;
   tripHeadsign: string;
   stopSequence: number;
   departureTime: string; // GTFS time format (HH:MM:SS, can exceed 24:00)
@@ -99,7 +100,24 @@ export async function getScheduledDepartures(
 
   const params = [stopId, startTime, endTime, limit];
 
-  return query<ScheduledDeparture>(sql, params);
+  const rows = await query<ScheduledDeparture & { routeTypeRaw: number }>(
+    sql,
+    params,
+  );
+
+  return rows.map((row) => ({
+    tripId: row.tripId,
+    routeId: row.routeId,
+    routeShortName: row.routeShortName,
+    routeLongName: row.routeLongName,
+    routeType: toRouteType(row.routeTypeRaw),
+    tripHeadsign: row.tripHeadsign,
+    stopSequence: row.stopSequence,
+    departureTime: row.departureTime,
+    arrivalTime: row.arrivalTime,
+    stopId: row.stopId,
+    directionId: row.directionId,
+  }));
 }
 
 /**
@@ -135,7 +153,7 @@ export async function getScheduledDeparturesForStops(
       r.route_id as "routeId",
       r.route_short_name as "routeShortName",
       r.route_long_name as "routeLongName",
-      r.route_type as "routeType",
+      r.route_type as "routeTypeRaw",
       COALESCE(st.stop_headsign, t.trip_headsign, r.route_long_name) as "tripHeadsign",
       st.stop_sequence as "stopSequence",
       st.departure_time::text as "departureTime",
@@ -186,5 +204,22 @@ export async function getScheduledDeparturesForStops(
 
   const params = [startTime, endTime, limit, ...stopIds];
 
-  return query<ScheduledDeparture>(sql, params);
+  const rows = await query<ScheduledDeparture & { routeTypeRaw: number }>(
+    sql,
+    params,
+  );
+
+  return rows.map((row) => ({
+    tripId: row.tripId,
+    routeId: row.routeId,
+    routeShortName: row.routeShortName,
+    routeLongName: row.routeLongName,
+    routeType: toRouteType(row.routeTypeRaw),
+    tripHeadsign: row.tripHeadsign,
+    stopSequence: row.stopSequence,
+    departureTime: row.departureTime,
+    arrivalTime: row.arrivalTime,
+    stopId: row.stopId,
+    directionId: row.directionId,
+  }));
 }
