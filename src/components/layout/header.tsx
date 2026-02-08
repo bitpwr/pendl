@@ -23,7 +23,7 @@ export function Header() {
             Favoriter
           </Link>
           <Link
-            href="/karta"
+            href="/map"
             className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-1"
           >
             <Map className="h-4 w-4" />

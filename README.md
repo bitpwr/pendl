@@ -4,8 +4,8 @@
 
 - / - Home with search and favorites
 - /favoriter - Favorites list
-- /stop/[stopId] - Departure board
-- /karta - Vehicle map
+- /area/[areaId] - Departure board
+- /map - Vehicle map
 
 ## Scripts
 
@@ -13,7 +13,9 @@
 - `npm run build` - Production build
 - `npm run test:run` - Run tests
 - `npm run gtfs:import` - Import GTFS static data
+- `npx tsx --env-file=.env scripts/import-gtfs.ts`
 - `npm run gtfs:realtime` - Start realtime worker
+- `npx tsx --env-file=.env scripts/realtime-worker.ts`
 
 To get started with real data:
 

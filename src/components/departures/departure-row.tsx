@@ -21,7 +21,7 @@ export function DepartureRow({ departure }: DepartureRowProps) {
     <Link
       href={`/trip/${departure.tripId}`}
       className={cn(
-        "flex items-center gap-4 p-4 transition-colors hover:bg-accent/50",
+        "flex items-center gap-2 py-2 px-2 transition-colors hover:bg-accent/50",
         departure.isCancelled && "opacity-60",
       )}
     >
@@ -33,11 +33,6 @@ export function DepartureRow({ departure }: DepartureRowProps) {
 
       <div className="flex-1 min-w-0">
         <p className="font-medium truncate">{departure.headsign}</p>
-        {departure.platform && (
-          <p className="text-sm text-muted-foreground">
-            Läge {departure.platform}
-          </p>
-        )}
       </div>
 
       <DepartureTime
