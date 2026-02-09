@@ -176,6 +176,18 @@ export async function getAllVehiclePositions(): Promise<VehiclePosition[]> {
 }
 
 /**
+ * Get vehicle position by trip ID
+ */
+export async function getVehicleByTrip(
+  tripId: string,
+): Promise<VehiclePosition | null> {
+  // Since we index by vehicleId, we need to scan all vehicles
+  // In a production system, you'd want a tripId -> vehicleId index
+  const vehicles = await getAllVehiclePositions();
+  return vehicles.find((v) => v.tripId === tripId) || null;
+}
+
+/**
  * Store a service alert
  */
 export async function storeServiceAlert(alert: ServiceAlert): Promise<void> {
