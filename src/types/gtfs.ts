@@ -56,6 +56,25 @@ export function routeTypeColor(routeType: RouteType): {
   return colors[routeType] ?? { bg: "#6B7280", text: "#FFFFFF" };
 }
 
+export function routeTypeName(routeType: RouteType): string {
+  switch (routeType) {
+    case RouteType.Tram:
+      return "Spårvagn";
+    case RouteType.Metro:
+      return "Tunnelbana";
+    case RouteType.Train:
+      return "Pendeltåg";
+    case RouteType.Bus:
+      return "Buss";
+    case RouteType.Ferry:
+      return "Båt";
+    case RouteType.Taxi:
+      return "Taxi";
+    default:
+      return "Okänd";
+  }
+}
+
 /**
  * Convert numeric route type from database to RouteType enum
  * Maps SL-specific codes to standardized types

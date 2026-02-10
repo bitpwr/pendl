@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RouteType, routeTypeColor } from "@/types/gtfs";
+import { RouteType, routeTypeColor, routeTypeName } from "@/types/gtfs";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -56,6 +56,7 @@ interface TripMapProps {
   stops: TripStop[];
   vehicle: Vehicle | null;
   routeType: RouteType;
+  routeName: string;
   height?: string;
 }
 
@@ -64,6 +65,7 @@ export function TripMap({
   stops,
   vehicle,
   routeType,
+  routeName,
   height = "300px",
 }: TripMapProps) {
   const [isClient, setIsClient] = useState(false);
@@ -162,9 +164,6 @@ export function TripMap({
                 <Popup>
                   <div className="text-sm">
                     <p className="font-bold">{stop.stopName}</p>
-                    <p className="text-muted-foreground">
-                      Hållplats {stop.stopSequence}
-                    </p>
                   </div>
                 </Popup>
               </CircleMarker>
@@ -175,13 +174,8 @@ export function TripMap({
               <Marker position={[vehicle.latitude, vehicle.longitude]}>
                 <Popup>
                   <div className="text-sm">
-                    <p className="font-bold">Fordon {vehicle.vehicleId}</p>
-                    <p className="text-muted-foreground">
-                      {vehicle.currentStatus === "STOPPED_AT"
-                        ? "Vid hållplats"
-                        : vehicle.currentStatus === "INCOMING_AT"
-                          ? "Anländer"
-                          : "På väg"}
+                    <p className="font-bold">
+                      {routeTypeName(routeType)} {routeName}
                     </p>
                   </div>
                 </Popup>
