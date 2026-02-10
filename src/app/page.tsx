@@ -1,48 +1,69 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { StopSearch } from "@/components/search/stop-search";
 import { AreaSearchResults } from "@/components/search/area-search-results";
 import { FavoritesSection } from "@/components/favorites/favorites-list";
 import type { AreaSearchResult } from "@/types/api";
 
-export default function HomePage() {
+function HomePageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get("q") || "";
+
   const [searchResults, setSearchResults] = useState<AreaSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [hasSearched, setHasSearched] = useState(!!initialQuery);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = useCallback(async (query: string) => {
-    if (query.trim().length < 3) {
-      setSearchResults([]);
-      setHasSearched(false);
-      return;
-    }
-
-    setIsSearching(true);
-    setHasSearched(true);
-    setError(null);
-
-    try {
-      const response = await fetch(
-        `/api/areas/search?q=${encodeURIComponent(query)}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Kunde inte söka efter hållplats");
+  const handleSearch = useCallback(
+    async (query: string) => {
+      if (query.trim().length < 3) {
+        setSearchResults([]);
+        setHasSearched(false);
+        // Clear query param when search is cleared
+        router.replace("/", { scroll: false });
+        return;
       }
 
-      const data = await response.json();
-      setSearchResults(data.areas || []);
-    } catch (err) {
-      console.error("Search error:", err);
-      setError(err instanceof Error ? err.message : "Ett fel uppstod");
-      setSearchResults([]);
-    } finally {
-      setIsSearching(false);
+      // Update URL with search query
+      router.replace(`/?q=${encodeURIComponent(query)}`, { scroll: false });
+
+      setIsSearching(true);
+      setHasSearched(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `/api/areas/search?q=${encodeURIComponent(query)}`,
+        );
+
+        if (!response.ok) {
+          throw new Error("Kunde inte söka efter hållplats");
+        }
+
+        const data = await response.json();
+        setSearchResults(data.areas || []);
+      } catch (err) {
+        console.error("Search error:", err);
+        setError(err instanceof Error ? err.message : "Ett fel uppstod");
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    },
+    [router],
+  );
+
+  // Restore search results on mount if query param exists
+  useEffect(() => {
+    if (initialQuery) {
+      handleSearch(initialQuery);
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run on mount
 
   const handleNearby = useCallback(async () => {
     if (!("geolocation" in navigator)) {
@@ -93,6 +114,7 @@ export default function HomePage() {
           onNearby={handleNearby}
           isLoading={isSearching}
           isLocating={isLocating}
+          initialValue={initialQuery}
         />
       </section>
 
@@ -109,5 +131,13 @@ export default function HomePage() {
         <FavoritesSection />
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={<div className="p-4">Laddar...</div>}>
+      <HomePageContent />
+    </Suspense>
   );
 }

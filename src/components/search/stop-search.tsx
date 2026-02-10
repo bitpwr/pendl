@@ -10,6 +10,7 @@ interface StopSearchProps {
   onNearby: () => void;
   isLoading?: boolean;
   isLocating?: boolean;
+  initialValue?: string;
 }
 
 export function StopSearch({
@@ -17,8 +18,9 @@ export function StopSearch({
   onNearby,
   isLoading,
   isLocating,
+  initialValue = "",
 }: StopSearchProps) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialValue);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
