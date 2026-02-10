@@ -72,8 +72,9 @@ Since route_color is not available in SL GTFS data, the app uses default colors 
 - Rail: #7C3AED (purple)
 - Bus: #2563EB (blue)
 - Ferry: #0891B2 (cyan)
+- Taxi: #F59E0B (amber)
 
-See `src/components/departures/route-badge.tsx` for the color mapping.
+Use the `routeTypeColor(routeType: RouteType)` function from `src/types/gtfs.ts` to get consistent colors. It returns `{ bg: string, text: string }` for both background and text colors.
 
 ## Testing
 

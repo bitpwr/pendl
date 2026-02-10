@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RouteType } from "@/types/gtfs";
+import { RouteType, routeTypeColor } from "@/types/gtfs";
 import { cn } from "@/lib/utils";
 import { parseGtfsTime, getCurrentGtfsSeconds } from "@/lib/gtfs/time-utils";
 
@@ -36,18 +36,10 @@ interface TripStopListProps {
   routeType: RouteType;
 }
 
-// Route type colors
-const ROUTE_TYPE_COLORS: Record<RouteType, string> = {
-  [RouteType.Tram]: "#6B7280",
-  [RouteType.Metro]: "#1F2937",
-  [RouteType.Train]: "#7C3AED",
-  [RouteType.Bus]: "#2563EB",
-  [RouteType.Ferry]: "#0891B2",
-  [RouteType.Taxi]: "#F59E0B",
-};
+
 
 export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
-  const routeColor = ROUTE_TYPE_COLORS[routeType];
+  const routeColor = routeTypeColor(routeType).bg;
   const currentStopSequence = vehicle?.currentStopSequence;
 
   // Calculate current time in GTFS seconds for comparison
@@ -107,10 +99,10 @@ export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
                           ? "#22c55e"
                           : isLast
                             ? "#ef4444"
-                            : isCurrent
+                            : isPassed
                               ? routeColor
                               : "#ffffff",
-                        color: isCurrent ? routeColor : undefined,
+                        color: routeColor,
                       }}
                     />
                   </div>

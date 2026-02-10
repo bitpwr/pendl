@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { RouteType } from "@/types/gtfs";
+import { RouteType, routeTypeColor } from "@/types/gtfs";
 import { cn } from "@/lib/utils";
 import { Bus, Train, TramFront, Ship } from "lucide-react";
 
@@ -44,18 +44,7 @@ export function RouteBadge({
     lg: "h-5 w-5",
   };
 
-  // Default colors based on route type
-  const defaultColors: Record<RouteType, { bg: string; text: string }> = {
-    [RouteType.Tram]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.Metro]: { bg: "#1F2937", text: "#FFFFFF" },
-    [RouteType.Train]: { bg: "#7C3AED", text: "#FFFFFF" },
-    [RouteType.Bus]: { bg: "#2563EB", text: "#FFFFFF" },
-    [RouteType.Ferry]: { bg: "#0891B2", text: "#FFFFFF" },
-    [RouteType.Taxi]: { bg: "#F59E0B", text: "#000000" },
-  };
-
-  const bgColor = defaultColors[routeType]?.bg || "#6B7280";
-  const txtColor = defaultColors[routeType]?.text || "#FFFFFF";
+  const { bg: bgColor, text: txtColor } = routeTypeColor(routeType);
 
   return (
     <Badge

@@ -38,6 +38,25 @@ export enum RouteType {
 }
 
 /**
+ * Get the display colors for a route type
+ * Returns background and text colors for consistent styling
+ */
+export function routeTypeColor(routeType: RouteType): {
+  bg: string;
+  text: string;
+} {
+  const colors: Record<RouteType, { bg: string; text: string }> = {
+    [RouteType.Tram]: { bg: "#6B7280", text: "#FFFFFF" },
+    [RouteType.Metro]: { bg: "#1F2937", text: "#FFFFFF" },
+    [RouteType.Train]: { bg: "#7C3AED", text: "#FFFFFF" },
+    [RouteType.Bus]: { bg: "#2563EB", text: "#FFFFFF" },
+    [RouteType.Ferry]: { bg: "#0891B2", text: "#FFFFFF" },
+    [RouteType.Taxi]: { bg: "#F59E0B", text: "#000000" },
+  };
+  return colors[routeType] ?? { bg: "#6B7280", text: "#FFFFFF" };
+}
+
+/**
  * Convert numeric route type from database to RouteType enum
  * Maps SL-specific codes to standardized types
  */

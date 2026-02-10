@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RouteType } from "@/types/gtfs";
+import { RouteType, routeTypeColor } from "@/types/gtfs";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -59,16 +59,6 @@ interface TripMapProps {
   height?: string;
 }
 
-// Route type colors (same as route-badge.tsx)
-const ROUTE_TYPE_COLORS: Record<RouteType, string> = {
-  [RouteType.Tram]: "#6B7280",
-  [RouteType.Metro]: "#1F2937",
-  [RouteType.Train]: "#7C3AED",
-  [RouteType.Bus]: "#2563EB",
-  [RouteType.Ferry]: "#0891B2",
-  [RouteType.Taxi]: "#F59E0B",
-};
-
 export function TripMap({
   shape,
   stops,
@@ -114,7 +104,7 @@ export function TripMap({
     ] as [[number, number], [number, number]];
   }, [shape, stops]);
 
-  const routeColor = ROUTE_TYPE_COLORS[routeType];
+  const routeColor = routeTypeColor(routeType).bg;
 
   // Convert shape coordinates from [lon, lat] to [lat, lon] for Leaflet
   const polylinePositions = useMemo(() => {
