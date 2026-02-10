@@ -57,7 +57,13 @@ export default function AreaPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href="/">
+          <Link
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              window.history.back();
+            }}
+          >
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
             </Button>
