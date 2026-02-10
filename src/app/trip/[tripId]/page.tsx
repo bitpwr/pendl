@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -56,6 +56,7 @@ interface TripData {
 
 export default function TripPage() {
   const params = useParams();
+  const router = useRouter();
   const tripId = params.tripId as string;
 
   const [data, setData] = useState<TripData | null>(null);
@@ -146,17 +147,9 @@ export default function TripPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.back();
-            }}
-          >
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <RouteBadge
             shortName={data.trip.routeShortName}
             routeType={data.trip.routeType}

@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DepartureBoard } from "@/components/departures/departure-board";
 import { Star, ArrowLeft, Map } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import type { DepartureResponse } from "@/types/api";
 
 export default function StopPage() {
   const params = useParams();
+  const router = useRouter();
   const stopId = params.stopId as string;
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -57,11 +57,9 @@ export default function StopPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link href="/">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <h1 className="text-xl font-bold">{stopName}</h1>
         </div>
         <div className="flex items-center gap-2">

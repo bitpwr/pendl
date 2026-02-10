@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
 import { Star, ArrowLeft, Map } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 import type { AreaDepartureResponse } from "@/types/api";
 
 export default function AreaPage() {
   const params = useParams();
+  const router = useRouter();
   const areaId = params.areaId as string;
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -57,17 +57,9 @@ export default function AreaPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Link
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              window.history.back();
-            }}
-          >
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <h1 className="text-xl font-bold">{areaName}</h1>
         </div>
         <div className="flex items-center gap-2">
