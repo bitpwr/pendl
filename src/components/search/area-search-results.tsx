@@ -53,7 +53,7 @@ export function AreaSearchResults({
       {results.map((area) => (
         <Card
           key={area.areaId}
-          className="group transition-colors hover:bg-accent/50"
+          className="group transition-colors hover:bg-accent/50 py-0"
         >
           <CardContent className="p-0">
             <div className="flex items-center">

@@ -34,7 +34,7 @@ export function FavoritesList() {
             <div className="flex items-center">
               <Link
                 href={`/area/${favorite.areaId}`}
-                className="flex flex-1 items-center justify-between p-4"
+                className="flex flex-1 items-center justify-between py-1 px-4"
               >
                 <div className="flex items-center gap-3">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -45,7 +45,7 @@ export function FavoritesList() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="mr-2 text-muted-foreground hover:text-destructive"
+                className="mr-2 h-8 w-8 text-muted-foreground hover:text-destructive"
                 onClick={() => removeFavorite(favorite.areaId)}
                 title="Ta bort favorit"
               >
@@ -68,7 +68,7 @@ export function FavoritesSection() {
 
   return (
     <Card>
-      <CardHeader className="pb-3">
+      <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
           Favoriter
@@ -76,7 +76,7 @@ export function FavoritesSection() {
       </CardHeader>
       <CardContent className="pt-0">
         <div className="space-y-1">
-          {favorites.slice(0, 3).map((favorite) => (
+          {favorites.slice(0, 5).map((favorite) => (
             <Link
               key={favorite.areaId}
               href={`/area/${favorite.areaId}`}
@@ -86,7 +86,7 @@ export function FavoritesSection() {
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           ))}
-          {favorites.length > 3 && (
+          {favorites.length > 5 && (
             <Link
               href="/favoriter"
               className="block text-center text-sm text-muted-foreground hover:text-foreground"
