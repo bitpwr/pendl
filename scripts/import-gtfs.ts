@@ -18,6 +18,7 @@ import { downloadGtfsStatic, getLatestGtfsZip } from "@/lib/gtfs/download";
 import { parseGtfsZip } from "@/lib/gtfs/parser";
 import { importGtfsToDatabase } from "@/lib/gtfs/importer";
 import { isIncludedAgency } from "@/lib/config/agencies";
+import { statSync } from "fs";
 import { closePool } from "@/lib/db";
 
 async function main() {
@@ -47,7 +48,6 @@ async function main() {
       // Check if we need to download
       const existing = getLatestGtfsZip();
       if (existing) {
-        const { statSync } = require("fs");
         const stat = statSync(existing);
         const ageMs = Date.now() - stat.mtime.getTime();
         const ageHours = ageMs / (1000 * 60 * 60);

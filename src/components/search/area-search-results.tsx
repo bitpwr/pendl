@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Star, MapPin } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import type { AreaSearchResult } from "@/types/api";

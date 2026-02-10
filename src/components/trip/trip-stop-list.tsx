@@ -36,7 +36,7 @@ interface TripStopListProps {
   routeType: RouteType;
 }
 
-export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
+export function TripStopList({ stops, routeType }: TripStopListProps) {
   const routeColor = routeTypeColor(routeType).bg;
 
   // Calculate current time in GTFS seconds for comparison

@@ -136,9 +136,7 @@ export async function parseGtfsZip(
       : undefined,
     limit,
   });
-  // Get all stop IDs from the parsed stops for filtering stop_areas
-  const parsedStopIds = new Set(stops.map((s) => s.stop_id));
-  // Also collect parent_station values - stop_areas.txt uses these
+  // Collect parent_station values - stop_areas.txt uses these
   const parsedParentStations = new Set(
     stops.map((s) => s.parent_station).filter(Boolean),
   );

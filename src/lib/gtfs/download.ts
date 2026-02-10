@@ -1,4 +1,10 @@
-import { createWriteStream, existsSync, mkdirSync } from "fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  statSync,
+  readdirSync,
+} from "fs";
 import { pipeline } from "stream/promises";
 import { GTFS_CONFIG } from "./config";
 import path from "path";
@@ -78,7 +84,6 @@ export function getLatestGtfsZip(): string | null {
     return null;
   }
 
-  const { readdirSync, statSync } = require("fs");
   const files = readdirSync(dataDir)
     .filter((f: string) => f.startsWith("gtfs-") && f.endsWith(".zip"))
     .map((f: string) => ({

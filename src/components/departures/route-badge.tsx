@@ -9,29 +9,11 @@ interface RouteBadgeProps {
   size?: "sm" | "md" | "lg";
 }
 
-function getRouteIcon(routeType: RouteType) {
-  switch (routeType) {
-    case RouteType.Tram:
-      return TramFront;
-    case RouteType.Metro:
-    case RouteType.Train:
-      return Train;
-    case RouteType.Ferry:
-      return Ship;
-    case RouteType.Bus:
-    case RouteType.Taxi:
-    default:
-      return Bus;
-  }
-}
-
 export function RouteBadge({
   shortName,
   routeType,
   size = "md",
 }: RouteBadgeProps) {
-  const Icon = getRouteIcon(routeType);
-
   const sizeClasses = {
     sm: "text-xs px-1.5 py-0.5 gap-1",
     md: "text-sm px-2 py-1 gap-1.5",
@@ -57,7 +39,16 @@ export function RouteBadge({
         color: txtColor,
       }}
     >
-      <Icon className={iconSizes[size]} />
+      {routeType === RouteType.Tram && (
+        <TramFront className={iconSizes[size]} />
+      )}
+      {(routeType === RouteType.Metro || routeType === RouteType.Train) && (
+        <Train className={iconSizes[size]} />
+      )}
+      {routeType === RouteType.Ferry && <Ship className={iconSizes[size]} />}
+      {(routeType === RouteType.Bus || routeType === RouteType.Taxi) && (
+        <Bus className={iconSizes[size]} />
+      )}
       <span>{shortName}</span>
     </Badge>
   );
