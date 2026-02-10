@@ -110,8 +110,8 @@ function StopGroupCard({ group }: StopGroupCardProps) {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-2 pt-3">
+    <Card className="pt-4">
+      <CardHeader className="">
         <CardTitle className="text-base font-medium">{displayName}</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
