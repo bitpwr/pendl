@@ -36,11 +36,8 @@ interface TripStopListProps {
   routeType: RouteType;
 }
 
-
-
 export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
   const routeColor = routeTypeColor(routeType).bg;
-  const currentStopSequence = vehicle?.currentStopSequence;
 
   // Calculate current time in GTFS seconds for comparison
   const currentSeconds = getCurrentGtfsSeconds();
@@ -52,6 +49,14 @@ export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
     const m = parsed.minutes.toString().padStart(2, "0");
     return `${h}:${m}`;
   };
+
+  // Find the index of the next stop (first stop that hasn't passed yet)
+  const nextStopIndex = stops.findIndex((stop) => {
+    return (
+      parseGtfsTime(stop.departureTime).totalSeconds >= currentSeconds &&
+      !stop.isSkipped
+    );
+  });
 
   return (
     <Card>
@@ -70,11 +75,8 @@ export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
             {stops.map((stop, index) => {
               const isFirst = index === 0;
               const isLast = index === stops.length - 1;
-              const isPassed = currentStopSequence
-                ? stop.stopSequence < currentStopSequence
-                : parseGtfsTime(stop.departureTime).totalSeconds <
-                  currentSeconds;
-              const isCurrent = currentStopSequence === stop.stopSequence;
+              const isPassed = index < nextStopIndex;
+              const isNext = index === nextStopIndex;
 
               return (
                 <li
@@ -82,16 +84,21 @@ export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
                   className={cn(
                     "relative flex items-center gap-4 py-2 px-4",
                     stop.isSkipped && "opacity-50 line-through",
-                    isPassed && !isCurrent && "opacity-60",
+                    isPassed && "opacity-60",
                   )}
                 >
                   {/* Stop marker */}
                   <div className="relative z-10 flex items-center justify-center w-5 h-5">
+                    {isNext && (
+                      <span
+                        className="absolute inline-flex h-4 w-4 rounded-full opacity-40 animate-ping"
+                        style={{ backgroundColor: routeColor }}
+                      />
+                    )}
                     <div
                       className={cn(
                         "rounded-full border-2",
                         isFirst || isLast ? "w-4 h-4" : "w-3 h-3",
-                        isCurrent && "ring-2 ring-offset-2 ring-current",
                       )}
                       style={{
                         borderColor: routeColor,
@@ -146,22 +153,6 @@ export function TripStopList({ stops, vehicle, routeType }: TripStopListProps) {
                         </p>
                       )}
                   </div>
-
-                  {/* Current vehicle indicator */}
-                  {isCurrent && (
-                    <div className="absolute -left-1 top-1/2 -translate-y-1/2">
-                      <span className="relative flex h-3 w-3">
-                        <span
-                          className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                          style={{ backgroundColor: routeColor }}
-                        />
-                        <span
-                          className="relative inline-flex rounded-full h-3 w-3"
-                          style={{ backgroundColor: routeColor }}
-                        />
-                      </span>
-                    </div>
-                  )}
                 </li>
               );
             })}
