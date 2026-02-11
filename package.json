@@ -11,7 +11,15 @@
     "test:run": "vitest run",
     "gtfs:import": "npx tsx scripts/import-gtfs.ts",
     "gtfs:realtime": "npx tsx scripts/realtime-worker.ts",
-    "format": "npx prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\""
+    "format": "npx prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
+    "changelog": "bash scripts/generate-changelog.sh",
+    "preversion": "npm run build && npm run lint && npm test",
+    "version": "bash scripts/generate-changelog.sh $npm_package_version && git add CHANGELOG.md",
+    "pushversion": "git push && git push --tags",
+    "release:patch": "npm version patch -m 'Release v%s'",
+    "release:minor": "npm version minor -m 'Release v%s'",
+    "release:major": "npm version major -m 'Release v%s'",
+    "release:prerelease": "npm version prerelease --preid=rc -m 'Release v%s'"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.4",
