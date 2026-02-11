@@ -19,7 +19,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
   zipPath: string,
   fileName: GtfsFileName,
   options: ParseOptions = {},
-): Promise<T[]> {
+): Promise<{ used: T[]; total: number }> {
   const { filter, transform, limit } = options;
   const results: T[] = [];
 
@@ -27,6 +27,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
     const zipStream = createReadStream(zipPath).pipe(unzipper.Parse());
 
     zipStream.on("entry", async (entry) => {
+      let count = 0;
       if (entry.path === fileName) {
         const parser = parse({
           columns: true,
@@ -38,6 +39,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
         entry.pipe(parser);
 
         parser.on("data", (row: Record<string, string>) => {
+          count += 1;
           if (limit && results.length >= limit) {
             return;
           }
@@ -53,7 +55,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
         });
 
         parser.on("end", () => {
-          resolve(results);
+          resolve({ used: results, total: count });
         });
 
         parser.on("error", reject);
@@ -66,7 +68,7 @@ export async function parseGtfsFile<T extends Record<string, string>>(
     zipStream.on("close", () => {
       // File not found in zip
       if (results.length === 0) {
-        resolve([]);
+        resolve({ used: [], total: 0 });
       }
     });
   });
@@ -100,35 +102,33 @@ export async function parseGtfsZip(
     filter: agencyFilter ? (row) => agencyFilter(row.agency_id) : undefined,
     limit,
   });
-  const agencyIds = new Set(agencies.map((a) => a.agency_id));
-  console.log(`Found ${agencies.length} agencies`);
+  const agencyIds = new Set(agencies.used.map((a) => a.agency_id));
+  console.log(`Found ${agencies.used.length} (${agencies.total}) agencies`);
 
   console.log("Parsing routes...");
   const routes = await parseGtfsFile(zipPath, "routes.txt", {
     filter: agencyFilter ? (row) => agencyIds.has(row.agency_id) : undefined,
     limit,
   });
-  const routeIds = new Set(routes.map((r) => r.route_id));
-  console.log(`Found ${routes.length} routes`);
-
+  const routeIds = new Set(routes.used.map((r) => r.route_id));
+  console.log(`Found ${routes.used.length} (${routes.total}) routes`);
   console.log("Parsing trips...");
   const trips = await parseGtfsFile(zipPath, "trips.txt", {
     filter: agencyFilter ? (row) => routeIds.has(row.route_id) : undefined,
     limit,
   });
-  const tripIds = new Set(trips.map((t) => t.trip_id));
-  const serviceIds = new Set(trips.map((t) => t.service_id));
-  const shapeIds = new Set(trips.map((t) => t.shape_id).filter(Boolean));
-  console.log(`Found ${trips.length} trips`);
+  const tripIds = new Set(trips.used.map((t) => t.trip_id));
+  const serviceIds = new Set(trips.used.map((t) => t.service_id));
+  const shapeIds = new Set(trips.used.map((t) => t.shape_id).filter(Boolean));
+  console.log(`Found ${trips.used.length} (${trips.total}) trips`);
 
   console.log("Parsing stop_times...");
   const stopTimes = await parseGtfsFile(zipPath, "stop_times.txt", {
     filter: agencyFilter ? (row) => tripIds.has(row.trip_id) : undefined,
     limit,
   });
-  const stopIds = new Set(stopTimes.map((st) => st.stop_id));
-  console.log(`Found ${stopTimes.length} stop times`);
-
+  const stopIds = new Set(stopTimes.used.map((st) => st.stop_id));
+  console.log(`Found ${stopTimes.used.length} (${stopTimes.total}) stop times`);
   console.log("Parsing stops...");
   const stops = await parseGtfsFile(zipPath, "stops.txt", {
     filter: agencyFilter
@@ -138,29 +138,33 @@ export async function parseGtfsZip(
   });
   // Collect parent_station values - stop_areas.txt uses these
   const parsedParentStations = new Set(
-    stops.map((s) => s.parent_station).filter(Boolean),
+    stops.used.map((s) => s.parent_station).filter(Boolean),
   );
-  console.log(`Found ${stops.length} stops`);
+  console.log(`Found ${stops.used.length} (${stops.total}) stops`);
 
   console.log("Parsing calendar...");
   const calendar = await parseGtfsFile(zipPath, "calendar.txt", {
     filter: agencyFilter ? (row) => serviceIds.has(row.service_id) : undefined,
     limit,
   });
-  console.log(`Found ${calendar.length} calendar entries`);
+  console.log(
+    `Found ${calendar.used.length} (${calendar.total}) calendar entries`,
+  );
 
   console.log("Parsing calendar_dates...");
   const calendarDates = await parseGtfsFile(zipPath, "calendar_dates.txt", {
     filter: agencyFilter ? (row) => serviceIds.has(row.service_id) : undefined,
     limit,
   });
-  console.log(`Found ${calendarDates.length} calendar date exceptions`);
+  console.log(
+    `Found ${calendarDates.used.length} (${calendarDates.total}) calendar date exceptions`,
+  );
 
   console.log("Parsing shapes...");
   const shapes = await parseGtfsFile(zipPath, "shapes.txt", {
     filter: agencyFilter ? (row) => shapeIds.has(row.shape_id) : undefined,
   });
-  console.log(`Found ${shapes.length} shape points`);
+  console.log(`Found ${shapes.used.length} (${shapes.total}) shape points`);
 
   // Parse stop_areas first to find which areas contain our stops
   // stop_areas.txt maps area_id to parent_station IDs (not individual platform stop_ids)
@@ -168,8 +172,8 @@ export async function parseGtfsZip(
   const allStopAreas = await parseGtfsFile(zipPath, "stop_areas.txt", {});
   // Filter to only include stop_areas that reference parent stations we have
   const stopAreas = agencyFilter
-    ? allStopAreas.filter((row) => parsedParentStations.has(row.stop_id))
-    : allStopAreas;
+    ? allStopAreas.used.filter((row) => parsedParentStations.has(row.stop_id))
+    : allStopAreas.used;
   const areaIds = new Set(stopAreas.map((sa) => sa.area_id));
   console.log(`Found ${stopAreas.length} stop-area mappings`);
 
@@ -177,18 +181,17 @@ export async function parseGtfsZip(
   const areas = await parseGtfsFile(zipPath, "areas.txt", {
     filter: agencyFilter ? (row) => areaIds.has(row.area_id) : undefined,
   });
-  console.log(`Found ${areas.length} areas`);
-
+  console.log(`Found ${areas.used.length} (${areas.total}) areas`);
   return {
-    agencies,
-    stops,
-    routes,
-    trips,
-    stopTimes,
-    calendar,
-    calendarDates,
-    shapes,
-    areas,
-    stopAreas,
+    agencies: agencies.used,
+    stops: stops.used,
+    routes: routes.used,
+    trips: trips.used,
+    stopTimes: stopTimes.used,
+    calendar: calendar.used,
+    calendarDates: calendarDates.used,
+    shapes: shapes.used,
+    areas: areas.used,
+    stopAreas: stopAreas,
   };
 }

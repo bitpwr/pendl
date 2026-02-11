@@ -52,7 +52,7 @@ async function main() {
         const ageMs = Date.now() - stat.mtime.getTime();
         const ageHours = ageMs / (1000 * 60 * 60);
 
-        if (ageHours < 24) {
+        if (ageHours < 24 * 5) {
           console.log(
             `Using recent GTFS zip (${ageHours.toFixed(1)}h old): ${existing}`,
           );

@@ -280,7 +280,7 @@ async function importStopTimes(
       values,
     );
 
-    if (i % 50000 === 0 && i > 0) {
+    if (i % 100000 === 0 && i > 0) {
       console.log(`  Imported ${i} / ${stopTimes.length} stop times...`);
     }
   }
@@ -317,6 +317,10 @@ async function importShapes(
        ON CONFLICT (shape_id, shape_pt_sequence) DO NOTHING`,
       values,
     );
+
+    if (i % 100000 === 0 && i > 0) {
+      console.log(`  Imported ${i} / ${shapes.length} shape points...`);
+    }
   }
   console.log(`  Imported ${shapes.length} shape points`);
 }
