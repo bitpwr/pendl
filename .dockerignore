@@ -1,0 +1,43 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+.next
+out
+
+# Git
+.git
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Dev/test
+.env
+.env.*
+vitest.config.ts
+src/test/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Data (mounted as volume in production)
+data/
+
+# Scripts
+dev/
+
+# Docs
+README.md
+TODO.md
+architecture.md
