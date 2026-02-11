@@ -1,11 +1,11 @@
 services:
   postgres:
     image: postgis/postgis:16-3.4
-    container_name: pendl-postgres
+    container_name: pendl-postgres-dev
     environment:
-      POSTGRES_USER: pendl
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pendl_dev}
-      POSTGRES_DB: pendl
+      POSTGRES_USER: ${DB_USER:-}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-}
+      POSTGRES_DB: ${DB_NAME:-}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
@@ -13,14 +13,14 @@ services:
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pendl -d pendl"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-} -d ${DB_NAME:-}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: pendl-redis
+    container_name: pendl-redis-dev
     ports:
       - "127.0.0.1:6379:6379"
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
