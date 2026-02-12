@@ -56,11 +56,35 @@ jobs:
           if [ -f CHANGELOG.md ]; then
             # Extract the first version section from CHANGELOG.md
             CHANGELOG_BODY=$(awk '/^## \[.*\]/{if(++n==1){flag=1;next}else{flag=0}}flag' CHANGELOG.md)
+
+            # Add Docker image information
+            RELEASE_BODY="## 🚀 Docker Image
+
+          \`\`\`bash
+          docker pull ${{ secrets.DOCKER_USER }}/pendl:${{ steps.vars.outputs.VERSION }}
+          # or
+          docker pull ${{ secrets.DOCKER_USER }}/pendl:latest
+          \`\`\`
+
+          ## 📋 What's Changed
+
+          $CHANGELOG_BODY
+
+          ---
+
+          **Full Changelog**: https://github.com/${{ github.repository }}/compare/$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo 'HEAD')...${{ github.ref_name }}"
+
             echo "CHANGELOG_BODY<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGELOG_BODY" >> $GITHUB_OUTPUT
+            echo "$RELEASE_BODY" >> $GITHUB_OUTPUT
             echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "CHANGELOG_BODY=See commits for changes." >> $GITHUB_OUTPUT
+            echo "CHANGELOG_BODY=## 🚀 Docker Image
+
+          \`\`\`bash
+          docker pull ${{ secrets.DOCKER_USER }}/pendl:${{ steps.vars.outputs.VERSION }}
+          \`\`\`
+
+          See commits for detailed changes." >> $GITHUB_OUTPUT
           fi
 
       - name: Create GitHub Release
@@ -69,5 +93,6 @@ jobs:
           body: ${{ steps.changelog.outputs.CHANGELOG_BODY }}
           draft: false
           prerelease: ${{ contains(github.ref_name, 'rc') }}
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
