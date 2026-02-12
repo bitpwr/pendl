@@ -220,9 +220,9 @@ async function importTrips(
     const placeholders: string[] = [];
 
     batch.forEach((t, idx) => {
-      const offset = idx * 8;
+      const offset = idx * 7;
       placeholders.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`,
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`,
       );
       values.push(
         t.trip_id,
@@ -231,13 +231,12 @@ async function importTrips(
         t.trip_headsign || null,
         t.trip_short_name || null,
         parseInt(t.direction_id) || 0,
-        t.block_id || null,
         t.shape_id || null,
       );
     });
 
     await client.query(
-      `INSERT INTO trips (trip_id, route_id, service_id, trip_headsign, trip_short_name, direction_id, block_id, shape_id)
+      `INSERT INTO trips (trip_id, route_id, service_id, trip_headsign, trip_short_name, direction_id, shape_id)
        VALUES ${placeholders.join(", ")}
        ON CONFLICT (trip_id) DO NOTHING`,
       values,
@@ -257,9 +256,9 @@ async function importStopTimes(
     const placeholders: string[] = [];
 
     batch.forEach((st, idx) => {
-      const offset = idx * 8;
+      const offset = idx * 6;
       placeholders.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7}, $${offset + 8})`,
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`,
       );
       values.push(
         st.trip_id,
@@ -268,13 +267,11 @@ async function importStopTimes(
         st.departure_time,
         parseInt(st.stop_sequence),
         st.stop_headsign || null,
-        parseInt(st.pickup_type) || 0,
-        parseInt(st.drop_off_type) || 0,
       );
     });
 
     await client.query(
-      `INSERT INTO stop_times (trip_id, stop_id, arrival_time, departure_time, stop_sequence, stop_headsign, pickup_type, drop_off_type)
+      `INSERT INTO stop_times (trip_id, stop_id, arrival_time, departure_time, stop_sequence, stop_headsign)
        VALUES ${placeholders.join(", ")}
        ON CONFLICT (trip_id, stop_sequence) DO NOTHING`,
       values,

@@ -77,10 +77,7 @@ CREATE TABLE trips (
     trip_headsign TEXT,
     trip_short_name TEXT,
     direction_id INTEGER,
-    block_id TEXT,
-    shape_id TEXT,
-    wheelchair_accessible INTEGER,
-    bikes_allowed INTEGER
+    shape_id TEXT
 );
 
 CREATE INDEX idx_trips_route ON trips(route_id);
@@ -95,8 +92,6 @@ CREATE TABLE stop_times (
     stop_id TEXT REFERENCES stops(stop_id) ON DELETE CASCADE NOT NULL,
     stop_sequence INTEGER NOT NULL,
     stop_headsign TEXT,
-    pickup_type INTEGER DEFAULT 0,
-    drop_off_type INTEGER DEFAULT 0,
     timepoint INTEGER DEFAULT 1,
     PRIMARY KEY (trip_id, stop_sequence)
 );
