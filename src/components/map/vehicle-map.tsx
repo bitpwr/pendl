@@ -26,6 +26,10 @@ const Marker = dynamic(
 const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
   ssr: false,
 });
+const CircleMarker = dynamic(
+  () => import("react-leaflet").then((mod) => mod.CircleMarker),
+  { ssr: false },
+);
 
 interface VehicleMapProps {
   center?: [number, number];
@@ -49,6 +53,10 @@ export function VehicleMap({
   const [mapCenter, setMapCenter] = useState(center);
   const [isClient, setIsClient] = useState(false);
   const [selectedRouteType, setSelectedRouteType] = useState<RouteType | null>(
+    null,
+  );
+  const [locateKey, setLocateKey] = useState(0);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
 
@@ -93,12 +101,20 @@ export function VehicleMap({
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setMapCenter([position.coords.latitude, position.coords.longitude]);
+          const location: [number, number] = [
+            position.coords.latitude,
+            position.coords.longitude,
+          ];
+          setMapCenter(location);
+          setUserLocation(location);
+          setLocateKey((prev) => prev + 1);
         },
         (err) => {
           console.error("Geolocation error:", err);
         },
       );
+    } else {
+      alert("Din webbläsare stödjer inte positionering");
     }
   };
 
@@ -225,10 +241,27 @@ export function VehicleMap({
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
           >
+            <MapUpdater center={mapCenter} locateKey={locateKey} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+            {userLocation && (
+              <CircleMarker
+                center={userLocation}
+                radius={8}
+                fillColor="#3B82F6"
+                color="#FFFFFF"
+                weight={3}
+                fillOpacity={0.8}
+              >
+                <Popup>
+                  <div className="text-sm">
+                    <p className="font-bold">Din position</p>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            )}
             {vehicleMarkers}
           </MapContainer>
         </div>
@@ -236,6 +269,33 @@ export function VehicleMap({
     </Card>
   );
 }
+
+// MapUpdater component must be inside MapContainer to access useMap
+const MapUpdater = dynamic(
+  () =>
+    import("react-leaflet").then((mod) => {
+      const { useMap } = mod;
+
+      return function MapUpdaterComponent({
+        center,
+        locateKey,
+      }: {
+        center: [number, number];
+        locateKey: number;
+      }) {
+        const map = useMap();
+
+        useEffect(() => {
+          if (locateKey > 0) {
+            map.flyTo(center, 12, { duration: 1.5 });
+          }
+        }, [locateKey, center, map]);
+
+        return null;
+      };
+    }),
+  { ssr: false },
+);
 
 interface VehicleMarkerProps {
   vehicle: Vehicle;
