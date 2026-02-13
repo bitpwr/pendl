@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useSyncExternalStore, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteType, routeTypeColor, routeTypeName } from "@/types/gtfs";
+import { createVehicleLeafletIcon } from "@/components/map/vehicle-arrow-icon";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -100,7 +101,7 @@ export function TripMap({
     const lats = points.map((p) => p[0]);
     const lons = points.map((p) => p[1]);
 
-    const padding = 0.005;
+    const padding = 0.0;
     return [
       [Math.min(...lats) - padding, Math.min(...lons) - padding],
       [Math.max(...lats) + padding, Math.max(...lons) + padding],
@@ -127,6 +128,7 @@ export function TripMap({
         <div style={{ height }} className="relative rounded-lg overflow-hidden">
           <MapContainer
             bounds={bounds}
+            boundsOptions={{ padding: [0, 0] }}
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
           >
@@ -172,19 +174,55 @@ export function TripMap({
 
             {/* Vehicle marker */}
             {vehicle && (
-              <Marker position={[vehicle.latitude, vehicle.longitude]}>
-                <Popup>
-                  <div className="text-sm">
-                    <p className="font-bold">
-                      {routeTypeName(routeType)} {routeName}
-                    </p>
-                  </div>
-                </Popup>
-              </Marker>
+              <VehicleMarker
+                vehicle={vehicle}
+                routeType={routeType}
+                routeName={routeName}
+              />
             )}
           </MapContainer>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface VehicleMarkerProps {
+  vehicle: Vehicle;
+  routeType: RouteType;
+  routeName: string;
+}
+
+function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
+  const [L, setL] = useState<any>(null);
+
+  useEffect(() => {
+    // Import Leaflet only on client side
+    import("leaflet").then((leaflet) => setL(leaflet));
+  }, []);
+
+  if (!L) return null;
+
+  const bearing = vehicle.bearing ?? 0;
+  const icon = createVehicleLeafletIcon(L, routeType, bearing, 48);
+
+  return (
+    <>
+      <style jsx global>{`
+        .vehicle-marker {
+          background: transparent !important;
+          border: none !important;
+        }
+      `}</style>
+      <Marker position={[vehicle.latitude, vehicle.longitude]} icon={icon}>
+        <Popup>
+          <div className="text-sm">
+            <p className="font-bold">
+              {routeTypeName(routeType)} {routeName}
+            </p>
+          </div>
+        </Popup>
+      </Marker>
+    </>
   );
 }
