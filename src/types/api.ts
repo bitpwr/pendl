@@ -65,12 +65,13 @@ export interface Vehicle {
   tripId: string;
   routeId: string;
   routeShortName: string;
+  routeType: RouteType;
   headsign: string;
   latitude: number;
   longitude: number;
   bearing?: number;
   speed?: number;
-  currentStatus: string;
+  currentStatus?: string;
   nextStop?: {
     stopId: string;
     stopName: string;

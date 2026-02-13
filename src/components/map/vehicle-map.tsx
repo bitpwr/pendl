@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Locate } from "lucide-react";
 import type { Vehicle } from "@/types/api";
+import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
+import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -26,7 +28,6 @@ const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
 });
 
 interface VehicleMapProps {
-  routeId?: string;
   center?: [number, number];
   zoom?: number;
   height?: string;
@@ -34,10 +35,9 @@ interface VehicleMapProps {
 
 // Stockholm default center
 const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
-const DEFAULT_ZOOM = 12;
+const DEFAULT_ZOOM = 10;
 
 export function VehicleMap({
-  routeId,
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
   height = "400px",
@@ -48,6 +48,9 @@ export function VehicleMap({
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [mapCenter, setMapCenter] = useState(center);
   const [isClient, setIsClient] = useState(false);
+  const [selectedRouteType, setSelectedRouteType] = useState<RouteType | null>(
+    null,
+  );
 
   useEffect(() => {
     setIsClient(true);
@@ -58,9 +61,10 @@ export function VehicleMap({
     setError(null);
 
     try {
-      const url = routeId
-        ? `/api/vehicles?routeId=${encodeURIComponent(routeId)}`
-        : "/api/vehicles";
+      const url =
+        selectedRouteType !== null
+          ? `/api/vehicles?routeType=${selectedRouteType}`
+          : "/api/vehicles";
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -75,7 +79,7 @@ export function VehicleMap({
     } finally {
       setIsLoading(false);
     }
-  }, [routeId]);
+  }, [selectedRouteType]);
 
   useEffect(() => {
     fetchVehicles();
@@ -83,7 +87,7 @@ export function VehicleMap({
     // Auto-refresh every 10 seconds
     const interval = setInterval(fetchVehicles, 10000);
     return () => clearInterval(interval);
-  }, [fetchVehicles]);
+  }, [fetchVehicles, selectedRouteType]);
 
   const handleLocateMe = () => {
     if ("geolocation" in navigator) {
@@ -124,9 +128,17 @@ export function VehicleMap({
     );
   }
 
+  const routeTypes = [
+    { type: RouteType.Metro, label: "Tunnelbana" },
+    { type: RouteType.Tram, label: "Spårvagn" },
+    { type: RouteType.Train, label: "Pendeltåg" },
+    { type: RouteType.Bus, label: "Buss" },
+    { type: RouteType.Ferry, label: "Båt" },
+  ];
+
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 space-y-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
             Fordon i realtid
@@ -168,6 +180,39 @@ export function VehicleMap({
             </Button>
           </div>
         </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={selectedRouteType === null ? "default" : "outline"}
+            size="sm"
+            onClick={() => setSelectedRouteType(null)}
+            className="h-8 text-xs"
+          >
+            Alla
+          </Button>
+          {routeTypes.map(({ type, label }) => {
+            const colors = routeTypeColor(type);
+            return (
+              <Button
+                key={type}
+                variant={selectedRouteType === type ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedRouteType(type)}
+                className="h-8 text-xs"
+                style={
+                  selectedRouteType === type
+                    ? {
+                        backgroundColor: colors.bg,
+                        color: colors.text,
+                        borderColor: colors.bg,
+                      }
+                    : undefined
+                }
+              >
+                {label}
+              </Button>
+            );
+          })}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <div
@@ -197,20 +242,45 @@ interface VehicleMarkerProps {
 }
 
 function VehicleMarker({ vehicle }: VehicleMarkerProps) {
-  // Create custom icon based on vehicle type/route
-  // For now, using default marker
+  const [L, setL] = useState<any>(null);
+
+  useEffect(() => {
+    // Import Leaflet only on client side
+    import("leaflet").then((leaflet) => setL(leaflet));
+  }, []);
+
+  if (!L) return null;
+
+  // Get the color for this route type
+  const bearing = vehicle.bearing ?? 0;
+
+  // Create custom arrow icon
+  const icon = createVehicleLeafletIcon(L, vehicle.routeType, bearing);
+
   return (
-    <Marker position={[vehicle.latitude, vehicle.longitude]}>
-      <Popup>
-        <div className="text-sm">
-          <p className="font-bold">
-            {vehicle.routeShortName || vehicle.routeId}
-          </p>
-          <p>{vehicle.headsign}</p>
-          <p className="text-muted-foreground">Fordon: {vehicle.vehicleId}</p>
-        </div>
-      </Popup>
-    </Marker>
+    <>
+      <style jsx global>{`
+        .vehicle-marker {
+          background: transparent !important;
+          border: none !important;
+        }
+      `}</style>
+      <Marker position={[vehicle.latitude, vehicle.longitude]} icon={icon}>
+        <Popup>
+          <div className="text-sm">
+            <p className="font-bold">
+              {routeTypeName(vehicle.routeType)} {vehicle.routeShortName ?? ""}
+            </p>
+            <a
+              href={`/trip/${vehicle.tripId}`}
+              className="text-blue-600 hover:underline mt-1 inline-block"
+            >
+              Visa resa
+            </a>
+          </div>
+        </Popup>
+      </Marker>
+    </>
   );
 }
 
