@@ -182,7 +182,7 @@ fi
 
 # Chores
 if [ ${#CHORE[@]} -gt 0 ]; then
-  echo "### 🧹 Chores" >> "$TEMP_FILE"
+  echo "### 🧹 Maintenance" >> "$TEMP_FILE"
   echo "" >> "$TEMP_FILE"
   for hash in "${!CHORE[@]}"; do
     echo "- ${CHORE[$hash]} (\`$hash\`)" >> "$TEMP_FILE"
