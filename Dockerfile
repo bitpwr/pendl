@@ -25,7 +25,6 @@ RUN apk add --no-cache su-exec tzdata && \
 # Copy Next.js standalone build (includes its own minimal node_modules)
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copy scripts and source needed by tsx for script execution
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
