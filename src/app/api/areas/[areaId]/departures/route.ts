@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getScheduledDeparturesForStops } from "@/lib/db/queries/departures";
 import { getArea, getAreaStops } from "@/lib/db/queries/areas";
 import { getTripUpdates } from "@/lib/redis/realtime";
-import { gtfsTimeToDate } from "@/lib/gtfs/time-utils";
+import { gtfsTimeToActualDate } from "@/lib/gtfs/time-utils";
 import type { Departure } from "@/types/api";
 
 interface Props {
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     // Build response
     const now = new Date();
     const departures: Departure[] = scheduled.map((dep) => {
-      const scheduledTime = gtfsTimeToDate(dep.departureTime, now);
+      const scheduledTime = gtfsTimeToActualDate(dep.departureTime, now);
       const tripUpdate = tripUpdates.get(dep.tripId);
       const stopInfo = stopMap.get(dep.stopId);
 

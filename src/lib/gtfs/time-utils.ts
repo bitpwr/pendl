@@ -100,6 +100,35 @@ export function getCurrentGtfsSeconds(now: Date = new Date()): number {
 }
 
 /**
+ * Convert a GTFS time to a Date object, automatically determining the correct service date.
+ *
+ * When the current time is between 00:00 and 03:00, and the GTFS time is >= 24:00,
+ * the time belongs to yesterday's service day.
+ *
+ * @param gtfsTimeStr - GTFS time string (e.g., "14:30:00" or "25:30:00")
+ * @param referenceDate - The reference date (defaults to now)
+ * @returns The actual Date object for this departure
+ */
+export function gtfsTimeToActualDate(
+  gtfsTimeStr: string,
+  referenceDate: Date = new Date(),
+): Date {
+  const parsed = parseGtfsTime(gtfsTimeStr);
+  const currentHour = referenceDate.getHours();
+
+  // Determine the service date
+  let serviceDate = new Date(referenceDate);
+
+  // If we're in early morning (00:00-03:00) and the GTFS time is >= 24:00,
+  // this trip belongs to yesterday's service
+  if (currentHour < 3 && parsed.totalSeconds >= 24 * 3600) {
+    serviceDate.setDate(serviceDate.getDate() - 1);
+  }
+
+  return gtfsTimeToDate(gtfsTimeStr, serviceDate);
+}
+
+/**
  * Convert GTFS time string to seconds since midnight
  */
 export function gtfsTimeToSeconds(timeStr: string): number {

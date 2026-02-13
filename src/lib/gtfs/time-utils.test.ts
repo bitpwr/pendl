@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   parseGtfsTime,
   gtfsTimeToDate,
+  gtfsTimeToActualDate,
   formatTime,
   formatMinutesUntil,
   minutesUntil,
@@ -114,5 +115,52 @@ describe("gtfsTimeToSeconds", () => {
     expect(gtfsTimeToSeconds("01:00:00")).toBe(3600);
     expect(gtfsTimeToSeconds("14:30:15")).toBe(14 * 3600 + 30 * 60 + 15);
     expect(gtfsTimeToSeconds("25:00:00")).toBe(25 * 3600);
+  });
+});
+
+describe("gtfsTimeToActualDate", () => {
+  it("should use current date for normal daytime hours", () => {
+    const referenceDate = new Date("2026-01-27T14:00:00");
+    const result = gtfsTimeToActualDate("15:30:00", referenceDate);
+
+    expect(result.getFullYear()).toBe(2026);
+    expect(result.getMonth()).toBe(0); // January
+    expect(result.getDate()).toBe(27);
+    expect(result.getHours()).toBe(15);
+    expect(result.getMinutes()).toBe(30);
+  });
+
+  it("should use current date for early morning times (00:00-03:00) when GTFS time < 24:00", () => {
+    const referenceDate = new Date("2026-01-27T01:30:00"); // 01:30
+    const result = gtfsTimeToActualDate("02:00:00", referenceDate);
+
+    expect(result.getDate()).toBe(27); // Same day
+    expect(result.getHours()).toBe(2);
+  });
+
+  it("should use previous day for early morning times when GTFS time >= 24:00", () => {
+    const referenceDate = new Date("2026-01-27T01:30:00"); // 01:30
+    const result = gtfsTimeToActualDate("25:30:00", referenceDate); // 01:30 from yesterday's service
+
+    expect(result.getDate()).toBe(27); // Maps to 01:30 on 27th (yesterday's 25:30)
+    expect(result.getHours()).toBe(1);
+    expect(result.getMinutes()).toBe(30);
+  });
+
+  it("should handle 24:00:00 correctly when current time is after midnight", () => {
+    const referenceDate = new Date("2026-01-27T00:30:00"); // 00:30
+    const result = gtfsTimeToActualDate("24:00:00", referenceDate); // Midnight from yesterday's service
+
+    expect(result.getDate()).toBe(27); // Maps to midnight on 27th
+    expect(result.getHours()).toBe(0);
+    expect(result.getMinutes()).toBe(0);
+  });
+
+  it("should not use previous day logic after 03:00", () => {
+    const referenceDate = new Date("2026-01-27T04:00:00"); // 04:00
+    const result = gtfsTimeToActualDate("25:30:00", referenceDate);
+
+    expect(result.getDate()).toBe(28); // Maps to next day (today's 25:30 = tomorrow 01:30)
+    expect(result.getHours()).toBe(1);
   });
 });
