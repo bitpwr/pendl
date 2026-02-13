@@ -116,7 +116,7 @@ function StopGroupCard({ group }: StopGroupCardProps) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="divide-y">
-          {group.departures.slice(0, 5).map((departure, index) => (
+          {group.departures.slice(0, 6).map((departure, index) => (
             <DepartureRow
               key={`${departure.tripId}-${departure.scheduledDeparture}-${index}`}
               departure={departure}
