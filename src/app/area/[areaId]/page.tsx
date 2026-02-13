@@ -78,10 +78,10 @@ export default function AreaPage() {
               )}
             />
           </Button>
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Map className="mr-2 h-4 w-4" />
             Visa på karta
-          </Button>
+          </Button> */}
         </div>
       </div>
 
