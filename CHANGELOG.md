@@ -1,3 +1,28 @@
+## [0.2.0] - 2026-02-14
+
+### ✨ Features
+
+- enable show and fly to users position (`||b943074`)
+- show destination on trip page (`||dbc5ea8`)
+- trip map shows icon and less padding (`||dbea6d4`)
+- main map shows icons and can select different type (`||29e5938`)
+
+### 🐛 Bug Fixes
+
+- handle departures after 24:00 (`||b5e0d85`)
+- show max 6 departures per stop (`||0f68f95`)
+- correct lint errors (`||8824d1b`)
+- hide "show on map" for now (`||d812898`)
+- current stop and times corrected for trip page (`||394e973`)
+
+### 🧹 Maintenance
+
+- remove next.js icons (`||eb09e91`)
+
+### 📝 Other Changes
+
+- doc: chores called maintenance in changelog (`||6485ca3`)
+
 ## [0.1.2] - 2026-02-13
 
 ### 🐛 Bug Fixes
