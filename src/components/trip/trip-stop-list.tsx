@@ -43,18 +43,34 @@ export function TripStopList({ stops, routeType }: TripStopListProps) {
   const currentSeconds = getCurrentGtfsSeconds();
 
   // Helper to format GTFS time (HH:MM:SS) to display (HH:MM)
-  const formatTime = (gtfsTime: string) => {
+  const formatGtfsTime = (gtfsTime: string) => {
     const parsed = parseGtfsTime(gtfsTime);
     const h = parsed.hours.toString().padStart(2, "0");
     const m = parsed.minutes.toString().padStart(2, "0");
     return `${h}:${m}`;
   };
 
+  // Get actual departure time considering realtime updates
+  const formatDepartureTime = (stop: TripStop) => {
+    if (stop.delaySeconds && stop.delaySeconds !== 0) {
+      // Add delay to scheduled time
+      const parsed = parseGtfsTime(stop.departureTime);
+      const delayedSeconds = parsed.totalSeconds + stop.delaySeconds;
+      const h = Math.floor(delayedSeconds / 3600) % 24;
+      const m = Math.floor((delayedSeconds % 3600) / 60);
+      return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+    }
+
+    // Fall back to scheduled time
+    return formatGtfsTime(stop.departureTime);
+  };
+
   // Find the index of the next stop (first stop that hasn't passed yet)
   const nextStopIndex = stops.findIndex((stop) => {
     return (
-      parseGtfsTime(stop.departureTime).totalSeconds >= currentSeconds &&
-      !stop.isSkipped
+      parseGtfsTime(stop.departureTime).totalSeconds +
+        (stop.delaySeconds ?? 0) >=
+        currentSeconds && !stop.isSkipped
     );
   });
 
@@ -144,7 +160,7 @@ export function TripStopList({ stops, routeType }: TripStopListProps) {
                           "text-red-600",
                       )}
                     >
-                      {formatTime(stop.departureTime)}
+                      {formatDepartureTime(stop)}
                     </p>
                     {stop.delaySeconds !== undefined &&
                       stop.delaySeconds > 0 && (
