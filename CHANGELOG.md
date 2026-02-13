@@ -1,3 +1,15 @@
+## [0.1.2] - 2026-02-13
+
+### 🐛 Bug Fixes
+
+- remove unused fields in database (`||f2ff1a6`)
+- add memory efficient import script (`||08e630b`)
+- adjust docker compose for production (`||e0ec9d5`)
+
+### 🔧 CI/CD
+
+- changelog groups commits by type (`||1aef464`)
+
 ## [0.1.1] - 2026-02-11
 
 - ci: add job to push docker and make GitHub release (46aa4e7)
