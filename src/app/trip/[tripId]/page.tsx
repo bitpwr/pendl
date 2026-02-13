@@ -155,7 +155,7 @@ export default function TripPage() {
             routeType={data.trip.routeType}
             size="lg"
           />
-          <h1 className="text-xl font-bold">{data.trip.headsign}</h1>
+          <h1 className="text-xl font-bold">{data.stops.at(-1)?.stopName}</h1>
         </div>
         <Button
           variant="ghost"
