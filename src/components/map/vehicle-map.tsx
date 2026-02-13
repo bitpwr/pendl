@@ -302,7 +302,7 @@ interface VehicleMarkerProps {
 }
 
 function VehicleMarker({ vehicle }: VehicleMarkerProps) {
-  const [L, setL] = useState<any>(null);
+  const [L, setL] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
     // Import Leaflet only on client side

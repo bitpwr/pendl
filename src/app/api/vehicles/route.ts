@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAllVehiclePositions } from "@/lib/redis/realtime";
 import { query } from "@/lib/db";
 import type { Vehicle } from "@/types/api";
-import { toRouteType, RouteType } from "@/types/gtfs";
+import { toRouteType } from "@/types/gtfs";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;

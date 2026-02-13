@@ -47,7 +47,7 @@ export function createVehicleArrowIcon(
  * @returns Leaflet DivIcon
  */
 export function createVehicleLeafletIcon(
-  L: any,
+  L: typeof import("leaflet"),
   routeType: RouteType,
   bearing: number = 0,
   size: number = 32,

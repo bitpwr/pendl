@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
-import { Star, ArrowLeft, Map } from "lucide-react";
+import { Star, ArrowLeft } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { AreaDepartureResponse } from "@/types/api";

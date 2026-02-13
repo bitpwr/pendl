@@ -117,7 +117,7 @@ export function gtfsTimeToActualDate(
   const currentHour = referenceDate.getHours();
 
   // Determine the service date
-  let serviceDate = new Date(referenceDate);
+  const serviceDate = new Date(referenceDate);
 
   // If we're in early morning (00:00-03:00) and the GTFS time is >= 24:00,
   // this trip belongs to yesterday's service
