@@ -1,41 +1,46 @@
 # Pendl
 
-Your personal pendl guide
+Pendl is a transit timetable web app that uses GTFS static and realtime data. It provides departure information, stop search, and realtime updates.
 
-## Pages
+## Local setup
 
-- / - Home with search and favorites
-- /favoriter - Favorites list
-- /area/[areaId] - Departure board
-- /map - Vehicle map
+1. Create `.env.development` from `.env.example` and fill in values.
+2. Start services:
 
-## Scripts
+   ```sh
+   ./scripts/dc-dev.sh up
+   ```
 
-- `npm run dev` - Development server
-- `npm run build` - Production build
-- `npm run test:run` - Run tests
-- `npm run gtfs:import` - Import GTFS static data (4GB heap limit)
-- `npm run gtfs:import:streaming` - Memory-efficient streaming import (recommended for large datasets)
-- `npm run gtfs:realtime` - Start realtime worker
+3. Import static GTFS:
 
-**Note**: If you get "JavaScript heap out of memory" errors during import, use the streaming version or see [docs/GTFS_IMPORT_MEMORY.md](docs/GTFS_IMPORT_MEMORY.md) for solutions.
+   ```sh
+   npm run gtfs:import
+   ```
 
-To get started with real data:
+4. Start app and realtime worker in separate terminals:
 
-- Get API keys from Trafiklab
-- Set environment variables for GTFS URLs
-- Run `docker compose up -d` to start database
-- Run `npm run gtfs:import` to import data
-- Run `npm run gtfs:realtime` in background
-- Run `npm run dev` to start the app
+   ```sh
+   npm run dev
+   npm run gtfs:realtime
+   ```
+
+## Quality checks
+
+Before committing:
+
+```sh
+npm run lint
+npm test
+npm run format
+```
 
 ## Production
 
 Get these files and rename them
 
-- docker-compose.prod.yml -> docker-compose.yml
-- init-db.sql -> move to scri
-- .env.production -> .env
+- `docker-compose.prod.yml` -> `docker-compose.yml`
+- `init-db.sql` -> move to `scripts/init-db.sql`
+- `.env.examples` -> `.env` and adjust values
 
 Either export the port from the pendl-app service or add a docker network to you forwarding proxy.
 
@@ -47,7 +52,7 @@ Run
 docker compose up -d
 ```
 
-With a cronjob once a week
+Import static data once and call from a cronjob once a week.
 
 ```sh
 docker compose run --rm gtfs-import

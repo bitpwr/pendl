@@ -101,17 +101,17 @@ export type AgencyId = (typeof INCLUDED_AGENCY_IDS)[number];
 - **Framework**: Next.js 16 (App Router)
 - **Database**: PostgreSQL 16 with PostGIS extension
 - **Cache**: Redis 7+
-- **GTFS Parsing**: `gtfs-realtime-bindings` for protobuf, custom CSV parser for static
+- **GTFS Parsing**: `protobufjs` for GTFS-realtime protobuf + custom CSV parser for static
 - **Scheduler**: Node-cron or BullMQ for worker scheduling
 
 ### Frontend
 
-- **Framework**: Next.js 16 with React 20
+- **Framework**: Next.js 16 with React 19
 - **Styling**: Tailwind CSS 4
 - **UI Components**: shadcn/ui
 - **Maps**: Leaflet with react-leaflet wrapper (OpenStreetMap tiles)
-- **State Management**: TanStack Query (React Query) for server state
-- **Real-time Updates**: Server-Sent Events (SSE) or polling
+- **State Management**: React hooks + API polling
+- **Real-time Updates**: Polling
 - **Favorites Storage**: localStorage (no backend required)
 
 ### Infrastructure
@@ -149,7 +149,7 @@ CREATE TABLE stops (
     stop_lat DOUBLE PRECISION NOT NULL,
     stop_lon DOUBLE PRECISION NOT NULL,
     location_type INTEGER DEFAULT 0,
-    parent_station TEXT REFERENCES stops(stop_id),
+    parent_station TEXT,
     platform_code TEXT,
     geom GEOMETRY(Point, 4326) GENERATED ALWAYS AS (
         ST_SetSRID(ST_MakePoint(stop_lon, stop_lat), 4326)
@@ -166,10 +166,7 @@ CREATE TABLE routes (
     route_short_name TEXT,
     route_long_name TEXT,
     route_desc TEXT,
-    route_type INTEGER NOT NULL,
-    route_color TEXT,
-    route_text_color TEXT,
-    route_sort_order INTEGER
+    route_type INTEGER NOT NULL
 );
 
 -- Calendar (service patterns)
@@ -202,10 +199,7 @@ CREATE TABLE trips (
     trip_headsign TEXT,
     trip_short_name TEXT,
     direction_id INTEGER,
-    block_id TEXT,
-    shape_id TEXT,
-    wheelchair_accessible INTEGER,
-    bikes_allowed INTEGER
+    shape_id TEXT
 );
 
 CREATE INDEX idx_trips_route ON trips(route_id);
@@ -353,7 +347,6 @@ The key insight is that **static data provides the schedule, realtime data provi
      t.trip_headsign,
      r.route_id,
      r.route_short_name,
-     r.route_color,
      r.route_type
    FROM stop_times st
    JOIN trips t ON st.trip_id = t.trip_id
@@ -371,6 +364,7 @@ The key insight is that **static data provides the schedule, realtime data provi
 4. Merge the data:
 
    scheduledDeparture + delaySeconds = predictedDeparture
+  routeColor = routeTypeColor(routeType)
 
    For each departure:
    - If realtime exists: use predicted time, mark as "realtime"
@@ -448,7 +442,7 @@ function parseGtfsTime(timeStr: string): {
 Runs weekly (e.g., Sunday 3:00 AM) to fetch and update static schedule data.
 
 ```typescript
-// /workers/gtfs-static-worker.ts
+// scripts/import-gtfs.ts
 
 interface GTFSStaticWorkerConfig {
   gtfsUrl: string; // URL to download GTFS .zip
@@ -516,9 +510,7 @@ async function runStaticWorker(config: GTFSStaticWorkerConfig): Promise<void> {
 Runs every 10 seconds to fetch and process realtime updates.
 
 ```typescript
-// /workers/gtfs-realtime-worker.ts
-
-import GtfsRealtimeBindings from "gtfs-realtime-bindings";
+// scripts/realtime-worker.ts
 
 interface GTFSRealtimeWorkerConfig {
   tripUpdatesUrl: string;
@@ -675,7 +667,12 @@ setInterval(() => runRealtimeWorker(config).catch(console.error), 10_000);
 /api/stops
   GET /api/stops/search?q=central     - Text search for stops
   GET /api/stops/nearby?lat=&lon=&r=  - Geo search (radius in meters)
-  GET /api/stops/[stopId]             - Get stop details
+  POST /api/stops/batch               - Fetch multiple stops by ID
+
+/api/areas
+  GET /api/areas/search?q=central     - Text search for station areas
+  GET /api/areas/nearby?lat=&lon=&r=  - Geo search for nearby areas
+  GET /api/areas/[areaId]             - Area details and grouped departures
 
 /api/departures
   GET /api/departures/[stopId]        - Get realtime departures
@@ -684,21 +681,10 @@ setInterval(() => runRealtimeWorker(config).catch(console.error), 10_000);
       - timespan: number (minutes, default 120)
 
 /api/vehicles
-  GET /api/vehicles/by-stop/[stopId]  - Get vehicles for trips serving this stop
-  GET /api/vehicles/by-trip/[tripId]  - Get vehicle for a specific trip
-  GET /api/vehicles/by-route/[routeId] - Get all vehicles on a route
+  GET /api/vehicles                    - Get active vehicle positions
 
 /api/trips
-  GET /api/trips/[tripId]             - Get trip details with all stops
-  GET /api/trips/[tripId]/shape       - Get trip shape as GeoJSON
-
-/api/routes
-  GET /api/routes                     - List all routes
-  GET /api/routes/[routeId]           - Get route details
-
-/api/alerts
-  GET /api/alerts/by-stop/[stopId]    - Get alerts affecting a stop
-  GET /api/alerts/by-route/[routeId]  - Get alerts for a route
+  GET /api/trips/[tripId]             - Get trip details with all stops and shape
 ```
 
 ### Response Types
@@ -717,14 +703,12 @@ interface Departure {
   tripId: string;
   routeId: string;
   routeShortName: string;
-  routeColor: string;
   routeType: RouteType;
   headsign: string;
   scheduledDeparture: string; // ISO datetime
-  predictedDeparture?: string; // ISO datetime (if realtime available)
-  delayMinutes?: number;
-  status: "on-time" | "delayed" | "early" | "cancelled" | "scheduled";
-  isRealtime: boolean;
+  realtimeDeparture?: string; // ISO datetime (if realtime available)
+  delaySeconds?: number;
+  isCancelled?: boolean;
   platform?: string;
   vehicleId?: string;
   alerts?: AlertSummary[];
@@ -740,7 +724,7 @@ interface Vehicle {
   tripId: string;
   routeId: string;
   routeShortName: string;
-  routeColor: string;
+  routeType: RouteType;
   headsign: string;
   latitude: number;
   longitude: number;
@@ -761,8 +745,9 @@ interface StopSearchResult {
   stopCode?: string;
   latitude: number;
   longitude: number;
+  platformCode?: string;
   distance?: number; // For nearby search
-  routes: RouteSummary[]; // Routes serving this stop
+  routes?: RouteSummary[]; // Routes serving this stop
 }
 ```
 
@@ -772,22 +757,23 @@ interface StopSearchResult {
 
 ```
 pendl/
-├── .env.local                    # Environment variables
+├── .env.development              # Development environment variables
 ├── .env.example                  # Example env file
-├── docker-compose.yml            # PostgreSQL, Redis, and workers
+├── docker-compose.dev.yml        # Local PostgreSQL + Redis
+├── docker-compose.prod.yml       # Production stack
 ├── package.json
 ├── tsconfig.json
-├── tailwind.config.ts
+├── postcss.config.mjs
 ├── next.config.ts
 ├── components.json               # shadcn/ui config
-│
-├── prisma/                       # Database schema (alternative to raw SQL)
-│   └── schema.prisma
 │
 ├── src/
 │   ├── app/                      # Next.js App Router
 │   │   ├── layout.tsx            # Root layout
-│   │   ├── page.tsx              # Home page (stop search + map)
+│   │   ├── page.tsx              # Home page
+│   │   ├── area/[areaId]/page.tsx
+│   │   ├── favoriter/page.tsx
+│   │   ├── map/page.tsx
 │   │   ├── stop/
 │   │   │   └── [stopId]/
 │   │   │       └── page.tsx      # Departure board for stop
@@ -798,52 +784,41 @@ pendl/
 │   │       ├── stops/
 │   │       │   ├── search/route.ts
 │   │       │   ├── nearby/route.ts
-│   │       │   └── [stopId]/route.ts
+│   │       │   └── batch/route.ts
+│   │       ├── areas/
+│   │       │   ├── search/route.ts
+│   │       │   ├── nearby/route.ts
+│   │       │   └── [areaId]/route.ts
 │   │       ├── departures/
 │   │       │   └── [stopId]/route.ts
-│   │       ├── vehicles/
-│   │       │   ├── by-stop/[stopId]/route.ts
-│   │       │   ├── by-trip/[tripId]/route.ts
-│   │       │   └── by-route/[routeId]/route.ts
+│   │       ├── vehicles/route.ts
 │   │       ├── trips/
 │   │       │   └── [tripId]/
-│   │       │       ├── route.ts
-│   │       │       └── shape/route.ts
-│   │       └── alerts/
-│   │           └── route.ts
+│   │       │       └── route.ts
 │   │
 │   ├── components/
-│   │   ├── ui/                   # shadcn/ui components
-│   │   │   ├── button.tsx
-│   │   │   ├── card.tsx
-│   │   │   ├── input.tsx
-│   │   │   ├── badge.tsx
-│   │   │   └── ...
 │   │   ├── layout/
-│   │   │   ├── header.tsx
-│   │   │   ├── footer.tsx
-│   │   │   └── mobile-nav.tsx
+│   │   │   └── header.tsx
 │   │   ├── search/
 │   │   │   ├── stop-search.tsx
 │   │   │   ├── search-results.tsx
-│   │   │   └── nearby-button.tsx
+│   │   │   └── area-search-results.tsx
 │   │   ├── favorites/
-│   │   │   ├── favorite-button.tsx
 │   │   │   └── favorites-list.tsx
 │   │   ├── departures/
 │   │   │   ├── departure-board.tsx
 │   │   │   ├── departure-row.tsx
 │   │   │   ├── departure-time.tsx
 │   │   │   ├── route-badge.tsx
-│   │   │   └── delay-indicator.tsx
+│   │   │   └── area-departure-board.tsx
 │   │   ├── map/
-│   │   │   ├── transit-map.tsx
-│   │   │   ├── vehicle-marker.tsx
-│   │   │   ├── stop-marker.tsx
-│   │   │   └── route-line.tsx
-│   │   └── alerts/
-│   │       ├── alert-banner.tsx
-│   │       └── alert-card.tsx
+│   │   │   ├── vehicle-map.tsx
+│   │   │   └── vehicle-arrow-icon.ts
+│   │   ├── trip/
+│   │   │   ├── trip-map.tsx
+│   │   │   └── trip-stop-list.tsx
+│   │   └── ui/
+│   │       └── ...
 │   │
 │   ├── lib/
 │   │   ├── config/
@@ -851,28 +826,18 @@ pendl/
 │   │   ├── db/
 │   │   │   ├── index.ts          # Database client (pg Pool)
 │   │   │   ├── queries/
-│   │   │   │   ├── stops.ts
-│   │   │   │   ├── departures.ts
-│   │   │   │   ├── trips.ts
-│   │   │   │   └── routes.ts
-│   │   │   └── types.ts
+│   │   │   │   └── ...
 │   │   ├── redis/
 │   │   │   ├── index.ts          # Redis client
 │   │   │   ├── realtime.ts       # Realtime data access
-│   │   │   └── types.ts
 │   │   ├── gtfs/
 │   │   │   ├── service-day.ts    # Service day calculations
 │   │   │   ├── time-utils.ts     # GTFS time parsing
-│   │   │   └── merge-realtime.ts # Combine static + realtime
-│   │   ├── geo/
-│   │   │   └── distance.ts       # Geo calculations
+│   │   │   ├── importer.ts
+│   │   │   └── realtime-proto.ts
 │   │   └── utils.ts
 │   │
 │   ├── hooks/
-│   │   ├── use-departures.ts     # React Query hook for departures
-│   │   ├── use-vehicles.ts       # React Query hook for vehicles
-│   │   ├── use-location.ts       # Geolocation hook
-│   │   ├── use-stop-search.ts    # Search with debounce
 │   │   └── use-favorites.ts      # localStorage favorites management
 │   │
 │   └── types/
@@ -880,26 +845,13 @@ pendl/
 │       ├── api.ts                # API response types
 │       └── realtime.ts           # Realtime data types
 │
-├── workers/
-│   ├── gtfs-static/
-│   │   ├── index.ts              # Worker entry point
-│   │   ├── download.ts           # Download and extract GTFS
-│   │   ├── parse.ts              # Parse CSV files
-│   │   ├── validate.ts           # Data validation
-│   │   └── import.ts             # Database import
-│   └── gtfs-realtime/
-│       ├── index.ts              # Worker entry point
-│       ├── fetch.ts              # Fetch GTFS-RT feeds
-│       ├── process.ts            # Process protobuf data
-│       └── store.ts              # Store in Redis
-│
 ├── scripts/
-│   ├── init-db.sql               # Database initialization
-│   ├── seed-dev.ts               # Development data seeding
-│   └── run-worker.ts             # Worker runner script
+│   ├── init-db.sql
+│   ├── import-gtfs.ts
+│   ├── import-gtfs-streaming.ts
+│   └── realtime-worker.ts
 │
 └── public/
-    ├── icons/                    # Transit mode icons
     └── ...
 ```
 
@@ -970,37 +922,27 @@ export function useFavorites() {
 ### State Management Strategy
 
 ```typescript
-// React Query configuration for realtime data
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5_000, // Data fresh for 5 seconds
-      refetchInterval: 10_000, // Refetch every 10 seconds
-      refetchOnWindowFocus: true,
-      retry: 2,
-    },
-  },
-});
-
-// Example departure hook
+// Polling strategy using React hooks
 function useDepartures(stopId: string) {
-  return useQuery({
-    queryKey: ["departures", stopId],
-    queryFn: () => fetchDepartures(stopId),
-    refetchInterval: 10_000, // Match realtime worker frequency
-    staleTime: 5_000,
-  });
-}
+  const [data, setData] = useState<DepartureResponse | null>(null);
 
-// Example vehicle positions hook
-function useVehicles(stopId: string) {
-  return useQuery({
-    queryKey: ["vehicles", "by-stop", stopId],
-    queryFn: () => fetchVehiclesByStop(stopId),
-    refetchInterval: 5_000, // More frequent for smooth map updates
-    staleTime: 3_000,
-  });
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const res = await fetch(`/api/departures/${stopId}`);
+      if (!cancelled) setData(await res.json());
+    }
+
+    load();
+    const timer = setInterval(load, 10_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [stopId]);
+
+  return data;
 }
 ```
 
@@ -1014,16 +956,15 @@ interface DepartureBoardProps {
 }
 
 function DepartureBoard({ stopId }: DepartureBoardProps) {
-  const { data, isLoading, error, dataUpdatedAt } = useDepartures(stopId);
+  const data = useDepartures(stopId);
 
-  if (isLoading) return <DepartureSkeleton />;
-  if (error) return <ErrorCard message="Could not load departures" />;
+  if (!data) return <DepartureSkeleton />;
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{data.stopName}</h2>
-        <UpdateIndicator lastUpdated={dataUpdatedAt} />
+        <h2 className="text-xl font-semibold">{data.stop.stopName}</h2>
+        <UpdateIndicator lastUpdated={data.updatedAt} />
       </div>
 
       <div className="divide-y divide-border rounded-lg border bg-card">
@@ -1040,15 +981,14 @@ function DepartureBoard({ stopId }: DepartureBoardProps) {
 
 function DepartureRow({ departure }: { departure: Departure }) {
   const timeUntil = useTimeUntil(
-    departure.predictedDeparture || departure.scheduledDeparture,
+    departure.realtimeDeparture || departure.scheduledDeparture,
   );
 
   return (
     <div className="flex items-center gap-4 p-4">
       <RouteBadge
         shortName={departure.routeShortName}
-        color={departure.routeColor}
-        type={departure.routeType}
+        routeType={departure.routeType}
       />
 
       <div className="flex-1 min-w-0">
@@ -1103,7 +1043,7 @@ function DepartureRow({ departure }: { departure: Departure }) {
 ## Environment Variables
 
 ```bash
-# .env.local
+# .env.development
 
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/pendl?schema=public
@@ -1117,7 +1057,8 @@ GTFS_STATIC_URL=https://opendata.samtrafiken.se/gtfs/sl/sl.zip
 GTFS_REALTIME_TRIP_UPDATES_URL=https://opendata.samtrafiken.se/gtfs-rt/sl/TripUpdates.pb
 GTFS_REALTIME_VEHICLE_POSITIONS_URL=https://opendata.samtrafiken.se/gtfs-rt/sl/VehiclePositions.pb
 GTFS_REALTIME_ALERTS_URL=https://opendata.samtrafiken.se/gtfs-rt/sl/ServiceAlerts.pb
-GTFS_API_KEY=your_trafiklab_api_key
+GTFS_REALTIME_KEY=your_trafiklab_realtime_key
+GTFS_STATIC_KEY=your_trafiklab_static_key
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -1132,96 +1073,52 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ## Docker Compose Setup (Self-Hosted)
 
 ```yaml
-# docker-compose.yml
-
-version: "3.8"
+# docker-compose.prod.yml (excerpt)
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+  pendl:
+    image: bitpwr/pendl:latest
     ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://pendl:${POSTGRES_PASSWORD}@postgres:5432/pendl
-      REDIS_URL: redis://redis:6379
-      GTFS_API_KEY: ${GTFS_API_KEY}
+      - "${APP_PORT:-3000}:3000"
     depends_on:
       - postgres
       - redis
-    restart: unless-stopped
 
   postgres:
     image: postgis/postgis:16-3.4
-    environment:
-      POSTGRES_USER: pendl
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: pendl
-    ports:
-      - "127.0.0.1:5432:5432" # Only expose locally
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - pendl_db:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6379:6379" # Only expose locally
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
-      - redis_data:/data
-    restart: unless-stopped
+      - pendl_redis:/data
 
-  gtfs-static-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    command: ["node", "dist/workers/gtfs-static/index.js"]
-    environment:
-      DATABASE_URL: postgresql://pendl:${POSTGRES_PASSWORD}@postgres:5432/pendl
-      GTFS_STATIC_URL: ${GTFS_STATIC_URL}
-      GTFS_API_KEY: ${GTFS_API_KEY}
-    depends_on:
-      - postgres
-    restart: unless-stopped
-
-  gtfs-realtime-worker:
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    command: ["node", "dist/workers/gtfs-realtime/index.js"]
-    environment:
-      DATABASE_URL: postgresql://pendl:${POSTGRES_PASSWORD}@postgres:5432/pendl
-      REDIS_URL: redis://redis:6379
-      GTFS_REALTIME_TRIP_UPDATES_URL: ${GTFS_REALTIME_TRIP_UPDATES_URL}
-      GTFS_REALTIME_VEHICLE_POSITIONS_URL: ${GTFS_REALTIME_VEHICLE_POSITIONS_URL}
-      GTFS_REALTIME_ALERTS_URL: ${GTFS_REALTIME_ALERTS_URL}
-      GTFS_API_KEY: ${GTFS_API_KEY}
+  realtime-worker:
+    image: bitpwr/pendl:latest
+    command: ["tsx", "scripts/realtime-worker.ts"]
     depends_on:
       - postgres
       - redis
-    restart: unless-stopped
+
+  gtfs-import:
+    image: bitpwr/pendl:latest
+    command: ["tsx", "scripts/import-gtfs-streaming.ts"]
+    profiles:
+      - import
 
 volumes:
-  postgres_data:
-  redis_data:
+  pendl_db:
+  pendl_redis:
 ```
 
 ---
 
-## Next Steps
+## Current Priorities
 
-1. **Initialize Next.js 16 project** with TypeScript, Tailwind, and shadcn/ui
-2. **Set up Docker Compose** with PostgreSQL/PostGIS and Redis
-3. **Create database schema** and initialization scripts
-4. **Build GTFS static worker** - download, parse, and import (filtered by INCLUDED_AGENCY_IDS)
-5. **Build GTFS realtime worker** - fetch, process, and store in Redis
-6. **Implement API routes** - stops, departures, vehicles
-7. **Build core UI components** - search, departure board, map (Leaflet)
-8. **Add favorites** - localStorage-based stop saving
-9. **Add geolocation features** - nearby stops
-10. **Swedish translations** - all UI text in Swedish
-11. **Polish UI/UX** - animations, loading states, error handling
-12. **Docker deployment** - build and deploy to self-hosted server
+1. Keep API documentation in sync with implemented routes under `src/app/api`
+2. Improve test coverage for API routes and GTFS utility functions
+3. Harden realtime fallback logic when Redis data is missing
+4. Continue performance tuning for stop departure queries and map rendering
