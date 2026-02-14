@@ -30,6 +30,29 @@ import { closeRedis } from "@/lib/redis";
 import { GTFS_CONFIG } from "@/lib/gtfs/config";
 
 let isRunning = true;
+let lastVehicleUpdateTime = 0;
+let lastTripAlertUpdateTime = 0;
+
+const NIGHT_THROTTLE_START_HOUR = 1;
+const NIGHT_THROTTLE_END_HOUR = 7;
+const NIGHT_UPDATE_INTERVAL_MS = 30 * 60 * 1000;
+
+function shouldRunUpdate(lastUpdateTime: number): boolean {
+  const now = Date.now();
+  const hour = new Date(now).getHours();
+  const isNightThrottleWindow =
+    hour >= NIGHT_THROTTLE_START_HOUR && hour < NIGHT_THROTTLE_END_HOUR;
+
+  const doUpdate = isNightThrottleWindow
+    ? now - lastUpdateTime >= NIGHT_UPDATE_INTERVAL_MS
+    : true;
+
+  if (doUpdate) {
+    lastUpdateTime = now;
+  }
+
+  return doUpdate;
+}
 
 async function updateVehiclePositions(): Promise<void> {
   const startTime = Date.now();
@@ -107,17 +130,19 @@ async function runWorker(): Promise<void> {
 
   // Initial updates
   await updateVehiclePositions();
+  lastVehicleUpdateTime = Date.now();
   await updateTripUpdatesAndAlerts();
+  lastTripAlertUpdateTime = Date.now();
 
   // Set up intervals
   const vehicleInterval = setInterval(async () => {
-    if (isRunning) {
+    if (isRunning && shouldRunUpdate(lastVehicleUpdateTime)) {
       await updateVehiclePositions();
     }
   }, GTFS_CONFIG.realtimeVehicleUpdateInterval);
 
   const tripAlertInterval = setInterval(async () => {
-    if (isRunning) {
+    if (isRunning && shouldRunUpdate(lastTripAlertUpdateTime)) {
       await updateTripUpdatesAndAlerts();
     }
   }, GTFS_CONFIG.realtimeTripUpdateInterval);
