@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Pendl is a transit timetable web app for Stockholm (SL) using GTFS static and realtime data. It provides departure information, stop search, and realtime updates.
+Pendl is a transit timetable web app that uses GTFS static and realtime data. It provides departure information, stop search, and realtime updates.
 
 ## Tech Stack
 
@@ -20,29 +20,26 @@ Pendl is a transit timetable web app for Stockholm (SL) using GTFS static and re
 
 ```bash
 # Start database and Redis
-docker compose up -d
+docker compose -f docker-compose.dev.yml --env-file .env.development up -d
 
 # Initialize database schema
 psql $DATABASE_URL -f scripts/init-db.sql
 
 # Import GTFS data (place GTFS files in data/gtfs/)
-npx tsx --env-file=.env scripts/import-gtfs.ts
+npm run gtfs:import
 
 # Start development server
 npm run dev
+
+# Start realtime worker (run in a separate terminal)
+npm run gtfs:realtime
 ```
 
 ### Environment Variables
 
-Create `.env` file:
+See .env.example for required variables. Create a `.env.development` file with your own values.
 
-```
-DATABASE_URL=postgresql://pendl:pendl@localhost:5432/pendl
-REDIS_URL=redis://localhost:6379
-SL_REALTIME_API_KEY=your_api_key_here
-```
-
-Use `--env-file=.env` flag when running tsx scripts.
+If you run tsx scripts directly instead of npm scripts, use `--env-file=.env.development`.
 
 ## Database Schema
 
@@ -91,7 +88,17 @@ npm run test:coverage
 
 Tests are located alongside source files with `.test.ts` or `.test.tsx` extensions.
 
-Current test coverage: 35 tests across utilities, hooks, and API routes.
+Run `npm test` and `npm run test:coverage` to see current test count and coverage.
+
+## Quality Checks
+
+Before committing, run:
+
+```bash
+npm run lint
+npm test
+npm run format
+```
 
 ## GTFS Import Notes
 
@@ -110,6 +117,11 @@ Current test coverage: 35 tests across utilities, hooks, and API routes.
 - `GET /api/departures/[stopId]` - Get departures for a stop
 - `GET /api/stops/search?q=` - Search stops by name
 - `GET /api/stops/nearby?lat=&lon=` - Find nearby stops
+- `POST /api/stops/batch` - Fetch multiple stops by ID
+- `GET /api/areas/search?q=` - Search station areas
+- `GET /api/areas/nearby?lat=&lon=` - Find nearby areas
+- `GET /api/areas/[areaId]` - Get area details and stops
+- `GET /api/trips/[tripId]` - Get trip details
 - `GET /api/vehicles` - Get realtime vehicle positions
 
 ## Key Components
@@ -125,16 +137,22 @@ Current test coverage: 35 tests across utilities, hooks, and API routes.
 src/
 ├── app/                    # Next.js App Router pages
 │   ├── api/               # API routes
+│   ├── area/[areaId]/     # Area departures page
+│   ├── favoriter/         # Favorites page
+│   ├── map/               # Map page
 │   ├── stop/[stopId]/     # Stop departure page
+│   ├── trip/[tripId]/     # Trip details page
 │   └── page.tsx           # Home page with search
 ├── components/            # React components
 │   ├── departures/        # Departure-related components
+│   ├── map/               # Map UI and vehicle rendering
 │   ├── search/            # Search components
+│   ├── trip/              # Trip visualization components
 │   └── ui/                # shadcn/ui components
 ├── lib/
 │   ├── db/               # Database connection and queries
 │   ├── gtfs/             # GTFS parsing and import
-│   └── realtime/         # Realtime data fetching
+│   └── redis/            # Redis cache and realtime persistence
 ├── hooks/                 # React hooks
 └── types/                 # TypeScript type definitions
 ```
@@ -144,3 +162,16 @@ src/
 1. **Import fails with foreign key error**: The parent_station FK was removed; if you see this, recreate the database
 2. **Column does not exist**: Make sure init-db.sql schema matches importer.ts columns
 3. **Materialized view error**: Views are refreshed outside transaction; ensure COMMIT happens first
+
+## Implementation Notes
+
+When implementing features, consider the following:
+
+- Follow the existing code style and patterns
+- Use TypeScript types for safety
+- For UI, use shadcn/ui components and Tailwind CSS
+- For database queries, use parameterized queries to prevent SQL injection
+- For realtime data, ensure efficient caching in Redis and avoid unnecessary updates during night hours (see `scripts/realtime-worker.ts` for throttling logic)
+- Handle service-day and timezone edge cases consistently for departures and trip timelines
+- When realtime data is missing, degrade gracefully to scheduled GTFS static data
+- Add tests for new features, especially for utility functions and API routes
