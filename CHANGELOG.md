@@ -1,3 +1,21 @@
+## [0.3.0] - 2026-02-14
+
+### ✨ Features
+
+- add night throttling of realtime data (`||8236184`)
+- indicate if realtime data is not available (`||073a298`)
+
+### 📦 Build System
+
+- exclude scrips in dockerignore (`||15e03b2`)
+- add scripts to build docker and run services (`||86c4359`)
+- verify docker builds when making a release (`||a1d4eb4`)
+- update copilot-instructions (`||8b64fa9`)
+
+### 📝 Other Changes
+
+- doc: update README and architecture (`||8c2e692`)
+
 ## [0.2.0] - 2026-02-14
 
 ### ✨ Features
