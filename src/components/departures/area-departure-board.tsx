@@ -64,6 +64,10 @@ export function AreaDepartureBoard({
     );
   }
 
+  const hasRealtimePositions = data.groups.some((group) =>
+    group.departures.some((departure) => !!departure.realtimeDeparture),
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -88,6 +92,16 @@ export function AreaDepartureBoard({
           </Button>
         )}
       </div>
+
+      {!hasRealtimePositions && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          Avvikelser från tidtabellen inte tillgängliga
+        </div>
+      )}
 
       {data.groups.map((group) => (
         <StopGroupCard key={group.stopId} group={group} />

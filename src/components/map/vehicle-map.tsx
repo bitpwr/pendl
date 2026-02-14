@@ -158,11 +158,11 @@ export function VehicleMap({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">
             Fordon i realtid
-            {vehicles.length > 0 && (
-              <span className="ml-2 text-sm font-normal text-muted-foreground">
-                ({vehicles.length} fordon)
-              </span>
-            )}
+            <span className="ml-2 text-sm font-normal text-muted-foreground">
+              {vehicles.length > 0
+                ? `(${vehicles.length} fordon)`
+                : "(Positioner inte tillgängliga)"}
+            </span>
           </CardTitle>
           <div className="flex items-center gap-2">
             {lastUpdated && (

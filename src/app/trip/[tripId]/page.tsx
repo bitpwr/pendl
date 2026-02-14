@@ -167,15 +167,23 @@ export default function TripPage() {
         </Button>
       </div>
 
-      {data.vehicle && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </span>
-          Realtidsposition tillgänglig
-        </div>
-      )}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <span className="relative flex h-2 w-2">
+          <span
+            className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+              data.vehicle ? "animate-ping bg-green-400" : "bg-red-400"
+            }`}
+          ></span>
+          <span
+            className={`relative inline-flex rounded-full h-2 w-2 ${
+              data.vehicle ? "bg-green-500" : "bg-red-500"
+            }`}
+          ></span>
+        </span>
+        {data.vehicle
+          ? "Realtidsposition tillgänglig"
+          : "Realtidsposition inte tillgänglig"}
+      </div>
 
       <TripMap
         shape={data.shape}
