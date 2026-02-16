@@ -13,9 +13,6 @@ import {
   storeVehiclePositions,
 } from "@/lib/redis/realtime";
 
-const NIGHT_THROTTLE_START_HOUR = 1;
-const NIGHT_THROTTLE_END_HOUR = 7;
-const NIGHT_UPDATE_INTERVAL_MS = 30 * 60 * 1000;
 const DEFAULT_ACTIVE_WINDOW_MS = 15 * 60 * 1000;
 
 type RealtimeWorkerState = {
@@ -68,16 +65,6 @@ function getActiveWindowMs(): number {
   }
 
   return DEFAULT_ACTIVE_WINDOW_MS;
-}
-
-function shouldRunUpdate(lastUpdateTime: number, now: number): boolean {
-  const hour = new Date(now).getHours();
-  const isNightThrottleWindow =
-    hour >= NIGHT_THROTTLE_START_HOUR && hour < NIGHT_THROTTLE_END_HOUR;
-
-  return isNightThrottleWindow
-    ? now - lastUpdateTime >= NIGHT_UPDATE_INTERVAL_MS
-    : true;
 }
 
 function hasRecentConsumerActivity(now: number, lastActivity: number): boolean {
@@ -136,8 +123,7 @@ async function runVehicleTick(force = false): Promise<void> {
   const now = Date.now();
   if (
     !force &&
-    (!hasRecentConsumerActivity(now, state.lastConsumerActivityTime) ||
-      !shouldRunUpdate(state.lastVehicleUpdateTime, now))
+    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
   ) {
     return;
   }
@@ -162,8 +148,7 @@ async function runTripAlertTick(force = false): Promise<void> {
   const now = Date.now();
   if (
     !force &&
-    (!hasRecentConsumerActivity(now, state.lastConsumerActivityTime) ||
-      !shouldRunUpdate(state.lastTripAlertUpdateTime, now))
+    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
   ) {
     return;
   }
