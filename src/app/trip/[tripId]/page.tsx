@@ -92,8 +92,8 @@ export default function TripPage() {
   useEffect(() => {
     fetchTrip();
 
-    // Refresh every 10 seconds for realtime updates
-    const interval = setInterval(fetchTrip, 10000);
+    // Refresh every 2 seconds for realtime updates
+    const interval = setInterval(fetchTrip, 2000);
     return () => clearInterval(interval);
   }, [fetchTrip]);
 

@@ -13,15 +13,15 @@ import {
   storeVehiclePositions,
 } from "@/lib/redis/realtime";
 
-const DEFAULT_ACTIVE_WINDOW_MS = 15 * 60 * 1000;
-
 type RealtimeWorkerState = {
   started: boolean;
   startupPromise: Promise<void> | null;
   vehicleInterval: NodeJS.Timeout | null;
   tripUpdateInterval: NodeJS.Timeout | null;
   serviceAlertInterval: NodeJS.Timeout | null;
-  lastConsumerActivityTime: number;
+  lastVehicleConsumerActivityTime: number;
+  lastTripUpdateConsumerActivityTime: number;
+  lastServiceAlertConsumerActivityTime: number;
   vehicleUpdateInProgress: boolean;
   tripUpdateInProgress: boolean;
   serviceAlertUpdateInProgress: boolean;
@@ -40,7 +40,9 @@ function getWorkerState(): RealtimeWorkerState {
       vehicleInterval: null,
       tripUpdateInterval: null,
       serviceAlertInterval: null,
-      lastConsumerActivityTime: 0,
+      lastVehicleConsumerActivityTime: 0,
+      lastTripUpdateConsumerActivityTime: 0,
+      lastServiceAlertConsumerActivityTime: 0,
       vehicleUpdateInProgress: false,
       tripUpdateInProgress: false,
       serviceAlertUpdateInProgress: false,
@@ -56,19 +58,6 @@ function hasConfiguredRealtimeFeed(): boolean {
     GTFS_CONFIG.realtimeUrls;
 
   return Boolean(tripUpdates || vehiclePositions || serviceAlerts);
-}
-
-function getActiveWindowMs(): number {
-  const value = Number(process.env.GTFS_REALTIME_ACTIVE_WINDOW_MS);
-  if (Number.isFinite(value) && value > 0) {
-    return value;
-  }
-
-  return DEFAULT_ACTIVE_WINDOW_MS;
-}
-
-function hasRecentConsumerActivity(now: number, lastActivity: number): boolean {
-  return now - lastActivity <= getActiveWindowMs();
 }
 
 async function updateVehiclePositions(now: number): Promise<void> {
@@ -129,10 +118,12 @@ async function runVehicleTick(force = false): Promise<void> {
     return;
   }
 
+  // skip if no vehicle activity the the last 2 periods
   const now = Date.now();
   if (
     !force &&
-    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
+    now - state.lastVehicleConsumerActivityTime >
+      GTFS_CONFIG.realtimeVehicleUpdateInterval * 2
   ) {
     return;
   }
@@ -153,11 +144,9 @@ async function runTripUpdateTick(force = false): Promise<void> {
     return;
   }
 
+  // skip if no trip activity the last 20 seconds
   const now = Date.now();
-  if (
-    !force &&
-    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
-  ) {
+  if (!force && now - state.lastTripUpdateConsumerActivityTime > 20000) {
     return;
   }
 
@@ -177,11 +166,9 @@ async function runServiceAlertTick(force = false): Promise<void> {
     return;
   }
 
+  // skip if no service alert activity the last 20 seconds
   const now = Date.now();
-  if (
-    !force &&
-    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
-  ) {
+  if (!force && now - state.lastServiceAlertConsumerActivityTime > 20000) {
     return;
   }
 
@@ -218,22 +205,11 @@ function startIntervals(): void {
 }
 
 /**
- * Ensures that realtime polling is running in-process.
+ * Ensures that realtime polling loops are running in-process.
  *
  * Call this from API routes that read realtime data.
  */
-export async function ensureRealtimeWorkerRunning(
-  source = "unknown",
-): Promise<void> {
-  if (process.env.NODE_ENV === "test") {
-    return;
-  }
-
-  const state = getWorkerState();
-  state.lastConsumerActivityTime = Date.now();
-
-  console.log(`user activity detected: ${source}`);
-
+async function ensureWorkerRunning(state: RealtimeWorkerState): Promise<void> {
   if (state.started) {
     return;
   }
@@ -255,7 +231,6 @@ export async function ensureRealtimeWorkerRunning(
 
   state.startupPromise = (async () => {
     console.log("=== GTFS Realtime Worker (in-app) ===");
-    console.log(`Triggered by: ${source}`);
     console.log(
       `Vehicle update interval: ${GTFS_CONFIG.realtimeVehicleUpdateInterval}ms`,
     );
@@ -265,9 +240,6 @@ export async function ensureRealtimeWorkerRunning(
     console.log(
       `Service alert update interval: ${GTFS_CONFIG.realtimeServiceAlertUpdateInterval}ms`,
     );
-    console.log(
-      `Active window: ${getActiveWindowMs()}ms since latest realtime API request`,
-    );
 
     await Promise.all([
       runVehicleTick(true),
@@ -276,7 +248,6 @@ export async function ensureRealtimeWorkerRunning(
     ]);
     startIntervals();
     state.started = true;
-
     console.log("Realtime worker started in backend process.");
   })()
     .catch((error) => {
@@ -288,4 +259,35 @@ export async function ensureRealtimeWorkerRunning(
     });
 
   await state.startupPromise;
+}
+
+export async function triggerVehiclePositions(): Promise<void> {
+  const state = getWorkerState();
+  // no need to force, checked often enough
+  state.lastVehicleConsumerActivityTime = Date.now();
+  await ensureWorkerRunning(state);
+}
+
+export async function triggerTripUpdates(): Promise<void> {
+  const state = getWorkerState();
+  const now = Date.now();
+  if (!state.started) {
+    await ensureWorkerRunning(state);
+  } else {
+    // force update if no activity the last update period
+    if (
+      now - state.lastTripUpdateConsumerActivityTime >
+      GTFS_CONFIG.realtimeTripUpdateInterval
+    ) {
+      console.log("Forcing trip update tick due to consumer activity");
+      await runTripUpdateTick(true);
+    }
+  }
+  state.lastTripUpdateConsumerActivityTime = now;
+}
+
+export async function triggerServiceAlerts(): Promise<void> {
+  const state = getWorkerState();
+  state.lastServiceAlertConsumerActivityTime = Date.now();
+  await ensureWorkerRunning(state);
 }

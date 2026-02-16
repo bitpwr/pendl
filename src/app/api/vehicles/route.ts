@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllVehiclePositions } from "@/lib/redis/realtime";
-import { ensureRealtimeWorkerRunning } from "@/lib/realtime/background-worker";
+import { triggerVehiclePositions } from "@/lib/realtime/background-worker";
 import { query } from "@/lib/db";
 import type { Vehicle } from "@/types/api";
 import { toRouteType } from "@/types/gtfs";
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   const routeTypeFilter = routeTypeParam ? parseInt(routeTypeParam, 10) : null;
 
   try {
-    await ensureRealtimeWorkerRunning("GET /api/vehicles");
+    await triggerVehiclePositions();
 
     // Get all vehicle positions
     const positions = await getAllVehiclePositions();
@@ -113,15 +113,15 @@ export async function GET(request: NextRequest) {
     const vehiclesBeforeFilter = allVehicles.filter(
       (v): v is Vehicle => v !== null,
     );
-    console.log(`${vehiclesBeforeFilter.length} vehicles with route data`);
+    // console.log(`${vehiclesBeforeFilter.length} vehicles with route data`);
 
     const vehicles = vehiclesBeforeFilter.filter(
       (v) => routeTypeFilter === null || v.routeType === routeTypeFilter,
     );
 
-    console.log(
-      `${vehicles.length} vehicles after routeType filter (filter: ${routeTypeFilter})`,
-    );
+    // console.log(
+    //   `${vehicles.length} vehicles after routeType filter (filter: ${routeTypeFilter})`,
+    // );
 
     return NextResponse.json({
       vehicles,

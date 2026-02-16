@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getScheduledDeparturesForStops } from "@/lib/db/queries/departures";
 import { getArea, getAreaStops } from "@/lib/db/queries/areas";
 import { getTripUpdates } from "@/lib/redis/realtime";
-import { ensureRealtimeWorkerRunning } from "@/lib/realtime/background-worker";
+import { triggerTripUpdates } from "@/lib/realtime/background-worker";
 import { gtfsTimeToActualDate } from "@/lib/gtfs/time-utils";
 import type { Departure } from "@/types/api";
 
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: Props) {
   const hoursAhead = parseInt(searchParams.get("hours") || "2", 10);
 
   try {
-    await ensureRealtimeWorkerRunning("GET /api/areas/[areaId]/departures");
+    await triggerTripUpdates();
 
     // Get the area information
     const area = await getArea(areaId);

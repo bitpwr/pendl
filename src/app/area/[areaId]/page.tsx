@@ -46,8 +46,8 @@ export default function AreaPage() {
   useEffect(() => {
     fetchDepartures();
 
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchDepartures, 10000);
+    // Auto-refresh every 15 seconds
+    const interval = setInterval(fetchDepartures, 15000);
     return () => clearInterval(interval);
   }, [fetchDepartures]);
 

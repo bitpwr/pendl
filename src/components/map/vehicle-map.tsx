@@ -92,8 +92,8 @@ export function VehicleMap({
   useEffect(() => {
     fetchVehicles();
 
-    // Auto-refresh every 10 seconds
-    const interval = setInterval(fetchVehicles, 10000);
+    // Auto-refresh every 2 seconds
+    const interval = setInterval(fetchVehicles, 2000);
     return () => clearInterval(interval);
   }, [fetchVehicles, selectedRouteType]);
 
