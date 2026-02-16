@@ -22,6 +22,8 @@ export const GTFS_CONFIG = {
     Number(process.env.GTFS_VEHICLE_UPDATE_INTERVAL) || 10 * 1000, // 10 seconds (default)
   realtimeTripUpdateInterval:
     Number(process.env.GTFS_TRIP_UPDATE_INTERVAL) || 30 * 1000, // 30 seconds (default)
+  realtimeServiceAlertUpdateInterval:
+    Number(process.env.GTFS_SERVICE_ALERT_UPDATE_INTERVAL) || 30 * 1000, // 30 seconds (default)
 
   // Data directory for downloaded files
   dataDir: process.env.GTFS_DATA_DIR || "./data/gtfs",

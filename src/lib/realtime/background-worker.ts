@@ -19,12 +19,12 @@ type RealtimeWorkerState = {
   started: boolean;
   startupPromise: Promise<void> | null;
   vehicleInterval: NodeJS.Timeout | null;
-  tripAlertInterval: NodeJS.Timeout | null;
-  lastVehicleUpdateTime: number;
-  lastTripAlertUpdateTime: number;
+  tripUpdateInterval: NodeJS.Timeout | null;
+  serviceAlertInterval: NodeJS.Timeout | null;
   lastConsumerActivityTime: number;
   vehicleUpdateInProgress: boolean;
-  tripAlertUpdateInProgress: boolean;
+  tripUpdateInProgress: boolean;
+  serviceAlertUpdateInProgress: boolean;
   warnedAboutMissingFeeds: boolean;
 };
 
@@ -38,12 +38,12 @@ function getWorkerState(): RealtimeWorkerState {
       started: false,
       startupPromise: null,
       vehicleInterval: null,
-      tripAlertInterval: null,
-      lastVehicleUpdateTime: 0,
-      lastTripAlertUpdateTime: 0,
+      tripUpdateInterval: null,
+      serviceAlertInterval: null,
       lastConsumerActivityTime: 0,
       vehicleUpdateInProgress: false,
-      tripAlertUpdateInProgress: false,
+      tripUpdateInProgress: false,
+      serviceAlertUpdateInProgress: false,
       warnedAboutMissingFeeds: false,
     };
   }
@@ -80,6 +80,7 @@ async function updateVehiclePositions(now: number): Promise<void> {
   });
 
   await storeVehiclePositions(vehiclePositions);
+  await setLastRealtimeUpdate();
 
   const duration = Date.now() - startedAt;
   console.log(
@@ -87,30 +88,38 @@ async function updateVehiclePositions(now: number): Promise<void> {
   );
 }
 
-async function updateTripUpdatesAndAlerts(now: number): Promise<void> {
+async function updateTripUpdates(now: number): Promise<void> {
   const startedAt = now;
 
-  const [tripUpdates, serviceAlerts] = await Promise.all([
-    fetchTripUpdates().catch((err) => {
-      console.error("Failed to fetch trip updates:", err.message);
-      return [];
-    }),
-    fetchServiceAlerts().catch((err) => {
-      console.error("Failed to fetch service alerts:", err.message);
-      return [];
-    }),
-  ]);
+  const tripUpdates = await fetchTripUpdates().catch((err) => {
+    console.error("Failed to fetch trip updates:", err.message);
+    return [];
+  });
 
-  await Promise.all([
-    storeTripUpdates(tripUpdates),
-    storeServiceAlerts(serviceAlerts),
-  ]);
+  await storeTripUpdates(tripUpdates);
+  await setLastRealtimeUpdate();
+
+  const duration = Date.now() - startedAt;
+  console.log(
+    `[${new Date().toISOString()}] Updated trip updates: ${tripUpdates.length} entries (${duration}ms)`,
+  );
+}
+
+async function updateServiceAlerts(now: number): Promise<void> {
+  const startedAt = now;
+
+  const serviceAlerts = await fetchServiceAlerts().catch((err) => {
+    console.error("Failed to fetch service alerts:", err.message);
+    return [];
+  });
+
+  await storeServiceAlerts(serviceAlerts);
 
   await setLastRealtimeUpdate();
 
   const duration = Date.now() - startedAt;
   console.log(
-    `[${new Date().toISOString()}] Updated: ${tripUpdates.length} trip updates, ${serviceAlerts.length} alerts (${duration}ms)`,
+    `[${new Date().toISOString()}] Updated service alerts: ${serviceAlerts.length} entries (${duration}ms)`,
   );
 }
 
@@ -131,7 +140,6 @@ async function runVehicleTick(force = false): Promise<void> {
   state.vehicleUpdateInProgress = true;
   try {
     await updateVehiclePositions(now);
-    state.lastVehicleUpdateTime = now;
   } catch (error) {
     console.error("Error updating vehicle positions:", error);
   } finally {
@@ -139,9 +147,9 @@ async function runVehicleTick(force = false): Promise<void> {
   }
 }
 
-async function runTripAlertTick(force = false): Promise<void> {
+async function runTripUpdateTick(force = false): Promise<void> {
   const state = getWorkerState();
-  if (state.tripAlertUpdateInProgress) {
+  if (state.tripUpdateInProgress) {
     return;
   }
 
@@ -153,14 +161,37 @@ async function runTripAlertTick(force = false): Promise<void> {
     return;
   }
 
-  state.tripAlertUpdateInProgress = true;
+  state.tripUpdateInProgress = true;
   try {
-    await updateTripUpdatesAndAlerts(now);
-    state.lastTripAlertUpdateTime = now;
+    await updateTripUpdates(now);
   } catch (error) {
-    console.error("Error updating trip updates and alerts:", error);
+    console.error("Error updating trip updates:", error);
   } finally {
-    state.tripAlertUpdateInProgress = false;
+    state.tripUpdateInProgress = false;
+  }
+}
+
+async function runServiceAlertTick(force = false): Promise<void> {
+  const state = getWorkerState();
+  if (state.serviceAlertUpdateInProgress) {
+    return;
+  }
+
+  const now = Date.now();
+  if (
+    !force &&
+    !hasRecentConsumerActivity(now, state.lastConsumerActivityTime)
+  ) {
+    return;
+  }
+
+  state.serviceAlertUpdateInProgress = true;
+  try {
+    await updateServiceAlerts(now);
+  } catch (error) {
+    console.error("Error updating service alerts:", error);
+  } finally {
+    state.serviceAlertUpdateInProgress = false;
   }
 }
 
@@ -173,10 +204,16 @@ function startIntervals(): void {
     }, GTFS_CONFIG.realtimeVehicleUpdateInterval);
   }
 
-  if (!state.tripAlertInterval) {
-    state.tripAlertInterval = setInterval(() => {
-      void runTripAlertTick();
+  if (!state.tripUpdateInterval) {
+    state.tripUpdateInterval = setInterval(() => {
+      void runTripUpdateTick();
     }, GTFS_CONFIG.realtimeTripUpdateInterval);
+  }
+
+  if (!state.serviceAlertInterval) {
+    state.serviceAlertInterval = setInterval(() => {
+      void runServiceAlertTick();
+    }, GTFS_CONFIG.realtimeServiceAlertUpdateInterval);
   }
 }
 
@@ -223,13 +260,20 @@ export async function ensureRealtimeWorkerRunning(
       `Vehicle update interval: ${GTFS_CONFIG.realtimeVehicleUpdateInterval}ms`,
     );
     console.log(
-      `Trip/Alert update interval: ${GTFS_CONFIG.realtimeTripUpdateInterval}ms`,
+      `Trip update interval: ${GTFS_CONFIG.realtimeTripUpdateInterval}ms`,
+    );
+    console.log(
+      `Service alert update interval: ${GTFS_CONFIG.realtimeServiceAlertUpdateInterval}ms`,
     );
     console.log(
       `Active window: ${getActiveWindowMs()}ms since latest realtime API request`,
     );
 
-    await Promise.all([runVehicleTick(true), runTripAlertTick(true)]);
+    await Promise.all([
+      runVehicleTick(true),
+      runTripUpdateTick(true),
+      runServiceAlertTick(true),
+    ]);
     startIntervals();
     state.started = true;
 
