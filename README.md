@@ -17,12 +17,13 @@ Pendl is a transit timetable web app that uses GTFS static and realtime data. It
    npm run gtfs:import
    ```
 
-4. Start app and realtime worker in separate terminals:
+4. Start app:
 
    ```sh
    npm run dev
-   npm run gtfs:realtime
    ```
+
+Realtime polling runs inside the backend automatically when realtime API routes are requested.
 
 ## Quality checks
 

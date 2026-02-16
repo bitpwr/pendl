@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getScheduledDepartures } from "@/lib/db/queries/departures";
 import { getStop, getChildStops } from "@/lib/db/queries/stops";
 import { getTripUpdates } from "@/lib/redis/realtime";
+import { ensureRealtimeWorkerRunning } from "@/lib/realtime/background-worker";
 import { gtfsTimeToActualDate } from "@/lib/gtfs/time-utils";
 import type { Departure } from "@/types/api";
 
@@ -16,6 +17,8 @@ export async function GET(request: NextRequest, { params }: Props) {
   const hoursAhead = parseInt(searchParams.get("hours") || "2", 10);
 
   try {
+    await ensureRealtimeWorkerRunning("GET /api/departures/[stopId]");
+
     // Get the stop information
     const stop = await getStop(stopId);
     if (!stop) {

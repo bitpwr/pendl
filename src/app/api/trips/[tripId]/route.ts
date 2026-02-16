@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getTripUpdate, getVehicleByTrip } from "@/lib/redis/realtime";
+import { ensureRealtimeWorkerRunning } from "@/lib/realtime/background-worker";
 import { toRouteType } from "@/types/gtfs";
 import type { StopTimeUpdate } from "@/types/realtime";
 
@@ -39,6 +40,8 @@ export async function GET(
   const { tripId } = await params;
 
   try {
+    await ensureRealtimeWorkerRunning("GET /api/trips/[tripId]");
+
     // Get trip info
     const tripInfoSql = `
       SELECT

@@ -83,23 +83,6 @@ services:
     networks:
       - pendl_net
 
-  realtime-worker:
-    image: bitpwr/pendl:latest
-    container_name: pendl-realtime-worker
-    command: ["tsx", "scripts/realtime-worker.ts"]
-    environment:
-      <<: *app-env
-    volumes:
-      - pendl_script_modules:/app/node_modules
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - pendl_net
-
   # One-off service for GTFS import. Run with:
   #   docker compose -f docker-compose.prod.yml run --rm gtfs-import
   gtfs-import:

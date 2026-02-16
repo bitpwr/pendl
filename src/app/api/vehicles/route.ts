@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAllVehiclePositions } from "@/lib/redis/realtime";
+import { ensureRealtimeWorkerRunning } from "@/lib/realtime/background-worker";
 import { query } from "@/lib/db";
 import type { Vehicle } from "@/types/api";
 import { toRouteType } from "@/types/gtfs";
@@ -10,6 +11,8 @@ export async function GET(request: NextRequest) {
   const routeTypeFilter = routeTypeParam ? parseInt(routeTypeParam, 10) : null;
 
   try {
+    await ensureRealtimeWorkerRunning("GET /api/vehicles");
+
     // Get all vehicle positions
     const positions = await getAllVehiclePositions();
 

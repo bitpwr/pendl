@@ -3,6 +3,8 @@
 ## Project Overview
 
 Pendl is a transit timetable web app that uses GTFS static and realtime data. It provides departure information, stop search, and realtime updates.
+The app downloads static GTFS data with the script/import-gtfs.ts or script/import-gtfs-streaming.ts scripts. The static data is then imported into a PostgreSQL database, and served through a Next.js frontend.
+Realtime vehicle positions and trip updates are fetched by the background-worker and cached in Redis for fast access.
 
 ## Tech Stack
 
@@ -30,9 +32,6 @@ npm run gtfs:import
 
 # Start development server
 npm run dev
-
-# Start realtime worker (run in a separate terminal)
-npm run gtfs:realtime
 ```
 
 ### Environment Variables
@@ -171,7 +170,7 @@ When implementing features, consider the following:
 - Use TypeScript types for safety
 - For UI, use shadcn/ui components and Tailwind CSS
 - For database queries, use parameterized queries to prevent SQL injection
-- For realtime data, ensure efficient caching in Redis and avoid unnecessary updates during night hours (see `scripts/realtime-worker.ts` for throttling logic)
+- For realtime data, ensure efficient caching in Redis and avoid unnecessary updates during night hours (see `src/lib/realtime/background-worker.ts` for throttling logic)
 - Handle service-day and timezone edge cases consistently for departures and trip timelines
 - When realtime data is missing, degrade gracefully to scheduled GTFS static data
 - Add tests for new features, especially for utility functions and API routes
