@@ -1,3 +1,18 @@
+## [0.4.0] - 2026-02-19
+
+### ✨ Features
+
+- show trip for selected vehicle on map (`||7c49c7a`)
+- trip and vehicle colors based on route name (`||fc0ee8d`)
+- only update required realtime data when needed (`||b914eed`)
+- get realtime from backend instead of service (`||429259d`)
+
+### 🧹 Maintenance
+
+- use common route type names in map (`||d019691`)
+- use separate intervals for all realtime data (`||c0f1ed2`)
+- remove night throttling realtime download (`||bdc34a1`)
+
 ## [0.3.0] - 2026-02-14
 
 ### ✨ Features
