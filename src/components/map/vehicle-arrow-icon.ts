@@ -1,5 +1,3 @@
-import { routeTypeColor, type RouteType } from "@/types/gtfs";
-
 /**
  * Creates an arrow-shaped SVG icon for a vehicle marker
  * @param routeType - The type of route (bus, train, etc.)
@@ -8,12 +6,10 @@ import { routeTypeColor, type RouteType } from "@/types/gtfs";
  * @returns HTML string containing the SVG
  */
 export function createVehicleArrowIcon(
-  routeType: RouteType,
+  color: string,
   bearing: number = 0,
   size: number = 32,
 ): string {
-  const colors = routeTypeColor(routeType);
-
   // shadow is also translated, update to depend on bearing
 
   return `
@@ -25,12 +21,12 @@ export function createVehicleArrowIcon(
               transform="translate(2,2)" />
         <!-- Main arrow -->
         <path d="M 16 4 L 22 22 L 16 18 L 10 22 Z"
-              fill="${colors.bg}"
+              fill="${color}"
               stroke="#FFFFFF"
               stroke-width="1.5" />
         <!-- Inner highlight -->
         <path d="M 16 6 L 20 20 L 16 17 L 12 20 Z"
-              fill="${colors.bg}"
+              fill="${color}"
               opacity="0.8" />
       </g>
     </svg>
@@ -48,12 +44,11 @@ export function createVehicleArrowIcon(
  */
 export function createVehicleLeafletIcon(
   L: typeof import("leaflet"),
-  routeType: RouteType,
+  color: string,
   bearing: number = 0,
   size: number = 32,
 ) {
-  const html = createVehicleArrowIcon(routeType, bearing, size);
-
+  const html = createVehicleArrowIcon(color, bearing, size);
   return L.divIcon({
     html,
     className: "vehicle-marker",

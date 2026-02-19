@@ -198,6 +198,7 @@ export default function TripPage() {
         stops={data.stops}
         vehicle={data.vehicle}
         routeType={data.trip.routeType}
+        routeName={data.trip.routeShortName}
       />
     </div>
   );

@@ -41,19 +41,46 @@ export enum RouteType {
  * Get the display colors for a route type
  * Returns background and text colors for consistent styling
  */
-export function routeTypeColor(routeType: RouteType): {
+export function routeTypeColor(
+  routeType: RouteType,
+  route: number = 0,
+): {
   bg: string;
   text: string;
 } {
-  const colors: Record<RouteType, { bg: string; text: string }> = {
-    [RouteType.Tram]: { bg: "#6B7280", text: "#FFFFFF" },
-    [RouteType.Metro]: { bg: "#1F2937", text: "#FFFFFF" },
-    [RouteType.Train]: { bg: "#7C3AED", text: "#FFFFFF" },
-    [RouteType.Bus]: { bg: "#2563EB", text: "#FFFFFF" },
-    [RouteType.Ferry]: { bg: "#0891B2", text: "#FFFFFF" },
-    [RouteType.Taxi]: { bg: "#F59E0B", text: "#000000" },
-  };
-  return colors[routeType] ?? { bg: "#6B7280", text: "#FFFFFF" };
+  if (routeType === RouteType.Bus) {
+    return { bg: "#444455", text: "#FFFFFF" };
+  } else if (routeType === RouteType.Train) {
+    return { bg: "#F266A6", text: "#FFFFFF" };
+  } else if (routeType === RouteType.Metro) {
+    if (route === 10 || route === 11) {
+      return { bg: "#0089CA", text: "#FFFFFF" };
+    } else if (route === 13 || route === 14) {
+      return { bg: "#D71D24", text: "#FFFFFF" };
+    }
+    return { bg: "#17944D", text: "#FFFFFF" };
+  } else if (routeType === RouteType.Tram) {
+    if (route === 7) {
+      return { bg: "#878A83", text: "#FFFFFF" };
+    } else if (route === 12) {
+      return { bg: "#C0C0C0", text: "#FFFFFF" };
+    } else if (route === 21) {
+      return { bg: "#B4792B", text: "#FFFFFF" };
+    } else if (route === 30 || route === 31) {
+      return { bg: "#985141", text: "#FFFFFF" };
+    } else if (route === 25 || route === 26) {
+      return { bg: "#008F93", text: "#FFFFFF" };
+    } else if (route >= 27 && route <= 29) {
+      return { bg: "#9F599A", text: "#FFFFFF" };
+    }
+    return { bg: "#985141", text: "#FFFFFF" };
+  } else if (routeType === RouteType.Ferry) {
+    return { bg: "#0891B2", text: "#FFFFFF" };
+  } else if (routeType === RouteType.Taxi) {
+    return { bg: "#F59E0B", text: "#000000" };
+  }
+
+  return { bg: "#6B7280", text: "#FFFFFF" };
 }
 
 export function routeTypeName(routeType: RouteType): string {

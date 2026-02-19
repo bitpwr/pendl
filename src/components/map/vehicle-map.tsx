@@ -330,7 +330,10 @@ export function VehicleMap({
                 positions={tripShape}
                 color={
                   selectedVehicle
-                    ? routeTypeColor(selectedVehicle.routeType).bg
+                    ? routeTypeColor(
+                        selectedVehicle.routeType,
+                        parseInt(selectedVehicle.routeShortName),
+                      ).bg
                     : "#3B82F6"
                 }
                 weight={4}
@@ -391,10 +394,15 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
   // Get the color for this route type
   const bearing = vehicle.bearing ?? 0;
 
+  const color = routeTypeColor(
+    vehicle.routeType,
+    parseInt(vehicle.routeShortName),
+  ).bg;
+
   // Create custom arrow icon
   const icon = createVehicleLeafletIcon(
     L,
-    vehicle.routeType,
+    color,
     bearing,
     isSelected ? 48 : 32,
   );

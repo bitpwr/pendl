@@ -26,7 +26,10 @@ export function RouteBadge({
     lg: "h-5 w-5",
   };
 
-  const { bg: bgColor, text: txtColor } = routeTypeColor(routeType);
+  const { bg: bgColor, text: txtColor } = routeTypeColor(
+    routeType,
+    parseInt(shortName),
+  );
 
   return (
     <Badge
