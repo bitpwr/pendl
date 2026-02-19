@@ -208,11 +208,11 @@ export function VehicleMap({
   }
 
   const routeTypes = [
-    { type: RouteType.Metro, label: "Tunnelbana" },
-    { type: RouteType.Tram, label: "Spårvagn" },
-    { type: RouteType.Train, label: "Pendeltåg" },
-    { type: RouteType.Bus, label: "Buss" },
-    { type: RouteType.Ferry, label: "Båt" },
+    RouteType.Metro,
+    RouteType.Tram,
+    RouteType.Train,
+    RouteType.Bus,
+    RouteType.Ferry,
   ];
 
   return (
@@ -268,7 +268,7 @@ export function VehicleMap({
           >
             Alla
           </Button>
-          {routeTypes.map(({ type, label }) => {
+          {routeTypes.map((type) => {
             const colors = routeTypeColor(type);
             return (
               <Button
@@ -287,7 +287,7 @@ export function VehicleMap({
                     : undefined
                 }
               >
-                {label}
+                {routeTypeName(type)}
               </Button>
             );
           })}
