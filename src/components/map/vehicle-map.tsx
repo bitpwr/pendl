@@ -30,6 +30,10 @@ const CircleMarker = dynamic(
   () => import("react-leaflet").then((mod) => mod.CircleMarker),
   { ssr: false },
 );
+const Polyline = dynamic(
+  () => import("react-leaflet").then((mod) => mod.Polyline),
+  { ssr: false },
+);
 
 interface VehicleMapProps {
   center?: [number, number];
@@ -59,6 +63,8 @@ export function VehicleMap({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
+  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [tripShape, setTripShape] = useState<[number, number][]>([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -97,6 +103,16 @@ export function VehicleMap({
     return () => clearInterval(interval);
   }, [fetchVehicles, selectedRouteType]);
 
+  // Clear selected vehicle if it's no longer in the vehicles list
+  useEffect(() => {
+    if (
+      selectedVehicle &&
+      !vehicles.some((v) => v.vehicleId === selectedVehicle.vehicleId)
+    ) {
+      setSelectedVehicle(null);
+    }
+  }, [vehicles, selectedVehicle]);
+
   const handleLocateMe = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -118,13 +134,60 @@ export function VehicleMap({
     }
   };
 
+  // Fetch trip shape when a vehicle is selected
+  useEffect(() => {
+    if (!selectedVehicle) {
+      setTripShape([]);
+      return;
+    }
+
+    const fetchTripShape = async () => {
+      try {
+        const response = await fetch(`/api/trips/${selectedVehicle.tripId}`);
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (
+          data.shape &&
+          data.shape.coordinates &&
+          Array.isArray(data.shape.coordinates)
+        ) {
+          // Shape is GeoJSON format with [lon, lat] coordinates
+          setTripShape(
+            data.shape.coordinates.map((coord: [number, number]) => [
+              coord[1],
+              coord[0],
+            ]),
+          );
+        }
+      } catch (err) {
+        console.error("Failed to fetch trip shape:", err);
+      }
+    };
+
+    fetchTripShape();
+  }, [selectedVehicle]);
+
+  // Filter vehicles based on selection
+  const displayedVehicles = useMemo(() => {
+    if (selectedVehicle) {
+      return vehicles.filter((v) => v.vehicleId === selectedVehicle.vehicleId);
+    }
+    return vehicles;
+  }, [vehicles, selectedVehicle]);
+
   // Create vehicle markers only on client
   const vehicleMarkers = useMemo(() => {
     if (!isClient) return null;
-    return vehicles.map((vehicle) => (
-      <VehicleMarker key={vehicle.vehicleId} vehicle={vehicle} />
+    return displayedVehicles.map((vehicle) => (
+      <VehicleMarker
+        key={vehicle.vehicleId}
+        vehicle={vehicle}
+        onSelect={setSelectedVehicle}
+        isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
+      />
     ));
-  }, [vehicles, isClient]);
+  }, [displayedVehicles, isClient, selectedVehicle]);
 
   if (!isClient) {
     return <MapSkeleton height={height} />;
@@ -262,6 +325,18 @@ export function VehicleMap({
                 </Popup>
               </CircleMarker>
             )}
+            {tripShape.length > 0 && (
+              <Polyline
+                positions={tripShape}
+                color={
+                  selectedVehicle
+                    ? routeTypeColor(selectedVehicle.routeType).bg
+                    : "#3B82F6"
+                }
+                weight={4}
+                opacity={0.7}
+              />
+            )}
             {vehicleMarkers}
           </MapContainer>
         </div>
@@ -299,9 +374,11 @@ const MapUpdater = dynamic(
 
 interface VehicleMarkerProps {
   vehicle: Vehicle;
+  onSelect: (vehicle: Vehicle | null) => void;
+  isSelected: boolean;
 }
 
-function VehicleMarker({ vehicle }: VehicleMarkerProps) {
+function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
   const [L, setL] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
@@ -315,7 +392,12 @@ function VehicleMarker({ vehicle }: VehicleMarkerProps) {
   const bearing = vehicle.bearing ?? 0;
 
   // Create custom arrow icon
-  const icon = createVehicleLeafletIcon(L, vehicle.routeType, bearing);
+  const icon = createVehicleLeafletIcon(
+    L,
+    vehicle.routeType,
+    bearing,
+    isSelected ? 48 : 32,
+  );
 
   return (
     <>
@@ -325,7 +407,14 @@ function VehicleMarker({ vehicle }: VehicleMarkerProps) {
           border: none !important;
         }
       `}</style>
-      <Marker position={[vehicle.latitude, vehicle.longitude]} icon={icon}>
+      <Marker
+        position={[vehicle.latitude, vehicle.longitude]}
+        icon={icon}
+        eventHandlers={{
+          click: () => onSelect(vehicle),
+          popupclose: () => onSelect(null),
+        }}
+      >
         <Popup>
           <div className="text-sm">
             <p className="font-bold">
