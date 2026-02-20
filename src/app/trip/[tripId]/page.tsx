@@ -42,16 +42,17 @@ interface TripData {
     type: "LineString";
     coordinates: [number, number][];
   } | null;
-  vehicle: {
-    vehicleId: string;
-    latitude: number;
-    longitude: number;
-    bearing?: number;
-    currentStatus: string;
-    currentStopSequence?: number;
-    timestamp: number;
-  } | null;
   updatedAt: string;
+}
+
+interface TripVehicle {
+  vehicleId: string;
+  latitude: number;
+  longitude: number;
+  bearing?: number;
+  currentStatus: string;
+  currentStopSequence?: number;
+  timestamp: number;
 }
 
 export default function TripPage() {
@@ -60,6 +61,7 @@ export default function TripPage() {
   const tripId = params.tripId as string;
 
   const [data, setData] = useState<TripData | null>(null);
+  const [vehicle, setVehicle] = useState<TripVehicle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -84,6 +86,24 @@ export default function TripPage() {
     }
   }, [tripId]);
 
+  const fetchVehicle = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}/vehicle`,
+      );
+
+      if (!response.ok) {
+        throw new Error("Kunde inte hämta fordonsposition");
+      }
+
+      const vehicleData = await response.json();
+      setVehicle(vehicleData.vehicle ?? null);
+    } catch {
+      // Vehicle data is optional; fall back to no realtime position.
+      setVehicle(null);
+    }
+  }, [tripId]);
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -91,11 +111,18 @@ export default function TripPage() {
 
   useEffect(() => {
     fetchTrip();
+    fetchVehicle();
 
-    // Refresh every 2 seconds for realtime updates
-    const interval = setInterval(fetchTrip, 2000);
-    return () => clearInterval(interval);
-  }, [fetchTrip]);
+    // Refresh trip details less frequently.
+    const tripInterval = setInterval(fetchTrip, 15000);
+    // Refresh vehicle position frequently for smooth realtime movement.
+    const vehicleInterval = setInterval(fetchVehicle, 2000);
+
+    return () => {
+      clearInterval(tripInterval);
+      clearInterval(vehicleInterval);
+    };
+  }, [fetchTrip, fetchVehicle]);
 
   if (error) {
     return (
@@ -111,7 +138,14 @@ export default function TripPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center p-6">
             <p className="text-destructive mb-2">{error.message}</p>
-            <Button variant="outline" size="sm" onClick={fetchTrip}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                void fetchTrip();
+                void fetchVehicle();
+              }}
+            >
               <RefreshCw className="mr-2 h-4 w-4" />
               Försök igen
             </Button>
@@ -160,7 +194,10 @@ export default function TripPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={fetchTrip}
+          onClick={() => {
+            void fetchTrip();
+            void fetchVehicle();
+          }}
           disabled={isLoading}
         >
           <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
@@ -171,16 +208,16 @@ export default function TripPage() {
         <span className="relative flex h-2 w-2">
           <span
             className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
-              data.vehicle ? "animate-ping bg-green-400" : "bg-red-400"
+              vehicle ? "animate-ping bg-green-400" : "bg-red-400"
             }`}
           ></span>
           <span
             className={`relative inline-flex rounded-full h-2 w-2 ${
-              data.vehicle ? "bg-green-500" : "bg-red-500"
+              vehicle ? "bg-green-500" : "bg-red-500"
             }`}
           ></span>
         </span>
-        {data.vehicle
+        {vehicle
           ? "Realtidsposition tillgänglig"
           : "Realtidsposition inte tillgänglig"}
       </div>
@@ -188,7 +225,7 @@ export default function TripPage() {
       <TripMap
         shape={data.shape}
         stops={data.stops}
-        vehicle={data.vehicle}
+        vehicle={vehicle}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
         height="300px"
@@ -196,7 +233,7 @@ export default function TripPage() {
 
       <TripStopList
         stops={data.stops}
-        vehicle={data.vehicle}
+        vehicle={vehicle}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
       />

@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getTripUpdate, getVehicleByTrip } from "@/lib/redis/realtime";
-import {
-  triggerTripUpdates,
-  triggerVehiclePositions,
-} from "@/lib/realtime/background-worker";
+import { getTripUpdate } from "@/lib/redis/realtime";
+import { triggerTripUpdates } from "@/lib/realtime/background-worker";
 import { toRouteType } from "@/types/gtfs";
 import type { StopTimeUpdate } from "@/types/realtime";
 
@@ -43,7 +40,7 @@ export async function GET(
   const { tripId } = await params;
 
   try {
-    await Promise.all([triggerTripUpdates(), triggerVehiclePositions()]);
+    await triggerTripUpdates();
 
     // Get trip info
     const tripInfoSql = `
@@ -116,11 +113,8 @@ export async function GET(
       }
     }
 
-    // Get realtime data
-    const [tripUpdate, vehicle] = await Promise.all([
-      getTripUpdate(tripId),
-      getVehicleByTrip(tripId),
-    ]);
+    // Get realtime trip updates (delays/skips)
+    const tripUpdate = await getTripUpdate(tripId);
 
     // Merge realtime updates with stops
     const stopsWithRealtime = stops.map((stop) => {
@@ -161,17 +155,6 @@ export async function GET(
       },
       stops: stopsWithRealtime,
       shape,
-      vehicle: vehicle
-        ? {
-            vehicleId: vehicle.vehicleId,
-            latitude: vehicle.latitude,
-            longitude: vehicle.longitude,
-            bearing: vehicle.bearing,
-            currentStatus: vehicle.currentStatus,
-            currentStopSequence: vehicle.currentStopSequence,
-            timestamp: vehicle.timestamp,
-          }
-        : null,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
