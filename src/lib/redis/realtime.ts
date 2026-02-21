@@ -76,8 +76,26 @@ export async function storeVehiclePosition(
   vehicle: VehiclePosition,
 ): Promise<void> {
   const redis = getRedis();
-  const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
-  await redis.setex(key, REALTIME_TTL, JSON.stringify(vehicle));
+  const vehicleKey = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
+  const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
+
+  // Read previous value to clean stale trip->vehicle index if this vehicle
+  // switched trips.
+  const previousData = await redis.get(vehicleKey);
+  const previousVehicle = previousData
+    ? (JSON.parse(previousData) as VehiclePosition)
+    : null;
+
+  await redis.setex(vehicleKey, REALTIME_TTL, JSON.stringify(vehicle));
+  await redis.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
+
+  if (previousVehicle && previousVehicle.tripId !== vehicle.tripId) {
+    const oldTripKey = buildKey(
+      REDIS_KEYS.VEHICLE_BY_TRIP,
+      previousVehicle.tripId,
+    );
+    await redis.del(oldTripKey);
+  }
 
   // Also add to route set if route is known
   if (vehicle.routeId) {
@@ -103,7 +121,9 @@ export async function storeVehiclePositions(
 
   for (const vehicle of vehicles) {
     const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
+    const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
     pipeline.setex(key, REALTIME_TTL, JSON.stringify(vehicle));
+    pipeline.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
 
     if (vehicle.routeId) {
       if (!vehiclesByRoute.has(vehicle.routeId)) {
@@ -181,10 +201,31 @@ export async function getAllVehiclePositions(): Promise<VehiclePosition[]> {
 export async function getVehicleByTrip(
   tripId: string,
 ): Promise<VehiclePosition | null> {
-  // Since we index by vehicleId, we need to scan all vehicles
-  // In a production system, you'd want a tripId -> vehicleId index
+  const redis = getRedis();
+  const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, tripId);
+
+  // Fast path: O(1) tripId -> vehicleId lookup.
+  const vehicleId = await redis.get(tripKey);
+  if (vehicleId) {
+    const vehicle = await getVehiclePosition(vehicleId);
+
+    // Guard against stale index entries.
+    if (vehicle?.tripId === tripId) {
+      return vehicle;
+    }
+
+    await redis.del(tripKey);
+  }
+
+  // Fallback: scan all vehicles, then self-heal the index.
   const vehicles = await getAllVehiclePositions();
-  return vehicles.find((v) => v.tripId === tripId) || null;
+  const vehicle = vehicles.find((v) => v.tripId === tripId) || null;
+
+  if (vehicle) {
+    await redis.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
+  }
+
+  return vehicle;
 }
 
 /**
