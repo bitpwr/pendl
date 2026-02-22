@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DepartureBoard } from "@/components/departures/departure-board";
-import { Star, ArrowLeft, Map } from "lucide-react";
+import { Star, ArrowLeft } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { DepartureResponse } from "@/types/api";
@@ -78,10 +78,10 @@ export default function StopPage() {
               )}
             />
           </Button>
-          <Button variant="outline" size="sm">
+          {/* <Button variant="outline" size="sm">
             <Map className="mr-2 h-4 w-4" />
             Visa på karta
-          </Button>
+          </Button> */}
         </div>
       </div>
 
