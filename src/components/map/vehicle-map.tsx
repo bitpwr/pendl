@@ -41,6 +41,22 @@ interface VehicleMapProps {
   height?: string;
 }
 
+function vehicleType(routeType: RouteType | null): string {
+  switch (routeType) {
+    case RouteType.Metro:
+    case RouteType.Train:
+      return "tåg";
+    case RouteType.Bus:
+      return "bussar";
+    case RouteType.Tram:
+      return "spårvagnar";
+    case RouteType.Ferry:
+      return "båtar";
+    default:
+      return "fordon";
+  }
+}
+
 // Stockholm default center
 const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
 const DEFAULT_ZOOM = 10;
@@ -205,9 +221,9 @@ export function VehicleMap({
 
   const routeTypes = [
     RouteType.Metro,
-    RouteType.Tram,
     RouteType.Train,
     RouteType.Bus,
+    RouteType.Tram,
     RouteType.Ferry,
   ];
 
@@ -217,9 +233,8 @@ export function VehicleMap({
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg">
-              Fordon i realtid{" "}
               {vehicles.length > 0
-                ? `(${vehicles.length} fordon)`
+                ? `Visar ${vehicles.length} ${vehicleType(selectedRouteType)}`
                 : "Positioner inte tillgängliga"}
             </CardTitle>
             {lastUpdated && (
