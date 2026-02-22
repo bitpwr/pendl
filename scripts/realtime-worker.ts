@@ -67,7 +67,7 @@ async function updateVehiclePositions(): Promise<void> {
 
     const duration = Date.now() - startTime;
     console.log(
-      `[${new Date().toISOString()}] Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
+      `Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
     );
   } catch (error) {
     console.error("Error updating vehicle positions:", error);
@@ -100,7 +100,7 @@ async function updateTripUpdatesAndAlerts(): Promise<void> {
 
     const duration = Date.now() - startTime;
     console.log(
-      `[${new Date().toISOString()}] Updated: ${tripUpdates.length} trip updates, ${serviceAlerts.length} alerts (${duration}ms)`,
+      `Updated: ${tripUpdates.length} trip updates, ${serviceAlerts.length} alerts (${duration}ms)`,
     );
   } catch (error) {
     console.error("Error updating trip updates and alerts:", error);

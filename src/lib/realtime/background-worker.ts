@@ -73,7 +73,7 @@ async function updateVehiclePositions(now: number): Promise<void> {
 
   const duration = Date.now() - startedAt;
   console.log(
-    `[${new Date().toISOString()}] Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
+    `Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
   );
 }
 
@@ -90,7 +90,7 @@ async function updateTripUpdates(now: number): Promise<void> {
 
   const duration = Date.now() - startedAt;
   console.log(
-    `[${new Date().toISOString()}] Updated trip updates: ${tripUpdates.length} entries (${duration}ms)`,
+    `Updated trip updates: ${tripUpdates.length} entries (${duration}ms)`,
   );
 }
 
@@ -108,7 +108,7 @@ async function updateServiceAlerts(now: number): Promise<void> {
 
   const duration = Date.now() - startedAt;
   console.log(
-    `[${new Date().toISOString()}] Updated service alerts: ${serviceAlerts.length} entries (${duration}ms)`,
+    `Updated service alerts: ${serviceAlerts.length} entries (${duration}ms)`,
   );
 }
 
