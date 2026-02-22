@@ -39,48 +39,43 @@ export enum RouteType {
 
 /**
  * Get the display colors for a route type
- * Returns background and text colors for consistent styling
+ * Returns background color for consistent styling
  */
 export function routeTypeColor(
   routeType: RouteType,
   route: number = 0,
-): {
-  bg: string;
-  text: string;
-} {
+): string {
   if (routeType === RouteType.Bus) {
-    return { bg: "#444455", text: "#FFFFFF" };
+    return "#444455";
   } else if (routeType === RouteType.Train) {
-    return { bg: "#F266A6", text: "#FFFFFF" };
+    return "#F266A6";
   } else if (routeType === RouteType.Metro) {
     if (route === 10 || route === 11) {
-      return { bg: "#0089CA", text: "#FFFFFF" };
+      return "#0089CA";
     } else if (route === 13 || route === 14) {
-      return { bg: "#D71D24", text: "#FFFFFF" };
+      return "#D71D24";
     }
-    return { bg: "#17944D", text: "#FFFFFF" };
+    return "#17944D";
   } else if (routeType === RouteType.Tram) {
     if (route === 7) {
-      return { bg: "#878A83", text: "#FFFFFF" };
+      return "#878A83";
     } else if (route === 12) {
-      return { bg: "#C0C0C0", text: "#FFFFFF" };
+      return "#C0C0C0";
     } else if (route === 21) {
-      return { bg: "#B4792B", text: "#FFFFFF" };
+      return "#B4792B";
     } else if (route === 30 || route === 31) {
-      return { bg: "#985141", text: "#FFFFFF" };
+      return "#985141";
     } else if (route === 25 || route === 26) {
-      return { bg: "#008F93", text: "#FFFFFF" };
+      return "#008F93";
     } else if (route >= 27 && route <= 29) {
-      return { bg: "#9F599A", text: "#FFFFFF" };
+      return "#9F599A";
     }
-    return { bg: "#985141", text: "#FFFFFF" };
+    return "#985141";
   } else if (routeType === RouteType.Ferry) {
-    return { bg: "#0891B2", text: "#FFFFFF" };
-  } else if (routeType === RouteType.Taxi) {
-    return { bg: "#F59E0B", text: "#000000" };
+    return "#0891B2";
   }
 
-  return { bg: "#6B7280", text: "#FFFFFF" };
+  return "#6B7280";
 }
 
 export function routeTypeName(routeType: RouteType): string {

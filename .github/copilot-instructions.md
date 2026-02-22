@@ -70,7 +70,7 @@ Since route_color is not available in SL GTFS data, the app uses default colors 
 - Ferry: #0891B2 (cyan)
 - Taxi: #F59E0B (amber)
 
-Use the `routeTypeColor(routeType: RouteType)` function from `src/types/gtfs.ts` to get consistent colors. It returns `{ bg: string, text: string }` for both background and text colors.
+Use the `routeTypeColor(routeType: RouteType)` function from `src/types/gtfs.ts` to get consistent background colors. It returns a hex color string.
 
 ## Testing
 

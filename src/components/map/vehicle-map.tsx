@@ -269,7 +269,7 @@ export function VehicleMap({
             Alla
           </Button>
           {routeTypes.map((type) => {
-            const colors = routeTypeColor(type);
+            const color = routeTypeColor(type);
             return (
               <Button
                 key={type}
@@ -280,9 +280,9 @@ export function VehicleMap({
                 style={
                   selectedRouteType === type
                     ? {
-                        backgroundColor: colors.bg,
-                        color: colors.text,
-                        borderColor: colors.bg,
+                        backgroundColor: color,
+                        color: "#FFFFFF",
+                        borderColor: color,
                       }
                     : undefined
                 }
@@ -333,7 +333,7 @@ export function VehicleMap({
                     ? routeTypeColor(
                         selectedVehicle.routeType,
                         parseInt(selectedVehicle.routeShortName),
-                      ).bg
+                      )
                     : "#3B82F6"
                 }
                 weight={4}
@@ -397,7 +397,7 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
   const color = routeTypeColor(
     vehicle.routeType,
     parseInt(vehicle.routeShortName),
-  ).bg;
+  );
 
   // Create custom arrow icon
   const icon = createVehicleLeafletIcon(

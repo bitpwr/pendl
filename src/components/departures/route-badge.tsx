@@ -26,10 +26,7 @@ export function RouteBadge({
     lg: "h-5 w-5",
   };
 
-  const { bg: bgColor, text: txtColor } = routeTypeColor(
-    routeType,
-    parseInt(shortName),
-  );
+  const bgColor = routeTypeColor(routeType, parseInt(shortName));
 
   return (
     <Badge
@@ -39,7 +36,7 @@ export function RouteBadge({
       )}
       style={{
         backgroundColor: bgColor,
-        color: txtColor,
+        color: "#FFFFFF",
       }}
     >
       {routeType === RouteType.Tram && (

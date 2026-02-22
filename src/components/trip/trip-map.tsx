@@ -108,7 +108,7 @@ export function TripMap({
     ] as [[number, number], [number, number]];
   }, [shape, stops]);
 
-  const routeColor = routeTypeColor(routeType, parseInt(routeName)).bg;
+  const routeColor = routeTypeColor(routeType, parseInt(routeName));
 
   // Convert shape coordinates from [lon, lat] to [lat, lon] for Leaflet
   const polylinePositions = useMemo(() => {
@@ -204,7 +204,7 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
   if (!L) return null;
 
   const bearing = vehicle.bearing ?? 0;
-  const color = routeTypeColor(routeType, parseInt(routeName)).bg;
+  const color = routeTypeColor(routeType, parseInt(routeName));
   const icon = createVehicleLeafletIcon(L, color, bearing, 48);
 
   return (

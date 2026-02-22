@@ -42,7 +42,7 @@ export function TripStopList({
   routeType,
   routeName,
 }: TripStopListProps) {
-  const routeColor = routeTypeColor(routeType, parseInt(routeName)).bg;
+  const routeColor = routeTypeColor(routeType, parseInt(routeName));
   // Calculate current time in GTFS seconds for comparison
   const currentSeconds = getCurrentGtfsSeconds();
 
