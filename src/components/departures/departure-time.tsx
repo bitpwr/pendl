@@ -3,8 +3,8 @@
 import { cn } from "@/lib/utils";
 import {
   formatTime,
-  formatMinutesUntil,
-  minutesUntil,
+  secondsUntil,
+  formatTimeRemaining,
 } from "@/lib/gtfs/time-utils";
 
 interface DepartureTimeProps {
@@ -21,8 +21,7 @@ export function DepartureTime({
   isCancelled,
 }: DepartureTimeProps) {
   const displayTime = predictedTime || scheduledTime;
-  const now = new Date();
-  const minutesRemaining = minutesUntil(displayTime, now);
+  const secondsRemaining = secondsUntil(displayTime);
   const delayMinutes = predictedTime
     ? Math.round((predictedTime.getTime() - scheduledTime.getTime()) / 60000)
     : 0;
@@ -40,8 +39,8 @@ export function DepartureTime({
     );
   }
 
-  // Show relative time for departures within 20 minutes
-  if (minutesRemaining <= 20 && minutesRemaining >= 0) {
+  // Show relative time for departures within 10 minutes
+  if (secondsRemaining <= 600 && secondsRemaining >= 0) {
     return (
       <div className="text-right">
         <span
@@ -50,7 +49,7 @@ export function DepartureTime({
             isRealtime ? "text-green-600 dark:text-green-400" : "",
           )}
         >
-          {formatMinutesUntil(minutesRemaining)}
+          {formatTimeRemaining(secondsRemaining)}
         </span>
         {delayMinutes !== 0 && (
           <span
@@ -89,11 +88,6 @@ export function DepartureTime({
           )}
         >
           {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes} min
-        </span>
-      )}
-      {isRealtime && delayMinutes === 0 && (
-        <span className="block text-xs text-green-600 dark:text-green-400">
-          I tid
         </span>
       )}
     </div>

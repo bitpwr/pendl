@@ -60,35 +60,48 @@ export function gtfsTimeToDate(timeStr: string, serviceDate: Date): Date {
 /**
  * Format a Date as HH:mm (24-hour format)
  */
-export function formatTime(date: Date): string {
+export function formatTime(
+  date: Date,
+  includeSeconds: boolean = false,
+): string {
   return date.toLocaleTimeString("sv-SE", {
     hour: "2-digit",
     minute: "2-digit",
+    second: includeSeconds ? "2-digit" : undefined,
     hour12: false,
   });
 }
 
 /**
- * Format minutes until departure
+ * Format seconds until departure
  */
-export function formatMinutesUntil(minutes: number): string {
-  if (minutes <= 0) {
+export function formatTimeRemaining(seconds: number): string {
+  if (seconds <= 20) {
     return "Nu";
   }
-  if (minutes < 60) {
-    return `${minutes} min`;
+  if (seconds < 40) {
+    return "30 s";
   }
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  if (seconds < 70) {
+    return "1 min";
+  }
+  if (seconds < 110) {
+    return "1.5 min";
+  }
+  if (seconds < 3600) {
+    return `${Math.round(seconds / 60)} min`;
+  }
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
   return mins > 0 ? `${hours} h ${mins} min` : `${hours} h`;
 }
 
 /**
- * Calculate minutes until a given time from now
+ * Calculate seconds until a given time from now
  */
-export function minutesUntil(targetTime: Date, now: Date = new Date()): number {
+export function secondsUntil(targetTime: Date, now: Date = new Date()): number {
   const diffMs = targetTime.getTime() - now.getTime();
-  return Math.round(diffMs / 60000);
+  return Math.round(diffMs / 1000);
 }
 
 /**

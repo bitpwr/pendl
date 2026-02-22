@@ -4,8 +4,9 @@ import {
   gtfsTimeToDate,
   gtfsTimeToActualDate,
   formatTime,
-  formatMinutesUntil,
-  minutesUntil,
+  formatTimeRemaining,
+  secondsUntil,
+  getCurrentGtfsSeconds,
   gtfsTimeToSeconds,
 } from "./time-utils";
 
@@ -77,36 +78,50 @@ describe("formatTime", () => {
     const date = new Date("2026-01-27T09:05:00");
     expect(formatTime(date)).toBe("09:05");
   });
-});
 
-describe("formatMinutesUntil", () => {
-  it('should return "Nu" for 0 or negative minutes', () => {
-    expect(formatMinutesUntil(0)).toBe("Nu");
-    expect(formatMinutesUntil(-5)).toBe("Nu");
-  });
-
-  it("should format minutes under an hour", () => {
-    expect(formatMinutesUntil(5)).toBe("5 min");
-    expect(formatMinutesUntil(45)).toBe("45 min");
-  });
-
-  it("should format hours and minutes", () => {
-    expect(formatMinutesUntil(75)).toBe("1 h 15 min");
-    expect(formatMinutesUntil(120)).toBe("2 h");
+  it("should include seconds when requested", () => {
+    const date = new Date("2026-01-27T09:05:07");
+    expect(formatTime(date, true)).toBe("09:05:07");
   });
 });
 
-describe("minutesUntil", () => {
-  it("should calculate minutes between two times", () => {
+describe("formatTimeRemaining", () => {
+  it('should return "Nu" for 20 seconds or less', () => {
+    expect(formatTimeRemaining(20)).toBe("Nu");
+    expect(formatTimeRemaining(-5)).toBe("Nu");
+  });
+
+  it("should format short intervals", () => {
+    expect(formatTimeRemaining(30)).toBe("30 s");
+    expect(formatTimeRemaining(60)).toBe("1 min");
+    expect(formatTimeRemaining(100)).toBe("1.5 min");
+  });
+
+  it("should format longer intervals", () => {
+    expect(formatTimeRemaining(5 * 60)).toBe("5 min");
+    expect(formatTimeRemaining(75 * 60)).toBe("1 h 15 min");
+    expect(formatTimeRemaining(2 * 3600)).toBe("2 h");
+  });
+});
+
+describe("secondsUntil", () => {
+  it("should calculate seconds between two times", () => {
     const now = new Date("2026-01-27T14:00:00");
     const target = new Date("2026-01-27T14:30:00");
-    expect(minutesUntil(target, now)).toBe(30);
+    expect(secondsUntil(target, now)).toBe(30 * 60);
   });
 
   it("should return negative for past times", () => {
     const now = new Date("2026-01-27T14:30:00");
     const target = new Date("2026-01-27T14:00:00");
-    expect(minutesUntil(target, now)).toBe(-30);
+    expect(secondsUntil(target, now)).toBe(-30 * 60);
+  });
+});
+
+describe("getCurrentGtfsSeconds", () => {
+  it("should return seconds since midnight", () => {
+    const now = new Date("2026-01-27T14:30:15");
+    expect(getCurrentGtfsSeconds(now)).toBe(14 * 3600 + 30 * 60 + 15);
   });
 });
 
