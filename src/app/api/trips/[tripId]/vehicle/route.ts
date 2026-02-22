@@ -20,7 +20,7 @@ export async function GET(
             longitude: vehicle.longitude,
             bearing: vehicle.bearing,
             currentStatus: vehicle.currentStatus,
-            currentStopSequence: vehicle.currentStopSequence,
+            speed: vehicle.speed,
             timestamp: vehicle.timestamp,
           }
         : null,

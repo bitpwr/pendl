@@ -46,7 +46,7 @@ interface Vehicle {
   longitude: number;
   bearing?: number;
   currentStatus: string;
-  currentStopSequence?: number;
+  speed?: number;
 }
 
 interface TripMapProps {
@@ -221,7 +221,12 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
             <p className="font-bold">
               {routeTypeName(routeType)} {routeName}
             </p>
-          </div>
+          </div>{" "}
+          {(vehicle.speed ?? 0) > 0 && (
+            <div className="text-muted-foreground mt-1">
+              Hastighet: {(vehicle.speed * 3.6).toFixed(0)} km/h
+            </div>
+          )}
         </Popup>
       </Marker>
     </>

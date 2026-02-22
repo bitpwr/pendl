@@ -428,6 +428,11 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
             <p className="font-bold">
               {routeTypeName(vehicle.routeType)} {vehicle.routeShortName ?? ""}
             </p>
+            {(vehicle.speed ?? 0) > 0 && (
+              <div className="text-muted-foreground mt-1">
+                Hastighet: {(vehicle.speed * 3.6).toFixed(0)} km/h
+              </div>
+            )}
             <a
               href={`/trip/${vehicle.tripId}`}
               className="text-blue-600 hover:underline mt-1 inline-block"
