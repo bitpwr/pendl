@@ -204,6 +204,7 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
   if (!L) return null;
 
   const bearing = vehicle.bearing ?? 0;
+  const speedMps = vehicle.speed ?? 0;
   const color = routeTypeColor(routeType, parseInt(routeName));
   const icon = createVehicleLeafletIcon(L, color, bearing, 48);
 
@@ -222,9 +223,9 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
               {routeTypeName(routeType)} {routeName}
             </p>
           </div>{" "}
-          {(vehicle.speed ?? 0) > 0 && (
+          {speedMps > 0 && (
             <div className="text-muted-foreground mt-1">
-              Hastighet: {(vehicle.speed * 3.6).toFixed(0)} km/h
+              Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
             </div>
           )}
         </Popup>

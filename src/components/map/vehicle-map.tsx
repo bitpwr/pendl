@@ -393,6 +393,7 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
 
   // Get the color for this route type
   const bearing = vehicle.bearing ?? 0;
+  const speedMps = vehicle.speed ?? 0;
 
   const color = routeTypeColor(
     vehicle.routeType,
@@ -428,9 +429,9 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
             <p className="font-bold">
               {routeTypeName(vehicle.routeType)} {vehicle.routeShortName ?? ""}
             </p>
-            {(vehicle.speed ?? 0) > 0 && (
+            {speedMps > 0 && (
               <div className="text-muted-foreground mt-1">
-                Hastighet: {(vehicle.speed * 3.6).toFixed(0)} km/h
+                Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
               </div>
             )}
             <a
