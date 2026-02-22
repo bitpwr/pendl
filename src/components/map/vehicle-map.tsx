@@ -51,7 +51,6 @@ export function VehicleMap({
   height = "400px",
 }: VehicleMapProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [mapCenter, setMapCenter] = useState(center);
@@ -71,7 +70,6 @@ export function VehicleMap({
   }, []);
 
   const fetchVehicles = useCallback(async () => {
-    setIsLoading(true);
     setError(null);
 
     try {
@@ -90,8 +88,6 @@ export function VehicleMap({
       setLastUpdated(new Date(data.updatedAt));
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Okänt fel"));
-    } finally {
-      setIsLoading(false);
     }
   }, [selectedRouteType]);
 
@@ -219,15 +215,13 @@ export function VehicleMap({
     <Card>
       <CardHeader className="pb-2 space-y-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">
-            Fordon i realtid
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
+          <div className="flex flex-col gap-1">
+            <CardTitle className="text-lg">
+              Fordon i realtid{" "}
               {vehicles.length > 0
                 ? `(${vehicles.length} fordon)`
-                : "(Positioner inte tillgängliga)"}
-            </span>
-          </CardTitle>
-          <div className="flex items-center gap-2">
+                : "Positioner inte tillgängliga"}
+            </CardTitle>
             {lastUpdated && (
               <span className="text-xs text-muted-foreground">
                 Uppdaterad{" "}
@@ -237,6 +231,8 @@ export function VehicleMap({
                 })}
               </span>
             )}
+          </div>
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -245,17 +241,6 @@ export function VehicleMap({
               title="Min position"
             >
               <Locate className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={fetchVehicles}
-              disabled={isLoading}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-              />
             </Button>
           </div>
         </div>
