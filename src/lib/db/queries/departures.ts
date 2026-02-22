@@ -1,6 +1,8 @@
 import { query } from "../index";
 import { RouteType, toRouteType } from "@/types/gtfs";
 
+const departureOffset = 15 * 60 * 1000; // Add buffer to include recently departed trips that might be delayed
+
 export interface ScheduledDeparture {
   tripId: string;
   routeId: string;
@@ -73,16 +75,16 @@ function calculateGtfsTimeWindow(date: Date, hoursAhead: number): TimeWindow[] {
 export async function getScheduledDepartures(
   stopId: string,
   options: {
-    date?: Date;
-    startTime?: string;
     limit?: number;
     hoursAhead?: number;
   } = {},
 ): Promise<ScheduledDeparture[]> {
-  const { date = new Date(), limit = 50, hoursAhead = 2 } = options;
+  const { limit = 50, hoursAhead = 2 } = options;
+  // Add buffer to include recently departed trips that might be delayed
+  const now = new Date(Date.now() - departureOffset);
 
   // Calculate time windows (handles times after midnight)
-  const windows = calculateGtfsTimeWindow(date, hoursAhead);
+  const windows = calculateGtfsTimeWindow(now, hoursAhead);
 
   const sql = `
     SELECT
@@ -203,9 +205,10 @@ export async function getScheduledDeparturesForStops(
 ): Promise<ScheduledDeparture[]> {
   if (stopIds.length === 0) return [];
 
-  const { limit = 50, hoursAhead = 2 } = options;
+  const { limit = 50, hoursAhead = 1 } = options;
 
-  const now = new Date();
+  // Add buffer to include recently departed trips that might be delayed
+  const now = new Date(Date.now() - departureOffset);
 
   // Calculate time windows (handles times after midnight)
   const windows = calculateGtfsTimeWindow(now, hoursAhead);
