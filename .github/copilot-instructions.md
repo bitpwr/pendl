@@ -113,10 +113,6 @@ npm run format
 
 ## API Routes
 
-- `GET /api/departures/[stopId]` - Get departures for a stop
-- `GET /api/stops/search?q=` - Search stops by name
-- `GET /api/stops/nearby?lat=&lon=` - Find nearby stops
-- `POST /api/stops/batch` - Fetch multiple stops by ID
 - `GET /api/areas/search?q=` - Search station areas
 - `GET /api/areas/nearby?lat=&lon=` - Find nearby areas
 - `GET /api/areas/[areaId]` - Get area details and stops
@@ -126,7 +122,7 @@ npm run format
 ## Key Components
 
 - `StopSearch` - Autocomplete search for stops
-- `DepartureBoard` - List of upcoming departures
+- `AreaDepartureBoard` - List of upcoming departures
 - `RouteBadge` - Display route number with type-based styling
 - `DepartureTime` - Countdown/time display with realtime indicator
 
@@ -139,7 +135,6 @@ src/
 │   ├── area/[areaId]/     # Area departures page
 │   ├── favoriter/         # Favorites page
 │   ├── map/               # Map page
-│   ├── stop/[stopId]/     # Stop departure page
 │   ├── trip/[tripId]/     # Trip details page
 │   └── page.tsx           # Home page with search
 ├── components/            # React components

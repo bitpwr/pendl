@@ -60,7 +60,7 @@ export type AgencyId = (typeof INCLUDED_AGENCY_IDS)[number];
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           Next.js API Routes                                 │
 │  ┌────────────────┐  ┌────────────────┐  ┌────────────────────────────────┐ │
-│  │ /api/stops     │  │ /api/departures│  │ /api/vehicles                  │ │
+│  │ /api/areas     │  │ /api/departures│  │ /api/vehicles                  │ │
 │  │ (search/nearby)│  │ (realtime)     │  │ (positions for trips at stop)  │ │
 │  └────────────────┘  └────────────────┘  └────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -661,11 +661,6 @@ setInterval(() => runRealtimeWorker(config).catch(console.error), 10_000);
 ### API Routes
 
 ```
-/api/stops
-  GET /api/stops/search?q=central     - Text search for stops
-  GET /api/stops/nearby?lat=&lon=&r=  - Geo search (radius in meters)
-  POST /api/stops/batch               - Fetch multiple stops by ID
-
 /api/areas
   GET /api/areas/search?q=central     - Text search for station areas
   GET /api/areas/nearby?lat=&lon=&r=  - Geo search for nearby areas
@@ -771,9 +766,6 @@ pendl/
 │   │   ├── area/[areaId]/page.tsx
 │   │   ├── favoriter/page.tsx
 │   │   ├── map/page.tsx
-│   │   ├── stop/
-│   │   │   └── [stopId]/
-│   │   │       └── page.tsx      # Departure board for stop
 │   │   ├── trip/
 │   │   │   └── [tripId]/
 │   │   │       └── page.tsx      # Trip details page
@@ -940,72 +932,6 @@ function useDepartures(stopId: string) {
   }, [stopId]);
 
   return data;
-}
-```
-
-### Component Architecture
-
-```tsx
-// Example: Departure Board Component
-
-interface DepartureBoardProps {
-  stopId: string;
-}
-
-function DepartureBoard({ stopId }: DepartureBoardProps) {
-  const data = useDepartures(stopId);
-
-  if (!data) return <DepartureSkeleton />;
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">{data.stop.stopName}</h2>
-        <UpdateIndicator lastUpdated={data.updatedAt} />
-      </div>
-
-      <div className="divide-y divide-border rounded-lg border bg-card">
-        {data.departures.map((departure) => (
-          <DepartureRow
-            key={`${departure.tripId}-${departure.scheduledDeparture}`}
-            departure={departure}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function DepartureRow({ departure }: { departure: Departure }) {
-  const timeUntil = useTimeUntil(
-    departure.realtimeDeparture || departure.scheduledDeparture,
-  );
-
-  return (
-    <div className="flex items-center gap-4 p-4">
-      <RouteBadge
-        shortName={departure.routeShortName}
-        routeType={departure.routeType}
-      />
-
-      <div className="flex-1 min-w-0">
-        <p className="font-medium truncate">{departure.headsign}</p>
-        {departure.platform && (
-          <p className="text-sm text-muted-foreground">
-            Läge {departure.platform}
-          </p>
-        )}
-      </div>
-
-      <div className="text-right">
-        <DepartureTime time={timeUntil} isRealtime={departure.isRealtime} />
-        {departure.delayMinutes !== undefined &&
-          departure.delayMinutes !== 0 && (
-            <DelayIndicator minutes={departure.delayMinutes} />
-          )}
-      </div>
-    </div>
-  );
 }
 ```
 
