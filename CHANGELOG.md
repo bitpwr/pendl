@@ -1,3 +1,23 @@
+## [0.5.0] - 2026-02-23
+
+### ✨ Features
+
+- add a 404 page (`||fd9a752`)
+- separate trip and vehicle api for efficiency (`||a5be45c`)
+- more details in departure time (`||ad600fe`)
+- show speed in vehicle popup (`||a127cd8`)
+- include departures 15 minutes after scheduled time to account for delays (`||9b8f211`)
+- show vehicle type in map header (`||c5a1303`)
+- index vehicle by trip for more efficient lookup (`||7e7937b`)
+
+### 🧹 Maintenance
+
+- fix typescript warning (`||1ec2ebb`)
+- remove timestamp from logs (`||ad5df59`)
+- rearrange title on map page and remove refresh button (`||904ee38`)
+- hide show on map on stop page (`||3af3ed3`)
+- separate route type colors from text colors (`||688de57`)
+
 ## [0.4.0] - 2026-02-19
 
 ### ✨ Features
