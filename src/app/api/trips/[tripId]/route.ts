@@ -7,6 +7,7 @@ import type { StopTimeUpdate } from "@/types/realtime";
 
 interface TripStopRow {
   stopId: string;
+  areaId: string | null;
   stopName: string;
   stopSequence: number;
   stopHeadsign: string | null;
@@ -72,6 +73,7 @@ export async function GET(
     const stopsSql = `
       SELECT
         st.stop_id as "stopId",
+        sa.area_id as "areaId",
         s.stop_name as "stopName",
         st.stop_sequence as "stopSequence",
         st.stop_headsign as "stopHeadsign",
@@ -82,6 +84,13 @@ export async function GET(
         s.stop_lon as "longitude"
       FROM stop_times st
       JOIN stops s ON s.stop_id = st.stop_id
+      LEFT JOIN LATERAL (
+        SELECT area_id
+        FROM stop_areas
+        WHERE stop_id = st.stop_id
+        ORDER BY area_id
+        LIMIT 1
+      ) sa ON true
       WHERE st.trip_id = $1
       ORDER BY st.stop_sequence
     `;
@@ -130,6 +139,7 @@ export async function GET(
 
       return {
         stopId: stop.stopId,
+        areaId: stop.areaId ?? undefined,
         stopName: stop.stopName,
         stopSequence: stop.stopSequence,
         arrivalTime: stop.arrivalTime,

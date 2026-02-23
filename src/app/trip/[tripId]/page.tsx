@@ -14,6 +14,7 @@ import type { RouteType } from "@/types/gtfs";
 
 interface TripStop {
   stopId: string;
+  areaId?: string;
   stopName: string;
   stopSequence: number;
   arrivalTime: string;

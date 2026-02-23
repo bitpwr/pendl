@@ -8,6 +8,7 @@ import { parseGtfsTime, getCurrentGtfsSeconds } from "@/lib/gtfs/time-utils";
 
 interface TripStop {
   stopId: string;
+  areaId?: string;
   stopName: string;
   stopSequence: number;
   arrivalTime: string;
@@ -137,7 +138,7 @@ export function TripStopList({
                   {/* Stop info */}
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={`/stop/${encodeURIComponent(stop.stopId)}`}
+                      href={`/area/${encodeURIComponent(stop.areaId ?? "0")}`}
                       className="hover:underline"
                     >
                       <p
