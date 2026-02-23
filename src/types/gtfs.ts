@@ -24,7 +24,6 @@ export interface Route {
   agencyId?: string;
   routeShortName?: string;
   routeLongName?: string;
-  routeDesc?: string;
   routeType: RouteType;
 }
 
@@ -159,13 +158,8 @@ export interface Trip {
   tripId: string;
   routeId: string;
   serviceId: string;
-  tripHeadsign?: string;
-  tripShortName?: string;
   directionId?: number;
-  blockId?: string;
   shapeId?: string;
-  wheelchairAccessible?: number;
-  bikesAllowed?: number;
 }
 
 export interface StopTime {
@@ -175,8 +169,6 @@ export interface StopTime {
   stopId: string;
   stopSequence: number;
   stopHeadsign?: string;
-  pickupType?: number;
-  dropOffType?: number;
   timepoint?: number;
 }
 

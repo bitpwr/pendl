@@ -165,7 +165,6 @@ CREATE TABLE routes (
     agency_id TEXT REFERENCES agencies(agency_id),
     route_short_name TEXT,
     route_long_name TEXT,
-    route_desc TEXT,
     route_type INTEGER NOT NULL
 );
 
@@ -196,8 +195,6 @@ CREATE TABLE trips (
     trip_id TEXT PRIMARY KEY,
     route_id TEXT REFERENCES routes(route_id) NOT NULL,
     service_id TEXT NOT NULL,
-    trip_headsign TEXT,
-    trip_short_name TEXT,
     direction_id INTEGER,
     shape_id TEXT
 );
@@ -344,7 +341,7 @@ The key insight is that **static data provides the schedule, realtime data provi
      st.trip_id,
      st.departure_time,
      st.stop_sequence,
-     t.trip_headsign,
+    COALESCE(st.stop_headsign, r.route_long_name) AS display_headsign,
      r.route_id,
      r.route_short_name,
      r.route_type

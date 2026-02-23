@@ -37,7 +37,6 @@ CREATE TABLE routes (
     agency_id TEXT REFERENCES agencies(agency_id) ON DELETE CASCADE,
     route_short_name TEXT,
     route_long_name TEXT,
-    route_desc TEXT,
     route_type INTEGER NOT NULL
 );
 
@@ -74,8 +73,6 @@ CREATE TABLE trips (
     trip_id TEXT PRIMARY KEY,
     route_id TEXT REFERENCES routes(route_id) ON DELETE CASCADE NOT NULL,
     service_id TEXT NOT NULL,
-    trip_headsign TEXT,
-    trip_short_name TEXT,
     direction_id INTEGER,
     shape_id TEXT
 );

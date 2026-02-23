@@ -9,6 +9,7 @@ interface TripStopRow {
   stopId: string;
   stopName: string;
   stopSequence: number;
+  stopHeadsign: string | null;
   arrivalTime: string;
   departureTime: string;
   platformCode: string | null;
@@ -22,7 +23,6 @@ interface TripInfoRow {
   routeShortName: string;
   routeLongName: string;
   routeType: number;
-  tripHeadsign: string;
   shapeId: string | null;
   directionId: number;
 }
@@ -50,7 +50,6 @@ export async function GET(
         r.route_short_name as "routeShortName",
         r.route_long_name as "routeLongName",
         r.route_type as "routeType",
-        COALESCE(t.trip_headsign, r.route_long_name) as "tripHeadsign",
         t.shape_id as "shapeId",
         t.direction_id as "directionId"
       FROM trips t
@@ -75,6 +74,7 @@ export async function GET(
         st.stop_id as "stopId",
         s.stop_name as "stopName",
         st.stop_sequence as "stopSequence",
+        st.stop_headsign as "stopHeadsign",
         st.arrival_time::text as "arrivalTime",
         st.departure_time::text as "departureTime",
         s.platform_code as "platformCode",
@@ -87,6 +87,11 @@ export async function GET(
     `;
 
     const stops = await query<TripStopRow>(stopsSql, [tripId]);
+
+    const stopHeadsign =
+      stops.find((stop) => stop.stopHeadsign?.trim())?.stopHeadsign ??
+      stops.at(-1)?.stopName ??
+      null;
 
     // Get shape if available
     let shape = null;
@@ -150,7 +155,8 @@ export async function GET(
         routeShortName: tripInfo.routeShortName,
         routeLongName: tripInfo.routeLongName,
         routeType: toRouteType(tripInfo.routeType),
-        headsign: tripInfo.tripHeadsign,
+        headsign:
+          stopHeadsign || tripInfo.routeLongName || tripInfo.routeShortName,
         directionId: tripInfo.directionId,
       },
       stops: stopsWithRealtime,

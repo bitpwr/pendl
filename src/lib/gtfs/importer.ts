@@ -152,15 +152,14 @@ async function importRoutes(
 ): Promise<void> {
   for (const r of routes) {
     await client.query(
-      `INSERT INTO routes (route_id, agency_id, route_short_name, route_long_name, route_desc, route_type)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO routes (route_id, agency_id, route_short_name, route_long_name, route_type)
+       VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT (route_id) DO NOTHING`,
       [
         r.route_id,
         r.agency_id,
         r.route_short_name || null,
         r.route_long_name || null,
-        r.route_desc || null,
         parseInt(r.route_type) || 3,
       ],
     );
@@ -220,23 +219,21 @@ async function importTrips(
     const placeholders: string[] = [];
 
     batch.forEach((t, idx) => {
-      const offset = idx * 7;
+      const offset = idx * 5;
       placeholders.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6}, $${offset + 7})`,
+        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5})`,
       );
       values.push(
         t.trip_id,
         t.route_id,
         t.service_id,
-        t.trip_headsign || null,
-        t.trip_short_name || null,
         parseInt(t.direction_id) || 0,
         t.shape_id || null,
       );
     });
 
     await client.query(
-      `INSERT INTO trips (trip_id, route_id, service_id, trip_headsign, trip_short_name, direction_id, shape_id)
+      `INSERT INTO trips (trip_id, route_id, service_id, direction_id, shape_id)
        VALUES ${placeholders.join(", ")}
        ON CONFLICT (trip_id) DO NOTHING`,
       values,

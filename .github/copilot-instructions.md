@@ -52,9 +52,9 @@ The database schema is aligned with actual SL GTFS data. These are the columns a
 - geom (auto-generated PostGIS point)
 - search_vector (TSVECTOR for full-text search)
 
-**routes table (6 columns)**:
+**routes table (5 columns)**:
 
-- route_id, agency_id, route_short_name, route_long_name, route_desc, route_type
+- route_id, agency_id, route_short_name, route_long_name, route_type
 - ⚠️ NO route_color, route_text_color, route_sort_order (not in SL data)
 
 **Other tables**: agencies, trips, stop_times, calendar, calendar_dates, shapes

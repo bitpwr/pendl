@@ -36,12 +36,10 @@ export async function GET(request: NextRequest) {
     // Fetch trip data which includes route_id
     const trips = await query<{
       trip_id: string;
-      trip_headsign: string;
       route_id: string;
-    }>(
-      `SELECT trip_id, trip_headsign, route_id FROM trips WHERE trip_id = ANY($1)`,
-      [tripIds],
-    );
+    }>(`SELECT trip_id, route_id FROM trips WHERE trip_id = ANY($1)`, [
+      tripIds,
+    ]);
 
     // console.log(`Found ${trips.length} trips in database`);
 
@@ -53,10 +51,11 @@ export async function GET(request: NextRequest) {
     // Fetch route data
     const routes = await query<{
       route_id: string;
-      route_short_name: string;
+      route_short_name: string | null;
+      route_long_name: string | null;
       route_type: number;
     }>(
-      `SELECT route_id, route_short_name, route_type FROM routes WHERE route_id = ANY($1)`,
+      `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1)`,
       [allRouteIds],
     );
 
@@ -66,14 +65,15 @@ export async function GET(request: NextRequest) {
     const routeMap = new Map(
       routes.map((r) => [
         r.route_id,
-        { shortName: r.route_short_name, routeType: toRouteType(r.route_type) },
+        {
+          shortName: r.route_short_name,
+          longName: r.route_long_name,
+          routeType: toRouteType(r.route_type),
+        },
       ]),
     );
     const tripMap = new Map(
-      trips.map((t) => [
-        t.trip_id,
-        { headsign: t.trip_headsign, routeId: t.route_id },
-      ]),
+      trips.map((t) => [t.trip_id, { routeId: t.route_id }]),
     );
 
     // Transform to API response format and filter
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         routeId: routeId,
         routeShortName: route.shortName || routeId,
         routeType: route.routeType,
-        headsign: tripInfo?.headsign || "",
+        headsign: route.longName || route.shortName || "",
         latitude: pos.latitude,
         longitude: pos.longitude,
         bearing: pos.bearing,
