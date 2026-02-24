@@ -40,7 +40,6 @@ npm run format
 Get these files and rename them
 
 - `docker-compose.prod.yml` -> `docker-compose.yml`
-- `init-db.sql` -> move to `scripts/init-db.sql`
 - `.env.examples` -> `.env` and adjust values
 
 Either export the port from the pendl-app service or add a docker network to you forwarding proxy.

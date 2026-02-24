@@ -29,16 +29,29 @@ x-app-env: &app-env
   GTFS_SERVICE_ALERT_UPDATE_INTERVAL: ${GTFS_SERVICE_ALERT_UPDATE_INTERVAL:-}
 
 services:
+  postgres-init:
+    image: bitpwr/pendl:latest
+    container_name: pendl-postgres-init
+    command: ["sh", "-c", "cp /app/scripts/init-db.sql /init/init.sql"]
+    volumes:
+      - pendl_db_init:/init
+    restart: "no"
+    networks:
+      - pendl_net
+
   postgres:
     image: postgis/postgis:16-3.4
     container_name: pendl-postgres
+    depends_on:
+      postgres-init:
+        condition: service_completed_successfully
     environment:
       POSTGRES_USER: ${DB_USER:-}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-}
       POSTGRES_DB: ${DB_NAME:-}
     volumes:
       - pendl_db:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      - pendl_db_init:/docker-entrypoint-initdb.d:ro
     restart: unless-stopped
     networks:
       - pendl_net
@@ -107,6 +120,8 @@ services:
 volumes:
   pendl_db:
     name: pendl_db
+  pendl_db_init:
+    name: pendl_db_init
   pendl_redis:
     name: pendl_redis
   pendl_script_modules:
