@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
@@ -19,6 +19,7 @@ export default function AreaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const lastLoggedAreaId = useRef<string | null>(null);
 
   const fetchDepartures = useCallback(async () => {
     setIsLoading(true);
@@ -50,6 +51,30 @@ export default function AreaPage() {
     const interval = setInterval(fetchDepartures, 15000);
     return () => clearInterval(interval);
   }, [fetchDepartures]);
+
+  useEffect(() => {
+    if (!data?.area?.areaId || !data.area.areaName) {
+      return;
+    }
+
+    if (lastLoggedAreaId.current === data.area.areaId) {
+      return;
+    }
+
+    lastLoggedAreaId.current = data.area.areaId;
+
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key: "area",
+        value: data.area.areaName,
+      }),
+      keepalive: true,
+    });
+  }, [data?.area?.areaId, data?.area?.areaName]);
 
   const areaName = data?.area?.areaName || "Laddar...";
 

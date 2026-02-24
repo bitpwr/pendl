@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { RouteBadge } from "@/components/departures/route-badge";
 import { TripMap } from "@/components/trip/trip-map";
 import { TripStopList } from "@/components/trip/trip-stop-list";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import type { RouteType } from "@/types/gtfs";
+import { routeTypeName, type RouteType } from "@/types/gtfs";
 
 interface TripStop {
   stopId: string;
@@ -65,6 +65,7 @@ export default function TripPage() {
   const [vehicle, setVehicle] = useState<TripVehicle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const lastLoggedTripId = useRef<string | null>(null);
 
   const fetchTrip = useCallback(async () => {
     try {
@@ -124,6 +125,30 @@ export default function TripPage() {
       clearInterval(vehicleInterval);
     };
   }, [fetchTrip, fetchVehicle]);
+
+  useEffect(() => {
+    if (!data?.trip?.tripId || !data.trip.routeShortName) {
+      return;
+    }
+
+    if (lastLoggedTripId.current === data.trip.tripId) {
+      return;
+    }
+
+    lastLoggedTripId.current = data.trip.tripId;
+
+    void fetch("/api/analytics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        key: "trip",
+        value: `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName}`,
+      }),
+      keepalive: true,
+    });
+  }, [data?.trip?.tripId, data?.trip?.routeType, data?.trip?.routeShortName]);
 
   if (error) {
     return (
