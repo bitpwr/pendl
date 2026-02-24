@@ -47,13 +47,13 @@ export function StopSearch({
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
       <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Sök hållplats..."
+          placeholder="Sök station eller hållplats..."
           value={query}
           onChange={handleInputChange}
-          className="pl-10"
+          className="h-11 pl-10 text-base bg-white dark:bg-card"
           autoComplete="off"
         />
         {isLoading && (
@@ -64,6 +64,7 @@ export function StopSearch({
         type="button"
         variant="outline"
         size="icon"
+        className="size-11"
         onClick={onNearby}
         disabled={isLocating}
         title="Hitta hållplatser nära mig"

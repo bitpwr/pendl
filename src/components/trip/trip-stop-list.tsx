@@ -82,7 +82,10 @@ export function TripStopList({
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg">Hållplatser ({stops.length})</CardTitle>
+        <CardTitle className="flex items-baseline gap-2 text-lg font-semibold">
+          Hållplatser
+          <span className="text-muted-foreground">({stops.length} stopp)</span>
+        </CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="relative">
@@ -153,16 +156,16 @@ export function TripStopList({
                   </div>
 
                   {/* Times */}
-                  <div className="text-right">
+                  <div className="text-right tabular-nums">
                     <p
                       className={cn(
-                        "font-mono text-sm",
+                        "text-sm font-semibold",
                         stop.delaySeconds &&
                           stop.delaySeconds > 60 &&
-                          "text-amber-600",
+                          "text-amber-600 dark:text-amber-400",
                         stop.delaySeconds &&
                           stop.delaySeconds > 300 &&
-                          "text-red-600",
+                          "text-red-600 dark:text-red-400",
                       )}
                     >
                       {formatDepartureTime(stop)}

@@ -152,8 +152,8 @@ export default function TripPage() {
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
           <Link href="/">
             <Button variant="ghost" size="icon">
               <ArrowLeft className="h-4 w-4" />
@@ -162,8 +162,8 @@ export default function TripPage() {
           <h1 className="text-xl font-bold">Resa</h1>
         </div>
         <Card>
-          <CardContent className="flex flex-col items-center justify-center p-6">
-            <p className="text-destructive mb-2">{error.message}</p>
+          <CardContent className="flex flex-col items-center justify-center p-8">
+            <p className="text-destructive font-medium mb-3">{error.message}</p>
             <Button
               variant="outline"
               size="sm"
@@ -183,12 +183,12 @@ export default function TripPage() {
 
   if (isLoading || !data) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
+      <div className="space-y-5">
+        <div className="flex items-center gap-3">
           <Skeleton className="h-9 w-9" />
           <Skeleton className="h-7 w-48" />
         </div>
-        <Skeleton className="h-75 w-full rounded-lg" />
+        <Skeleton className="h-75 w-full rounded-xl" />
         <Card>
           <CardHeader>
             <Skeleton className="h-6 w-32" />

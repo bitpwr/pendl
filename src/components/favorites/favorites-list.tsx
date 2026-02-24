@@ -12,10 +12,12 @@ export function FavoritesList() {
   if (favorites.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <Star className="mx-auto h-8 w-8 mb-2 opacity-50" />
-          <p>Du har inga sparade favoriter</p>
-          <p className="text-sm mt-1">
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+          <Star className="mx-auto h-10 w-10 mb-3 opacity-40" />
+          <p className="text-base font-medium text-foreground">
+            Du har inga sparade favoriter
+          </p>
+          <p className="text-sm mt-1.5">
             Tryck på stjärnan vid en hållplats för att spara den
           </p>
         </CardContent>
@@ -28,13 +30,13 @@ export function FavoritesList() {
       {favorites.map((favorite) => (
         <Card
           key={favorite.areaId}
-          className="group transition-colors hover:bg-accent/50"
+          className="group py-0 transition-colors hover:bg-muted/60"
         >
           <CardContent className="p-0">
             <div className="flex items-center">
               <Link
                 href={`/area/${favorite.areaId}`}
-                className="flex flex-1 items-center justify-between py-1 px-4"
+                className="flex flex-1 items-center justify-between rounded-lg py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-center gap-3">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -80,7 +82,7 @@ export function FavoritesSection() {
             <Link
               key={favorite.areaId}
               href={`/area/${favorite.areaId}`}
-              className="flex items-center justify-between rounded-md p-2 text-sm transition-colors hover:bg-accent"
+              className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span>{favorite.areaName}</span>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />

@@ -28,11 +28,11 @@ export function DepartureTime({
 
   if (isCancelled) {
     return (
-      <div className="text-right">
-        <span className="text-destructive font-medium line-through">
+      <div className="text-right tabular-nums">
+        <span className="text-destructive font-semibold line-through">
           {formatTime(scheduledTime)}
         </span>
-        <span className="block text-xs text-destructive font-medium">
+        <span className="mt-0.5 block text-xs text-destructive font-semibold">
           Inställd
         </span>
       </div>
@@ -42,10 +42,10 @@ export function DepartureTime({
   // Show relative time for departures within 10 minutes
   if (secondsRemaining <= 600 && secondsRemaining >= 0) {
     return (
-      <div className="text-right">
+      <div className="text-right tabular-nums">
         <span
           className={cn(
-            "font-semibold text-lg",
+            "text-xl font-bold leading-none",
             isRealtime ? "text-green-600 dark:text-green-400" : "",
           )}
         >
@@ -54,7 +54,7 @@ export function DepartureTime({
         {delayMinutes !== 0 && (
           <span
             className={cn(
-              "block text-xs",
+              "mt-0.5 block text-xs font-medium",
               delayMinutes > 0
                 ? "text-orange-600 dark:text-orange-400"
                 : "text-green-600 dark:text-green-400",
@@ -69,10 +69,10 @@ export function DepartureTime({
 
   // Show absolute time for later departures
   return (
-    <div className="text-right">
+    <div className="text-right tabular-nums">
       <span
         className={cn(
-          "font-medium",
+          "text-base font-semibold",
           isRealtime ? "text-green-600 dark:text-green-400" : "",
         )}
       >
@@ -81,7 +81,7 @@ export function DepartureTime({
       {delayMinutes !== 0 && (
         <span
           className={cn(
-            "block text-xs",
+            "mt-0.5 block text-xs font-medium",
             delayMinutes > 0
               ? "text-orange-600 dark:text-orange-400"
               : "text-green-600 dark:text-green-400",

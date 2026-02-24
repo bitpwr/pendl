@@ -2,12 +2,14 @@ import { FavoritesList } from "@/components/favorites/favorites-list";
 
 export default function FavoriterPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <section>
-        <h1 className="text-2xl font-bold mb-4">Favoriter</h1>
-        <p className="text-muted-foreground mb-6">
-          Dina sparade hållplatser för snabb åtkomst
-        </p>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Favoriter</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Dina sparade hållplatser för snabb åtkomst
+          </p>
+        </div>
         <FavoritesList />
       </section>
     </div>

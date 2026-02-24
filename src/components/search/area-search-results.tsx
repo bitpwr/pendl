@@ -39,10 +39,12 @@ export function AreaSearchResults({
   if (results.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          <MapPin className="mx-auto h-8 w-8 mb-2 opacity-50" />
-          <p>Inga områden hittades</p>
-          <p className="text-sm mt-1">Prova ett annat sökord</p>
+        <CardContent className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
+          <MapPin className="mx-auto h-10 w-10 mb-3 opacity-40" />
+          <p className="text-base font-medium text-foreground">
+            Inga områden hittades
+          </p>
+          <p className="text-sm mt-1.5">Prova ett annat sökord</p>
         </CardContent>
       </Card>
     );
@@ -53,11 +55,14 @@ export function AreaSearchResults({
       {results.map((area) => (
         <Card
           key={area.areaId}
-          className="group transition-colors hover:bg-accent/50 py-0"
+          className="group py-0 transition-colors hover:bg-muted/60"
         >
           <CardContent className="p-0">
             <div className="flex items-center">
-              <Link href={`/area/${area.areaId}`} className="flex-1 p-4">
+              <Link
+                href={`/area/${area.areaId}`}
+                className="flex-1 rounded-lg p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-medium">{area.areaName}</h3>

@@ -27,12 +27,14 @@ export default function MapPage() {
   }, []);
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Karta</h1>
-      <p className="text-muted-foreground">
-        Se alla fordon i realtid på kartan.
-      </p>
-      <VehicleMap height="calc(100vh - 200px)" />
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold">Karta</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Se alla fordon i realtid på kartan.
+        </p>
+      </div>
+      <VehicleMap height="calc(100vh - 220px)" />
     </div>
   );
 }
