@@ -79,14 +79,14 @@ export function formatTimeRemaining(seconds: number): string {
   if (seconds <= 20) {
     return "Nu";
   }
-  if (seconds < 40) {
+  if (seconds < 45) {
     return "30 s";
   }
-  if (seconds < 70) {
+  if (seconds < 75) {
     return "1 min";
   }
   if (seconds < 110) {
-    return "1.5 min";
+    return "1,5 min";
   }
   if (seconds < 3600) {
     return `${Math.round(seconds / 60)} min`;

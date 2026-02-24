@@ -92,9 +92,11 @@ describe("formatTimeRemaining", () => {
   });
 
   it("should format short intervals", () => {
-    expect(formatTimeRemaining(30)).toBe("30 s");
-    expect(formatTimeRemaining(60)).toBe("1 min");
-    expect(formatTimeRemaining(100)).toBe("1.5 min");
+    expect(formatTimeRemaining(25)).toBe("30 s");
+    expect(formatTimeRemaining(35)).toBe("30 s");
+    expect(formatTimeRemaining(45)).toBe("1 min");
+    expect(formatTimeRemaining(65)).toBe("1 min");
+    expect(formatTimeRemaining(100)).toBe("1,5 min");
   });
 
   it("should format longer intervals", () => {
