@@ -57,6 +57,14 @@ function vehicleType(routeType: RouteType | null): string {
   }
 }
 
+function vehicleTitle(vehicle: Vehicle): string {
+  if (vehicle.routeShortName !== vehicle.headsign) {
+    return vehicle.headsign;
+  }
+
+  return `${routeTypeName(vehicle.routeType)} ${vehicle.routeShortName}`;
+}
+
 // Stockholm default center
 const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
 const DEFAULT_ZOOM = 10;
@@ -426,9 +434,7 @@ function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
       >
         <Popup>
           <div className="text-sm">
-            <p className="font-bold">
-              {routeTypeName(vehicle.routeType)} {vehicle.routeShortName ?? ""}
-            </p>
+            <p className="font-bold">{vehicleTitle(vehicle)}</p>
             {speedMps > 0 && (
               <div className="text-muted-foreground mt-1">
                 Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
