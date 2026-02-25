@@ -53,7 +53,7 @@ export function StopSearch({
           placeholder="Sök station eller hållplats..."
           value={query}
           onChange={handleInputChange}
-          className="h-11 pl-10 text-base bg-white dark:bg-card"
+          className="h-11 pl-10 text-base bg-card dark:bg-card"
           autoComplete="off"
         />
         {isLoading && (

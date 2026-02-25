@@ -115,7 +115,7 @@ export function TripStopList({
                   <div className="relative z-10 flex items-center justify-center w-5 h-5">
                     {isNext && (
                       <span
-                        className="absolute inline-flex h-4 w-4 rounded-full opacity-40 animate-ping"
+                        className="absolute inline-flex h-4 w-4 rounded-full opacity-80 animate-ping"
                         style={{ backgroundColor: routeColor }}
                       />
                     )}
