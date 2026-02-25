@@ -764,7 +764,7 @@ pendl/
 │   │   ├── layout.tsx            # Root layout
 │   │   ├── page.tsx              # Home page
 │   │   ├── area/[areaId]/page.tsx
-│   │   ├── favoriter/page.tsx
+│   │   ├── favorites/page.tsx
 │   │   ├── map/page.tsx
 │   │   ├── trip/
 │   │   │   └── [tripId]/

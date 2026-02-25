@@ -90,7 +90,7 @@ export function FavoritesSection() {
           ))}
           {favorites.length > 5 && (
             <Link
-              href="/favoriter"
+              href="/favorites"
               className="block text-center text-sm text-muted-foreground hover:text-foreground"
             >
               Visa alla ({favorites.length})

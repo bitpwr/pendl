@@ -1,6 +1,6 @@
 import { FavoritesList } from "@/components/favorites/favorites-list";
 
-export default function FavoriterPage() {
+export default function FavoritesPage() {
   return (
     <div className="space-y-8">
       <section>

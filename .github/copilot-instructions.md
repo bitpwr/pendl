@@ -133,7 +133,7 @@ src/
 ├── app/                    # Next.js App Router pages
 │   ├── api/               # API routes
 │   ├── area/[areaId]/     # Area departures page
-│   ├── favoriter/         # Favorites page
+│   ├── favorites/         # Favorites page
 │   ├── map/               # Map page
 │   ├── trip/[tripId]/     # Trip details page
 │   └── page.tsx           # Home page with search
