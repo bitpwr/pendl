@@ -1,3 +1,30 @@
+## [0.6.0] - 2026-02-25
+
+### ✨ Features
+
+- log requested areas, trips and map (`||dda8507`)
+- show transport name in vehicle popup on map (`||adb8826`)
+- link to areas instead of stops on trip page (`||ef83ab7`)
+
+### 📦 Build System
+
+- disable next.js telemetry (`||f24f7de`)
+- postgres uses init-db.sql from pendl docker image (`||7045b57`)
+
+### 💎 Styling
+
+- reduce padding in RouteBadge and header (`||2ea17bd`)
+- improve readability and visual hierarchy (`||a4e3bef`)
+- add support for dark mode (`||8d349fa`)
+
+### 🧹 Maintenance
+
+- adjust remaining time presentation when less than 2 minutes (`||8f7f28b`)
+- remove all stop related pages and apis (`||ff4bfa1`)
+- simplify docker compose scripts and add sql helper (`||1fabef3`)
+- rename favoriter folder to favorites (`||8268012`)
+- clean up database and improve headsign (`||9db4cd2`)
+
 ## [0.5.0] - 2026-02-23
 
 ### ✨ Features
