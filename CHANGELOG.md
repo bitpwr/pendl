@@ -2,118 +2,118 @@
 
 ### ✨ Features
 
-- log requested areas, trips and map (`||dda8507`)
-- show transport name in vehicle popup on map (`||adb8826`)
-- link to areas instead of stops on trip page (`||ef83ab7`)
+- log requested areas, trips and map (`dda8507`)
+- show transport name in vehicle popup on map (`adb8826`)
+- link to areas instead of stops on trip page (`ef83ab7`)
 
 ### 📦 Build System
 
-- disable next.js telemetry (`||f24f7de`)
-- postgres uses init-db.sql from pendl docker image (`||7045b57`)
+- disable next.js telemetry (`f24f7de`)
+- postgres uses init-db.sql from pendl docker image (`7045b57`)
 
 ### 💎 Styling
 
-- reduce padding in RouteBadge and header (`||2ea17bd`)
-- improve readability and visual hierarchy (`||a4e3bef`)
-- add support for dark mode (`||8d349fa`)
+- reduce padding in RouteBadge and header (`2ea17bd`)
+- improve readability and visual hierarchy (`a4e3bef`)
+- add support for dark mode (`8d349fa`)
 
 ### 🧹 Maintenance
 
-- adjust remaining time presentation when less than 2 minutes (`||8f7f28b`)
-- remove all stop related pages and apis (`||ff4bfa1`)
-- simplify docker compose scripts and add sql helper (`||1fabef3`)
-- rename favoriter folder to favorites (`||8268012`)
-- clean up database and improve headsign (`||9db4cd2`)
+- adjust remaining time presentation when less than 2 minutes (`8f7f28b`)
+- remove all stop related pages and apis (`ff4bfa1`)
+- simplify docker compose scripts and add sql helper (`1fabef3`)
+- rename favoriter folder to favorites (`8268012`)
+- clean up database and improve headsign (`9db4cd2`)
 
 ## [0.5.0] - 2026-02-23
 
 ### ✨ Features
 
-- add a 404 page (`||fd9a752`)
-- separate trip and vehicle api for efficiency (`||a5be45c`)
-- more details in departure time (`||ad600fe`)
-- show speed in vehicle popup (`||a127cd8`)
-- include departures 15 minutes after scheduled time to account for delays (`||9b8f211`)
-- show vehicle type in map header (`||c5a1303`)
-- index vehicle by trip for more efficient lookup (`||7e7937b`)
+- add a 404 page (`fd9a752`)
+- separate trip and vehicle api for efficiency (`a5be45c`)
+- more details in departure time (`ad600fe`)
+- show speed in vehicle popup (`a127cd8`)
+- include departures 15 minutes after scheduled time to account for delays (`9b8f211`)
+- show vehicle type in map header (`c5a1303`)
+- index vehicle by trip for more efficient lookup (`7e7937b`)
 
 ### 🧹 Maintenance
 
-- fix typescript warning (`||1ec2ebb`)
-- remove timestamp from logs (`||ad5df59`)
-- rearrange title on map page and remove refresh button (`||904ee38`)
-- hide show on map on stop page (`||3af3ed3`)
-- separate route type colors from text colors (`||688de57`)
+- fix typescript warning (`1ec2ebb`)
+- remove timestamp from logs (`ad5df59`)
+- rearrange title on map page and remove refresh button (`904ee38`)
+- hide show on map on stop page (`3af3ed3`)
+- separate route type colors from text colors (`688de57`)
 
 ## [0.4.0] - 2026-02-19
 
 ### ✨ Features
 
-- show trip for selected vehicle on map (`||7c49c7a`)
-- trip and vehicle colors based on route name (`||fc0ee8d`)
-- only update required realtime data when needed (`||b914eed`)
-- get realtime from backend instead of service (`||429259d`)
+- show trip for selected vehicle on map (`7c49c7a`)
+- trip and vehicle colors based on route name (`fc0ee8d`)
+- only update required realtime data when needed (`b914eed`)
+- get realtime from backend instead of service (`429259d`)
 
 ### 🧹 Maintenance
 
-- use common route type names in map (`||d019691`)
-- use separate intervals for all realtime data (`||c0f1ed2`)
-- remove night throttling realtime download (`||bdc34a1`)
+- use common route type names in map (`d019691`)
+- use separate intervals for all realtime data (`c0f1ed2`)
+- remove night throttling realtime download (`bdc34a1`)
 
 ## [0.3.0] - 2026-02-14
 
 ### ✨ Features
 
-- add night throttling of realtime data (`||8236184`)
-- indicate if realtime data is not available (`||073a298`)
+- add night throttling of realtime data (`8236184`)
+- indicate if realtime data is not available (`073a298`)
 
 ### 📦 Build System
 
-- exclude scrips in dockerignore (`||15e03b2`)
-- add scripts to build docker and run services (`||86c4359`)
-- verify docker builds when making a release (`||a1d4eb4`)
-- update copilot-instructions (`||8b64fa9`)
+- exclude scrips in dockerignore (`15e03b2`)
+- add scripts to build docker and run services (`86c4359`)
+- verify docker builds when making a release (`a1d4eb4`)
+- update copilot-instructions (`8b64fa9`)
 
 ### 📝 Other Changes
 
-- doc: update README and architecture (`||8c2e692`)
+- doc: update README and architecture (`8c2e692`)
 
 ## [0.2.0] - 2026-02-14
 
 ### ✨ Features
 
-- enable show and fly to users position (`||b943074`)
-- show destination on trip page (`||dbc5ea8`)
-- trip map shows icon and less padding (`||dbea6d4`)
-- main map shows icons and can select different type (`||29e5938`)
+- enable show and fly to users position (`b943074`)
+- show destination on trip page (`dbc5ea8`)
+- trip map shows icon and less padding (`dbea6d4`)
+- main map shows icons and can select different type (`29e5938`)
 
 ### 🐛 Bug Fixes
 
-- handle departures after 24:00 (`||b5e0d85`)
-- show max 6 departures per stop (`||0f68f95`)
-- correct lint errors (`||8824d1b`)
-- hide "show on map" for now (`||d812898`)
-- current stop and times corrected for trip page (`||394e973`)
+- handle departures after 24:00 (`b5e0d85`)
+- show max 6 departures per stop (`0f68f95`)
+- correct lint errors (`8824d1b`)
+- hide "show on map" for now (`d812898`)
+- current stop and times corrected for trip page (`394e973`)
 
 ### 🧹 Maintenance
 
-- remove next.js icons (`||eb09e91`)
+- remove next.js icons (`eb09e91`)
 
 ### 📝 Other Changes
 
-- doc: chores called maintenance in changelog (`||6485ca3`)
+- doc: chores called maintenance in changelog (`6485ca3`)
 
 ## [0.1.2] - 2026-02-13
 
 ### 🐛 Bug Fixes
 
-- remove unused fields in database (`||f2ff1a6`)
-- add memory efficient import script (`||08e630b`)
-- adjust docker compose for production (`||e0ec9d5`)
+- remove unused fields in database (`f2ff1a6`)
+- add memory efficient import script (`08e630b`)
+- adjust docker compose for production (`e0ec9d5`)
 
 ### 🔧 CI/CD
 
-- changelog groups commits by type (`||1aef464`)
+- changelog groups commits by type (`1aef464`)
 
 ## [0.1.1] - 2026-02-11
 

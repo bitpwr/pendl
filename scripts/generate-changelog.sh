@@ -17,7 +17,7 @@ else
 fi
 
 # Get all commits
-ALL_COMMITS=$(git log $COMMIT_RANGE --pretty=format:"%s|||%h" --no-merges)
+ALL_COMMITS=$(git log $COMMIT_RANGE --pretty=format:"%s%x09%h" --no-merges)
 
 if [ -z "$ALL_COMMITS" ]; then
   echo "No new commits since last tag."
@@ -38,7 +38,7 @@ declare -A CHORE
 declare -A OTHER
 
 # Parse commits and group by type
-while IFS='|||' read -r message hash; do
+while IFS=$'\t' read -r message hash; do
   # Extract type from conventional commit format
   if [[ $message =~ ^([a-z]+)(\(.+\))?:\ (.+)$ ]]; then
     type="${BASH_REMATCH[1]}"
