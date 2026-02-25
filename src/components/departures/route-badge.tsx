@@ -16,8 +16,8 @@ export function RouteBadge({
 }: RouteBadgeProps) {
   const sizeClasses = {
     sm: "text-xs min-w-9 px-1.5 py-0.5 gap-1",
-    md: "text-sm min-w-12 px-2.5 py-1 gap-1.5",
-    lg: "text-base min-w-14 px-3 py-1.5 gap-2",
+    md: "text-sm min-w-12 px-1.5 py-1 gap-1.5",
+    lg: "text-base min-w-14 px-2 py-1.5 gap-2",
   };
 
   const iconSizes = {
