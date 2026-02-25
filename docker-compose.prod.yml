@@ -32,7 +32,8 @@ services:
   postgres-init:
     image: bitpwr/pendl:latest
     container_name: pendl-postgres-init
-    command: ["sh", "-c", "cp /app/scripts/init-db.sql /init/init.sql"]
+    entrypoint: ["cp"]
+    command: ["/app/scripts/init-db.sql", "/init/init.sql"]
     volumes:
       - pendl_db_init:/init
     restart: "no"
