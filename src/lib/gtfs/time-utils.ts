@@ -85,7 +85,7 @@ export function formatTimeRemaining(seconds: number): string {
   if (seconds < 75) {
     return "1 min";
   }
-  if (seconds < 110) {
+  if (seconds < 105) {
     return "1,5 min";
   }
   if (seconds < 3600) {
@@ -94,6 +94,28 @@ export function formatTimeRemaining(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   return mins > 0 ? `${hours} h ${mins} min` : `${hours} h`;
+}
+
+export function formatDelay(seconds: number): string {
+  if (seconds < -45) {
+    return `${Math.round(seconds / 60)} min`;
+  }
+  if (seconds < -20) {
+    return "-30 s";
+  }
+  if (seconds < 20) {
+    return "";
+  }
+  if (seconds < 45) {
+    return "+30 s";
+  }
+  if (seconds < 75) {
+    return "+1 min";
+  }
+  if (seconds < 105) {
+    return "+1,5 min";
+  }
+  return `+${Math.round(seconds / 60)} min`;
 }
 
 /**

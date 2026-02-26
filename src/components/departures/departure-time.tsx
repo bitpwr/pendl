@@ -5,6 +5,7 @@ import {
   formatTime,
   secondsUntil,
   formatTimeRemaining,
+  formatDelay,
 } from "@/lib/gtfs/time-utils";
 
 interface DepartureTimeProps {
@@ -22,8 +23,8 @@ export function DepartureTime({
 }: DepartureTimeProps) {
   const displayTime = predictedTime || scheduledTime;
   const secondsRemaining = secondsUntil(displayTime);
-  const delayMinutes = predictedTime
-    ? Math.round((predictedTime.getTime() - scheduledTime.getTime()) / 60000)
+  const delaySeconds = predictedTime
+    ? Math.round((predictedTime.getTime() - scheduledTime.getTime()) / 1000)
     : 0;
 
   if (isCancelled) {
@@ -40,54 +41,34 @@ export function DepartureTime({
   }
 
   // Show relative time for departures within 10 minutes
-  if (secondsRemaining <= 600 && secondsRemaining >= 0) {
-    return (
-      <div className="text-right tabular-nums">
-        <span
-          className={cn(
-            "text-xl font-bold leading-none",
-            isRealtime ? "text-green-600 dark:text-green-400" : "",
-          )}
-        >
-          {formatTimeRemaining(secondsRemaining)}
-        </span>
-        {delayMinutes !== 0 && (
-          <span
-            className={cn(
-              "mt-0.5 block text-xs font-medium",
-              delayMinutes > 0
-                ? "text-orange-600 dark:text-orange-400"
-                : "text-green-600 dark:text-green-400",
-            )}
-          >
-            {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes} min
-          </span>
-        )}
-      </div>
-    );
-  }
+  const isSoon = secondsRemaining <= 600 && secondsRemaining >= 0;
+  const timeClassName = isSoon
+    ? "text-xl font-bold leading-none"
+    : "text-base font-semibold";
+  const timeLabel = isSoon
+    ? formatTimeRemaining(secondsRemaining)
+    : formatTime(displayTime);
 
-  // Show absolute time for later departures
   return (
     <div className="text-right tabular-nums">
       <span
         className={cn(
-          "text-base font-semibold",
+          timeClassName,
           isRealtime ? "text-green-600 dark:text-green-400" : "",
         )}
       >
-        {formatTime(displayTime)}
+        {timeLabel}
       </span>
-      {delayMinutes !== 0 && (
+      {(delaySeconds > 20 || delaySeconds < -20) && (
         <span
           className={cn(
             "mt-0.5 block text-xs font-medium",
-            delayMinutes > 0
+            delaySeconds > 0
               ? "text-orange-600 dark:text-orange-400"
               : "text-green-600 dark:text-green-400",
           )}
         >
-          {delayMinutes > 0 ? `+${delayMinutes}` : delayMinutes} min
+          {formatDelay(delaySeconds)}
         </span>
       )}
     </div>
