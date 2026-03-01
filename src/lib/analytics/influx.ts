@@ -163,14 +163,6 @@ export async function flushRealtimeSummary(): Promise<void> {
     .floatField("window_seconds", windowSeconds)
     .timestamp(new Date(now));
 
-  console.log("influx summary", {
-    vehicle_downloads: state.vehicleDownloads,
-    tripupdate_downloads: state.tripUpdateDownloads,
-    servicealert_downloads: state.serviceAlertDownloads,
-    gtfs_downloads: state.staticDownloads,
-    window_seconds: windowSeconds,
-  });
-
   await writePoint(point);
 
   state.summaryWindowStartMs = now;
