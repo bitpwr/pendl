@@ -1,3 +1,19 @@
+## [0.7.0] - 2026-03-01
+
+### ✨ Features
+
+- add support for influx metrics (`5a84d7d`)
+- improve departure times in area page (`287e0eb`)
+- make the app a PWA and add icons (`fa3e5ea`)
+
+### 📦 Build System
+
+- fix permission problem with postgres-init container (`29c8c97`)
+
+### 🧹 Maintenance
+
+- ensure changelog does not get || by commits (`1fb9307`)
+
 ## [0.6.0] - 2026-02-25
 
 ### ✨ Features
