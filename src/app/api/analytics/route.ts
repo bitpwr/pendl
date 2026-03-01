@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackPageLoad } from "@/lib/analytics/influx";
 
 interface AnalyticsPayload {
   key?: string;
@@ -28,6 +29,8 @@ export async function POST(request: NextRequest) {
       key: payload.key,
       value: payload.value,
     });
+
+    trackPageLoad(payload.key, payload.value);
   } catch (error) {
     console.error("Error logging analytics:", error);
   }

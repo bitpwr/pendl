@@ -13,6 +13,11 @@ import type {
   StopTimeScheduleRelationship,
 } from "./realtime-proto";
 import { GTFS_CONFIG } from "./config";
+import {
+  trackServiceAlertDownload,
+  trackTripUpdateDownload,
+  trackVehicleDownload,
+} from "@/lib/analytics/influx";
 
 // GTFS Realtime proto definition (inline for simplicity)
 const protoDefinition = `
@@ -233,6 +238,7 @@ export async function fetchTripUpdates(): Promise<TripUpdate[]> {
     return [];
   }
 
+  trackTripUpdateDownload();
   const feed = await fetchRealtimeFeed(url);
   return feed.entity
     .filter((e) => e.tripUpdate)
@@ -249,6 +255,7 @@ export async function fetchVehiclePositions(): Promise<VehiclePosition[]> {
     return [];
   }
 
+  trackVehicleDownload();
   const feed = await fetchRealtimeFeed(url);
   return feed.entity
     .filter((e) => e.vehicle)
@@ -265,6 +272,7 @@ export async function fetchServiceAlerts(): Promise<ServiceAlert[]> {
     return [];
   }
 
+  trackServiceAlertDownload();
   const feed = await fetchRealtimeFeed(url);
   return feed.entity
     .filter((e) => e.alert)

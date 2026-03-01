@@ -8,6 +8,7 @@ import {
 import { pipeline } from "stream/promises";
 import { GTFS_CONFIG } from "./config";
 import path from "path";
+import { trackStaticDownload } from "@/lib/analytics/influx";
 
 /**
  * Download GTFS static data zip file
@@ -71,6 +72,7 @@ export async function downloadGtfsStatic(): Promise<string> {
   );
 
   console.log(`GTFS data downloaded to ${zipPath}`);
+  trackStaticDownload();
   return zipPath;
 }
 
