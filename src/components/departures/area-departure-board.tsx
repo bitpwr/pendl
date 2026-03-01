@@ -72,6 +72,25 @@ export function AreaDepartureBoard({
     group.departures.some((departure) => !!departure.realtimeDeparture),
   );
 
+  const sortedGroups = [...data.groups].sort((a, b) => {
+    const routeTypeA = a.departures[0]?.routeType;
+    const routeTypeB = b.departures[0]?.routeType;
+
+    if (routeTypeA === undefined && routeTypeB === undefined) {
+      return 0;
+    }
+
+    if (routeTypeA === undefined) {
+      return 1;
+    }
+
+    if (routeTypeB === undefined) {
+      return -1;
+    }
+
+    return routeTypeA - routeTypeB;
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -107,7 +126,7 @@ export function AreaDepartureBoard({
         </div>
       )}
 
-      {data.groups.map((group) => (
+      {sortedGroups.map((group) => (
         <StopGroupCard key={group.stopId} group={group} />
       ))}
     </div>
