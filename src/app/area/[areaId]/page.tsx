@@ -78,6 +78,14 @@ export default function AreaPage() {
 
   const areaName = data?.area?.areaName || "Laddar...";
 
+  useEffect(() => {
+    if (!data?.area?.areaName) {
+      return;
+    }
+
+    document.title = `${data.area.areaName} | Pendl`;
+  }, [data?.area?.areaName]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">

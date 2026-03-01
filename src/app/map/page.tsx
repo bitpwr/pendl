@@ -7,6 +7,10 @@ export default function MapPage() {
   const hasLoggedMapView = useRef(false);
 
   useEffect(() => {
+    document.title = "Karta | Pendl";
+  }, []);
+
+  useEffect(() => {
     if (hasLoggedMapView.current) {
       return;
     }

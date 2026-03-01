@@ -150,6 +150,16 @@ export default function TripPage() {
     });
   }, [data?.trip?.tripId, data?.trip?.routeType, data?.trip?.routeShortName]);
 
+  useEffect(() => {
+    if (!data || !data.trip || !data.stops) {
+      return;
+    }
+
+    const title = `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName} → ${data.stops.at(-1)?.stopName}`;
+
+    document.title = `${title} | Pendl`;
+  }, [data]);
+
   if (error) {
     return (
       <div className="space-y-5">
