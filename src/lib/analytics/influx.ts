@@ -57,7 +57,7 @@ function ensureSummaryInterval(): void {
   const intervalMs = getSummaryIntervalMs();
 
   state.flushInterval = setInterval(() => {
-    void flushRealtimeSummary();
+    void flushMetrics();
   }, intervalMs);
   state.flushInterval.unref();
 }
@@ -85,39 +85,52 @@ function getWriteApi(): WriteApi | null {
 
   const influx = new InfluxDB({ url, token });
   state.writeApi = influx.getWriteApi(org, bucket, "ms", {
-    batchSize: 1,
-    flushInterval: 1_000,
-    maxRetries: 1,
+    batchSize: 100,
+    flushInterval: 10_000,
+    maxRetries: 2,
   });
 
   return state.writeApi;
 }
 
-async function writePoint(point: Point): Promise<void> {
+function enqueuePoints(points: Point[]): void {
   const writeApi = getWriteApi();
   if (!writeApi) {
     return;
   }
 
   try {
-    writeApi.writePoint(point);
-    await writeApi.flush();
+    writeApi.writePoints(points);
   } catch (error) {
-    console.error("Failed to write analytics point to InfluxDB", error);
+    console.error("Failed to enqueue analytics points to InfluxDB", error);
   }
 }
 
-export async function trackPageLoad(
+async function writePoints(points: Point[]): Promise<void> {
+  const writeApi = getWriteApi();
+  if (!writeApi) {
+    return;
+  }
+
+  try {
+    writeApi.writePoints(points);
+    await writeApi.flush();
+  } catch (error) {
+    console.error("Failed to write analytics points to InfluxDB", error);
+  }
+}
+
+export function trackPageLoad(
   page: "area" | "trip" | "map",
   value: string,
-): Promise<void> {
+): void {
   const point = new Point("page_loads")
     .tag("page", page)
     .stringField("value", value || "")
     .intField("count", 1)
     .timestamp(new Date());
 
-  await writePoint(point);
+  enqueuePoints([point]);
 }
 
 export function trackVehicleDownload(): void {
@@ -138,13 +151,14 @@ export function trackServiceAlertDownload(): void {
   state.serviceAlertDownloads += 1;
 }
 
+// will not work, importer will shutdown before flush timer
 export function trackStaticDownload(): void {
   const state = getState();
   ensureSummaryInterval();
   state.staticDownloads += 1;
 }
 
-export async function flushRealtimeSummary(): Promise<void> {
+async function flushMetrics(): Promise<void> {
   const state = getState();
   const now = Date.now();
   const elapsedMs = now - state.summaryWindowStartMs;
@@ -155,15 +169,29 @@ export async function flushRealtimeSummary(): Promise<void> {
 
   const windowSeconds = Math.max(elapsedMs / 1000, 1);
 
-  const point = new Point("gtfs_downloads")
-    .intField("vehicle", state.vehicleDownloads)
-    .intField("tripupdate", state.tripUpdateDownloads)
-    .intField("servicealert", state.serviceAlertDownloads)
-    .intField("static", state.staticDownloads)
-    .floatField("window_seconds", windowSeconds)
-    .timestamp(new Date(now));
+  const points: Point[] = [
+    new Point("gtfs_downloads")
+      .intField("vehicle", state.vehicleDownloads)
+      .intField("tripupdate", state.tripUpdateDownloads)
+      .intField("servicealert", state.serviceAlertDownloads)
+      .intField("static", state.staticDownloads)
+      .floatField("window_seconds", windowSeconds)
+      .timestamp(new Date(now)),
+  ];
 
-  await writePoint(point);
+  const pageTypes: Array<string> = ["area", "trip", "map"];
+
+  for (const page of pageTypes) {
+    points.push(
+      new Point("page_loads")
+        .tag("page", page)
+        .stringField("value", "")
+        .intField("count", 0)
+        .timestamp(new Date(now)),
+    );
+  }
+
+  await writePoints(points);
 
   state.summaryWindowStartMs = now;
   state.vehicleDownloads = 0;
