@@ -1,3 +1,16 @@
+## [0.7.1] - 2026-03-02
+
+### 💎 Styling
+
+- group departures by type on area page (`8b5f61b`)
+- show relevant page titles (`d41e1c7`)
+
+### 🧹 Maintenance
+
+- remove influx logging (`3f3a437`)
+- page load metrics are reset and more efficient (`5de9d39`)
+- rename call-sql.sh script (`c231910`)
+
 ## [0.7.0] - 2026-03-01
 
 ### ✨ Features
