@@ -13,8 +13,8 @@ interface Props {
 export async function GET(request: NextRequest, { params }: Props) {
   const { areaId } = await params;
   const searchParams = request.nextUrl.searchParams;
-  const limit = parseInt(searchParams.get("limit") || "50", 10);
-  const hoursAhead = parseInt(searchParams.get("hours") || "2", 10);
+  const limit = parseInt(searchParams.get("limit") || "150", 10);
+  const minutesAhead = parseInt(searchParams.get("minutes") || "50", 10);
 
   try {
     await triggerTripUpdates();
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     // Get scheduled departures for all stops in the area
     const scheduled = await getScheduledDeparturesForStops(stopIds, {
       limit: Math.min(limit, 200),
-      hoursAhead: Math.min(hoursAhead, 12),
+      minutesAhead: Math.min(minutesAhead, 240),
     });
 
     // Get realtime updates for these trips

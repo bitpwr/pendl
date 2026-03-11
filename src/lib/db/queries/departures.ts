@@ -1,7 +1,7 @@
 import { query } from "../index";
 import { RouteType, toRouteType } from "@/types/gtfs";
 
-const departureOffset = 15 * 60 * 1000; // Add buffer to include recently departed trips that might be delayed
+const offsetMinutes = 15; // Add buffer to include recently departed trips that might be delayed
 
 export interface ScheduledDeparture {
   tripId: string;
@@ -31,13 +31,22 @@ interface TimeWindow {
  * 1. Today's services (00:00-03:00)
  * 2. Yesterday's services (24:00-27:00)
  */
-function calculateGtfsTimeWindow(date: Date, hoursAhead: number): TimeWindow[] {
+function formatGtfsTime(totalMinutes: number): string {
+  const hour = Math.floor(totalMinutes / 60);
+  const minute = totalMinutes % 60;
+  return `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}:00`;
+}
+
+function calculateGtfsTimeWindow(
+  date: Date,
+  minutesAhead: number,
+): TimeWindow[] {
   const hours = date.getHours();
   const minutes = date.getMinutes();
-  const currentTime = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
-
-  const endHour = hours + hoursAhead;
-  const endTime = `${endHour.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+  const startTotalMinutes = hours * 60 + minutes;
+  const endTotalMinutes = startTotalMinutes + minutesAhead;
+  const currentTime = formatGtfsTime(startTotalMinutes);
+  const endTime = formatGtfsTime(endTotalMinutes);
 
   const windows: TimeWindow[] = [];
 
@@ -51,9 +60,10 @@ function calculateGtfsTimeWindow(date: Date, hoursAhead: number): TimeWindow[] {
   // If we're between 00:00 and 03:00, also check yesterday's late services
   // (times 24:00-27:00 from yesterday's service day)
   if (hours < 3) {
-    const yesterdayHours = hours + 24;
-    const yesterdayStart = `${yesterdayHours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
-    const yesterdayEnd = `${(yesterdayHours + hoursAhead).toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:00`;
+    const yesterdayStartTotalMinutes = (hours + 24) * 60 + minutes;
+    const yesterdayEndTotalMinutes = yesterdayStartTotalMinutes + minutesAhead;
+    const yesterdayStart = formatGtfsTime(yesterdayStartTotalMinutes);
+    const yesterdayEnd = formatGtfsTime(yesterdayEndTotalMinutes);
 
     const yesterday = new Date(date);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -76,15 +86,15 @@ export async function getScheduledDepartures(
   stopId: string,
   options: {
     limit?: number;
-    hoursAhead?: number;
+    minutesAhead?: number;
   } = {},
 ): Promise<ScheduledDeparture[]> {
-  const { limit = 50, hoursAhead = 2 } = options;
+  const { limit = 50, minutesAhead = 60 } = options;
   // Add buffer to include recently departed trips that might be delayed
-  const now = new Date(Date.now() - departureOffset);
+  const start = new Date(Date.now() - offsetMinutes * 60 * 1000);
 
   // Calculate time windows (handles times after midnight)
-  const windows = calculateGtfsTimeWindow(now, hoursAhead);
+  const windows = calculateGtfsTimeWindow(start, minutesAhead + offsetMinutes);
 
   const sql = `
     SELECT
@@ -205,18 +215,18 @@ export async function getScheduledDeparturesForStops(
   options: {
     startTime?: string;
     limit?: number;
-    hoursAhead?: number;
+    minutesAhead?: number;
   } = {},
 ): Promise<ScheduledDeparture[]> {
   if (stopIds.length === 0) return [];
 
-  const { limit = 50, hoursAhead = 1 } = options;
+  const { limit = 50, minutesAhead = 60 } = options;
 
   // Add buffer to include recently departed trips that might be delayed
-  const now = new Date(Date.now() - departureOffset);
+  const start = new Date(Date.now() - offsetMinutes * 60 * 1000);
 
   // Calculate time windows (handles times after midnight)
-  const windows = calculateGtfsTimeWindow(now, hoursAhead);
+  const windows = calculateGtfsTimeWindow(start, minutesAhead + offsetMinutes);
 
   const stopIdPlaceholders = stopIds.map((_, i) => `$${i + 5}`).join(", ");
 
