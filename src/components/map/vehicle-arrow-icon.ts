@@ -10,15 +10,9 @@ export function createVehicleArrowIcon(
   bearing: number = 0,
   size: number = 32,
 ): string {
-  // shadow is also translated, update to depend on bearing
-
   return `
     <svg width="${size}" height="${size}" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
       <g transform="rotate(${bearing} 16 16)">
-        <!-- Drop shadow -->
-        <path d="M 16 4 L 22 22 L 16 18 L 10 22 Z"
-              fill="rgba(0,0,0,0.4)"
-              transform="translate(2,2)" />
         <!-- Main arrow -->
         <path d="M 16 4 L 22 22 L 16 18 L 10 22 Z"
               fill="${color}"
