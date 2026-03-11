@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useEffect, useState, useMemo, useCallback, memo, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, Locate } from "lucide-react";
+import type { Marker as LeafletMarker } from "leaflet";
 import type { Vehicle } from "@/types/api";
 import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
@@ -220,9 +221,26 @@ export function VehicleMap({
     return vehicles;
   }, [vehicles, selectedVehicle]);
 
+  const useLightweightMarkers =
+    displayedVehicles.length > 500 && selectedVehicle === null;
+
   // Create vehicle markers only on client
   const vehicleMarkers = useMemo(() => {
     if (!isClient) return null;
+
+    if (useLightweightMarkers) {
+      return displayedVehicles.map((vehicle) => (
+        <LightVehicleMarker
+          key={vehicle.vehicleId}
+          vehicle={vehicle}
+          onSelect={setSelectedVehicle}
+          isSelected={false}
+        />
+      ));
+    }
+
+    if (!L) return null;
+
     return displayedVehicles.map((vehicle) => (
       <VehicleMarker
         key={vehicle.vehicleId}
@@ -232,7 +250,13 @@ export function VehicleMap({
         isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
       />
     ));
-  }, [displayedVehicles, isClient, L, selectedVehicle]);
+  }, [
+    displayedVehicles,
+    isClient,
+    L,
+    selectedVehicle?.vehicleId,
+    useLightweightMarkers,
+  ]);
 
   if (!isClient) {
     return <MapSkeleton height={height} />;
@@ -336,6 +360,7 @@ export function VehicleMap({
             zoom={zoom}
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
+            preferCanvas={true}
           >
             <MapUpdater
               center={mapCenter}
@@ -461,6 +486,8 @@ function VehicleMarkerComponent({
   onSelect,
   isSelected,
 }: VehicleMarkerProps) {
+  const markerRef = useRef<LeafletMarker | null>(null);
+
   // Get the color for this route type
   const bearing = vehicle.bearing ?? 0;
   const speedMps = vehicle.speed ?? 0;
@@ -471,47 +498,87 @@ function VehicleMarkerComponent({
   );
 
   // Create custom arrow icon
-  const icon = createVehicleLeafletIcon(
-    L,
-    color,
-    bearing,
-    isSelected ? 48 : 32,
+  const icon = useMemo(
+    () => createVehicleLeafletIcon(L, color, bearing, isSelected ? 48 : 32),
+    [L, color, bearing, isSelected],
+  );
+
+  useEffect(() => {
+    if (isSelected) {
+      markerRef.current?.openPopup();
+    }
+  }, [isSelected]);
+
+  return (
+    <Marker
+      ref={markerRef}
+      position={[vehicle.latitude, vehicle.longitude]}
+      icon={icon}
+      eventHandlers={{
+        click: () => onSelect(vehicle),
+        popupclose: () => onSelect(null),
+      }}
+    >
+      <Popup>
+        <div className="text-sm">
+          <p className="font-bold">{vehicleTitle(vehicle)}</p>
+          {speedMps > 0 && (
+            <div className="text-muted-foreground mt-1">
+              Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
+            </div>
+          )}
+          <a
+            href={`/trip/${vehicle.tripId}`}
+            className="text-blue-600 hover:underline mt-1 inline-block"
+          >
+            Visa resa
+          </a>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
+const VehicleMarker = memo(
+  VehicleMarkerComponent,
+  (prev, next) =>
+    prev.isSelected === next.isSelected &&
+    prev.vehicle.vehicleId === next.vehicle.vehicleId &&
+    prev.vehicle.latitude === next.vehicle.latitude &&
+    prev.vehicle.longitude === next.vehicle.longitude &&
+    prev.vehicle.bearing === next.vehicle.bearing &&
+    prev.vehicle.speed === next.vehicle.speed &&
+    prev.vehicle.routeShortName === next.vehicle.routeShortName,
+);
+
+interface LightVehicleMarkerProps {
+  vehicle: Vehicle;
+  onSelect: (vehicle: Vehicle | null) => void;
+  isSelected: boolean;
+}
+
+function LightVehicleMarker({
+  vehicle,
+  onSelect,
+  isSelected,
+}: LightVehicleMarkerProps) {
+  const color = routeTypeColor(
+    vehicle.routeType,
+    Number.parseInt(vehicle.routeShortName),
   );
 
   return (
-    <>
-      <style jsx global>{`
-        .vehicle-marker {
-          background: transparent !important;
-          border: none !important;
-        }
-      `}</style>
-      <Marker
-        position={[vehicle.latitude, vehicle.longitude]}
-        icon={icon}
-        eventHandlers={{
-          click: () => onSelect(vehicle),
-          popupclose: () => onSelect(null),
-        }}
-      >
-        <Popup>
-          <div className="text-sm">
-            <p className="font-bold">{vehicleTitle(vehicle)}</p>
-            {speedMps > 0 && (
-              <div className="text-muted-foreground mt-1">
-                Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
-              </div>
-            )}
-            <a
-              href={`/trip/${vehicle.tripId}`}
-              className="text-blue-600 hover:underline mt-1 inline-block"
-            >
-              Visa resa
-            </a>
-          </div>
-        </Popup>
-      </Marker>
-    </>
+    <CircleMarker
+      center={[vehicle.latitude, vehicle.longitude]}
+      radius={isSelected ? 7 : 5}
+      fillColor={color}
+      color="#FFFFFF"
+      weight={2}
+      fillOpacity={0.9}
+      eventHandlers={{
+        click: () => onSelect(vehicle),
+      }}
+    ></CircleMarker>
   );
 }
 
