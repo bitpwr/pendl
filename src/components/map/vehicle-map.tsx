@@ -90,10 +90,17 @@ export function VehicleMap({
   const [tripShape, setTripShape] = useState<[number, number][]>([]);
   const [isMapInteracting, setIsMapInteracting] = useState(false);
   const isMapInteractingRef = useRef(false);
+  const [L, setL] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
+    import("leaflet").then((leaflet) => setL(leaflet));
+  }, [isClient]);
 
   useEffect(() => {
     isMapInteractingRef.current = isMapInteracting;
@@ -220,11 +227,12 @@ export function VehicleMap({
       <VehicleMarker
         key={vehicle.vehicleId}
         vehicle={vehicle}
+        L={L}
         onSelect={setSelectedVehicle}
         isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
       />
     ));
-  }, [displayedVehicles, isClient, selectedVehicle]);
+  }, [displayedVehicles, isClient, L, selectedVehicle]);
 
   if (!isClient) {
     return <MapSkeleton height={height} />;
@@ -442,20 +450,17 @@ const MapUpdater = dynamic(
 
 interface VehicleMarkerProps {
   vehicle: Vehicle;
+  L: typeof import("leaflet");
   onSelect: (vehicle: Vehicle | null) => void;
   isSelected: boolean;
 }
 
-function VehicleMarker({ vehicle, onSelect, isSelected }: VehicleMarkerProps) {
-  const [L, setL] = useState<typeof import("leaflet") | null>(null);
-
-  useEffect(() => {
-    // Import Leaflet only on client side
-    import("leaflet").then((leaflet) => setL(leaflet));
-  }, []);
-
-  if (!L) return null;
-
+function VehicleMarkerComponent({
+  vehicle,
+  L,
+  onSelect,
+  isSelected,
+}: VehicleMarkerProps) {
   // Get the color for this route type
   const bearing = vehicle.bearing ?? 0;
   const speedMps = vehicle.speed ?? 0;
