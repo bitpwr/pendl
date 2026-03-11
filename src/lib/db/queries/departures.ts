@@ -107,6 +107,11 @@ export async function getScheduledDepartures(
     ))
     AND st.departure_time >= $2
     AND st.departure_time <= $3
+    AND EXISTS (
+      SELECT 1 FROM stop_times st_next
+      WHERE st_next.trip_id = st.trip_id
+      AND st_next.stop_sequence > st.stop_sequence
+    )
     AND (
       -- Check if service is active for the specified date via calendar
       EXISTS (
@@ -234,6 +239,11 @@ export async function getScheduledDeparturesForStops(
     WHERE st.stop_id IN (${stopIdPlaceholders})
     AND st.departure_time >= $1
     AND st.departure_time <= $2
+    AND EXISTS (
+      SELECT 1 FROM stop_times st_next
+      WHERE st_next.trip_id = st.trip_id
+      AND st_next.stop_sequence > st.stop_sequence
+    )
     AND (
       -- Check if service is active for the specified date via calendar
       EXISTS (
