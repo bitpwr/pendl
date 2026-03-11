@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -88,10 +88,16 @@ export function VehicleMap({
   );
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [tripShape, setTripShape] = useState<[number, number][]>([]);
+  const [isMapInteracting, setIsMapInteracting] = useState(false);
+  const isMapInteractingRef = useRef(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    isMapInteractingRef.current = isMapInteracting;
+  }, [isMapInteracting]);
 
   const fetchVehicles = useCallback(async () => {
     setError(null);
@@ -108,6 +114,10 @@ export function VehicleMap({
       }
 
       const data = await response.json();
+      if (isMapInteractingRef.current) {
+        return;
+      }
+
       setVehicles(data.vehicles || []);
       setLastUpdated(new Date(data.updatedAt));
     } catch (err) {
@@ -116,12 +126,19 @@ export function VehicleMap({
   }, [selectedRouteType]);
 
   useEffect(() => {
-    fetchVehicles();
+    if (!isMapInteracting) {
+      fetchVehicles();
+    }
 
-    // Auto-refresh every 2 seconds
-    const interval = setInterval(fetchVehicles, 2000);
+    // Auto-refresh every 2 seconds (paused while interacting)
+    const interval = setInterval(() => {
+      if (!isMapInteracting) {
+        fetchVehicles();
+      }
+    }, 2000);
+
     return () => clearInterval(interval);
-  }, [fetchVehicles, selectedRouteType]);
+  }, [fetchVehicles, isMapInteracting]);
 
   // Clear selected vehicle if it's no longer in the vehicles list
   useEffect(() => {
@@ -312,7 +329,11 @@ export function VehicleMap({
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
           >
-            <MapUpdater center={mapCenter} locateKey={locateKey} />
+            <MapUpdater
+              center={mapCenter}
+              locateKey={locateKey}
+              onInteractionChange={setIsMapInteracting}
+            />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -360,22 +381,58 @@ export function VehicleMap({
 const MapUpdater = dynamic(
   () =>
     import("react-leaflet").then((mod) => {
-      const { useMap } = mod;
+      const { useMap, useMapEvents } = mod;
 
       return function MapUpdaterComponent({
         center,
         locateKey,
+        onInteractionChange,
       }: {
         center: [number, number];
         locateKey: number;
+        onInteractionChange: (isInteracting: boolean) => void;
       }) {
         const map = useMap();
+        const interactionEndTimeout = useRef<number | null>(null);
+
+        const clearInteractionEndTimeout = () => {
+          if (interactionEndTimeout.current !== null) {
+            window.clearTimeout(interactionEndTimeout.current);
+            interactionEndTimeout.current = null;
+          }
+        };
+
+        const onInteractionStart = () => {
+          clearInteractionEndTimeout();
+          onInteractionChange(true);
+        };
+
+        const onInteractionEnd = () => {
+          clearInteractionEndTimeout();
+          interactionEndTimeout.current = window.setTimeout(() => {
+            onInteractionChange(false);
+          }, 120);
+        };
+
+        useMapEvents({
+          movestart: onInteractionStart,
+          zoomstart: onInteractionStart,
+          moveend: onInteractionEnd,
+          zoomend: onInteractionEnd,
+        });
 
         useEffect(() => {
           if (locateKey > 0) {
             map.flyTo(center, 12, { duration: 1.5 });
           }
         }, [locateKey, center, map]);
+
+        useEffect(() => {
+          return () => {
+            clearInteractionEndTimeout();
+            onInteractionChange(false);
+          };
+        }, [onInteractionChange]);
 
         return null;
       };
