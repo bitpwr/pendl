@@ -42,6 +42,14 @@ interface VehicleMapProps {
   height?: string;
 }
 
+interface MapViewport {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+  zoom: number;
+}
+
 function vehicleType(routeType: RouteType | null): string {
   switch (routeType) {
     case RouteType.Metro:
@@ -69,6 +77,7 @@ function vehicleTitle(vehicle: Vehicle): string {
 // Stockholm default center
 const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
 const DEFAULT_ZOOM = 10;
+const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
 
 export function VehicleMap({
   center = DEFAULT_CENTER,
@@ -91,6 +100,7 @@ export function VehicleMap({
   const [tripShape, setTripShape] = useState<[number, number][]>([]);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [isMapInteracting, setIsMapInteracting] = useState(false);
+  const [mapViewport, setMapViewport] = useState<MapViewport | null>(null);
   const isMapInteractingRef = useRef(false);
   const [L, setL] = useState<typeof import("leaflet") | null>(null);
 
@@ -265,10 +275,26 @@ export function VehicleMap({
     return vehicles;
   }, [vehicles, selectedVehicle]);
 
+  const visibleVehicleCount = useMemo(() => {
+    if (!mapViewport) {
+      return displayedVehicles.length;
+    }
+
+    return displayedVehicles.reduce((count, vehicle) => {
+      const isVisible =
+        vehicle.latitude >= mapViewport.south &&
+        vehicle.latitude <= mapViewport.north &&
+        vehicle.longitude >= mapViewport.west &&
+        vehicle.longitude <= mapViewport.east;
+
+      return isVisible ? count + 1 : count;
+    }, 0);
+  }, [displayedVehicles, mapViewport]);
+
   const useLightweightMarkers =
     isMobileDevice &&
-    displayedVehicles.length > 500 && selectedVehicle === null;
-
+    visibleVehicleCount > LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD &&
+    selectedVehicle === null;
   // Create vehicle markers only on client
   const vehicleMarkers = useMemo(() => {
     if (!isClient) return null;
@@ -411,6 +437,7 @@ export function VehicleMap({
               center={mapCenter}
               locateKey={locateKey}
               onInteractionChange={setIsMapInteracting}
+              onViewportChange={setMapViewport}
             />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -465,10 +492,12 @@ const MapUpdater = dynamic(
         center,
         locateKey,
         onInteractionChange,
+        onViewportChange,
       }: {
         center: [number, number];
         locateKey: number;
         onInteractionChange: (isInteracting: boolean) => void;
+        onViewportChange: (viewport: MapViewport) => void;
       }) {
         const map = useMap();
         const interactionEndTimeout = useRef<number | null>(null);
@@ -485,10 +514,22 @@ const MapUpdater = dynamic(
           onInteractionChange(true);
         };
 
+        const emitViewport = useCallback(() => {
+          const bounds = map.getBounds();
+          onViewportChange({
+            north: bounds.getNorth(),
+            south: bounds.getSouth(),
+            east: bounds.getEast(),
+            west: bounds.getWest(),
+            zoom: map.getZoom(),
+          });
+        }, [map, onViewportChange]);
+
         const onInteractionEnd = () => {
           clearInteractionEndTimeout();
           interactionEndTimeout.current = window.setTimeout(() => {
             onInteractionChange(false);
+            emitViewport();
           }, 120);
         };
 
@@ -500,10 +541,12 @@ const MapUpdater = dynamic(
         });
 
         useEffect(() => {
+          emitViewport();
+
           if (locateKey > 0) {
             map.flyTo(center, 12, { duration: 1.5 });
           }
-        }, [locateKey, center, map]);
+        }, [locateKey, center, map, emitViewport]);
 
         useEffect(() => {
           return () => {
