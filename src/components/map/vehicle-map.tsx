@@ -89,12 +89,56 @@ export function VehicleMap({
   );
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [tripShape, setTripShape] = useState<[number, number][]>([]);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [isMapInteracting, setIsMapInteracting] = useState(false);
   const isMapInteractingRef = useRef(false);
   const [L, setL] = useState<typeof import("leaflet") | null>(null);
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mobileMediaQuery = window.matchMedia("(max-width: 1024px)");
+
+    const detectMobileDevice = () => {
+      const userAgentDataMobile =
+        typeof navigator !== "undefined" && "userAgentData" in navigator
+          ? (
+              navigator as Navigator & {
+                userAgentData?: { mobile?: boolean };
+              }
+            ).userAgentData?.mobile === true
+          : false;
+
+      const userAgentMobile =
+        typeof navigator !== "undefined" &&
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
+
+      const touchDevice =
+        typeof navigator !== "undefined" && navigator.maxTouchPoints > 0;
+
+      const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+      const noHover = window.matchMedia("(hover: none)").matches;
+      const mobileViewport = mobileMediaQuery.matches;
+
+      const isMobileLike =
+        userAgentDataMobile ||
+        userAgentMobile ||
+        ((touchDevice || coarsePointer || noHover) && mobileViewport);
+
+      setIsMobileDevice(isMobileLike);
+    };
+
+    detectMobileDevice();
+    mobileMediaQuery.addEventListener("change", detectMobileDevice);
+
+    return () =>
+      mobileMediaQuery.removeEventListener("change", detectMobileDevice);
   }, []);
 
   useEffect(() => {
@@ -222,6 +266,7 @@ export function VehicleMap({
   }, [vehicles, selectedVehicle]);
 
   const useLightweightMarkers =
+    isMobileDevice &&
     displayedVehicles.length > 500 && selectedVehicle === null;
 
   // Create vehicle markers only on client
