@@ -1,3 +1,19 @@
+## [0.7.2] - 2026-03-11
+
+### 🐛 Bug Fixes
+
+- do not include end stops when showing departures (`a6095bb`)
+- show departures for the next 60 minutes (`3159a05`)
+
+### ⚡ Performance
+
+- do not update vehicles on map while interacting (`3010c6a`)
+- remove shadow from vehicle markers (`9dff002`)
+- use simple marker when many vehicles are shown on map (`34f7feb`)
+- only use simple marker on mobile devices (`9c6ee07`)
+- preload leaflet in the map for better performance (`813d7a6`)
+- use simple marker based on number of vehicles actually shown (`cd1f55b`)
+
 ## [0.7.1] - 2026-03-02
 
 ### 💎 Styling
