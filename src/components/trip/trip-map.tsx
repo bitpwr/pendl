@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RouteType, routeTypeColor, routeTypeName } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "@/components/map/vehicle-arrow-icon";
+import Link from "next/link";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -34,6 +35,7 @@ const CircleMarker = dynamic(
 
 interface TripStop {
   stopId: string;
+  areaId?: string;
   stopName: string;
   stopSequence: number;
   latitude: number;
@@ -166,7 +168,12 @@ export function TripMap({
               >
                 <Popup>
                   <div className="text-sm">
-                    <p className="font-bold">{stop.stopName}</p>
+                    <Link
+                      href={`/area/${encodeURIComponent(stop.areaId ?? "0")}`}
+                      className="font-bold text-inherit! no-underline hover:underline"
+                    >
+                      {stop.stopName}
+                    </Link>
                   </div>
                 </Popup>
               </CircleMarker>
@@ -218,13 +225,11 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
       `}</style>
       <Marker position={[vehicle.latitude, vehicle.longitude]} icon={icon}>
         <Popup>
-          <div className="text-sm">
-            <p className="font-bold">
-              {routeTypeName(routeType)} {routeName}
-            </p>
+          <div className="text-sm font-bold">
+            {routeTypeName(routeType)} {routeName}
           </div>{" "}
           {speedMps > 0 && (
-            <div className="text-muted-foreground mt-1">
+            <div className="text-gray-600 mt-1">
               Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
             </div>
           )}

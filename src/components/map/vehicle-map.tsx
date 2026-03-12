@@ -609,9 +609,9 @@ function VehicleMarkerComponent({
     >
       <Popup>
         <div className="text-sm">
-          <p className="font-bold">{vehicleTitle(vehicle)}</p>
+          <div className="font-bold">{vehicleTitle(vehicle)}</div>
           {speedMps > 0 && (
-            <div className="text-muted-foreground mt-1">
+            <div className="text-gray-600 mt-1">
               Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
             </div>
           )}
