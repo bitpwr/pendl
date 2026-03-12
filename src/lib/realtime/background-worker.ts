@@ -280,7 +280,7 @@ export async function triggerTripUpdates(): Promise<void> {
       GTFS_CONFIG.realtimeTripUpdateInterval
     ) {
       console.log("Forcing trip update tick due to consumer activity");
-      await runTripUpdateTick(true);
+      void runTripUpdateTick(true);
     }
   }
   state.lastTripUpdateConsumerActivityTime = now;

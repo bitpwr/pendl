@@ -47,9 +47,19 @@ export default function AreaPage() {
   useEffect(() => {
     fetchDepartures();
 
-    // Auto-refresh every 15 seconds
-    const interval = setInterval(fetchDepartures, 15000);
-    return () => clearInterval(interval);
+    // First refresh after 2 seconds, then every 15 seconds
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const firstTimeout = setTimeout(() => {
+      fetchDepartures();
+      interval = setInterval(fetchDepartures, 15000);
+    }, 1500);
+
+    return () => {
+      clearTimeout(firstTimeout);
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
   }, [fetchDepartures]);
 
   useEffect(() => {
