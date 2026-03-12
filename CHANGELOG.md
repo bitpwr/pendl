@@ -1,3 +1,15 @@
+## [0.7.3] - 2026-03-12
+
+### 🐛 Bug Fixes
+
+- include public folder in production for favicon and manifest (`6f5afaf`)
+- ensure reinstall in production if dependencies have changed (`2326420`)
+- do not block area page during realtime trip update (`322c521`)
+
+### 💎 Styling
+
+- add link to stop on popup in trip map (`1681dc8`)
+
 ## [0.7.2] - 2026-03-11
 
 ### 🐛 Bug Fixes
