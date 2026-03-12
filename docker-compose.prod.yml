@@ -100,6 +100,9 @@ services:
 
   # One-off service for GTFS import. Run with:
   #   docker compose -f docker-compose.prod.yml run --rm gtfs-import
+  # Note: Uses persistent /app/node_modules volume (pendl_modules) for faster starts.
+  # If dependency errors occur after image updates, remove it once:
+  #   docker volume rm pendl_modules
   gtfs-import:
     image: bitpwr/pendl:latest
     container_name: pendl-gtfs-import
