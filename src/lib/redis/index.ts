@@ -11,24 +11,25 @@ const redisConfig = {
   },
 };
 
-// Global Redis instance (singleton pattern)
-let redis: Redis | null = null;
+declare global {
+  var __pendlRedis: Redis | undefined;
+}
 
 export function getRedis(): Redis {
-  if (!redis) {
-    redis = new Redis(redisConfig);
+  if (!globalThis.__pendlRedis) {
+    globalThis.__pendlRedis = new Redis(redisConfig);
 
-    redis.on("error", (err) => {
+    globalThis.__pendlRedis.on("error", (err) => {
       console.error("Redis connection error:", err);
     });
   }
-  return redis;
+  return globalThis.__pendlRedis;
 }
 
 export async function closeRedis(): Promise<void> {
-  if (redis) {
-    await redis.quit();
-    redis = null;
+  if (globalThis.__pendlRedis) {
+    await globalThis.__pendlRedis.quit();
+    globalThis.__pendlRedis = undefined;
   }
 }
 

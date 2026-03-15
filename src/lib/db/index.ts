@@ -11,19 +11,20 @@ const poolConfig: PoolConfig = {
   connectionTimeoutMillis: 2000,
 };
 
-// Global pool instance (singleton pattern for serverless)
-let pool: Pool | null = null;
+declare global {
+  var __pendlDbPool: Pool | undefined;
+}
 
 export function getPool(): Pool {
-  if (!pool) {
-    pool = new Pool(poolConfig);
+  if (!globalThis.__pendlDbPool) {
+    globalThis.__pendlDbPool = new Pool(poolConfig);
 
     // Log connection errors
-    pool.on("error", (err) => {
+    globalThis.__pendlDbPool.on("error", (err) => {
       console.error("Unexpected database pool error:", err);
     });
   }
-  return pool;
+  return globalThis.__pendlDbPool;
 }
 
 export async function query<T>(text: string, params?: unknown[]): Promise<T[]> {
@@ -45,8 +46,8 @@ export async function queryOne<T>(
 }
 
 export async function closePool(): Promise<void> {
-  if (pool) {
-    await pool.end();
-    pool = null;
+  if (globalThis.__pendlDbPool) {
+    await globalThis.__pendlDbPool.end();
+    globalThis.__pendlDbPool = undefined;
   }
 }
