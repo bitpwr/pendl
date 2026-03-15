@@ -1,16 +1,23 @@
 // SL (Storstockholms Lokaltrafik) GTFS Feed Configuration
 // Data from Trafiklab: https://www.trafiklab.se/api/gtfs-regional/sl
 
+const REALTIME_BASE = "https://opendata.samtrafiken.se/gtfs-rt-sweden";
+
+export function getTripUpdatesUrl(agencyTag: string): string {
+  return `${REALTIME_BASE}/${agencyTag}/TripUpdatesSweden.pb`;
+}
+
+export function getVehiclePositionsUrl(agencyTag: string): string {
+  return `${REALTIME_BASE}/${agencyTag}/VehiclePositionsSweden.pb`;
+}
+
+export function getServiceAlertsUrl(agencyTag: string): string {
+  return `${REALTIME_BASE}/${agencyTag}/ServiceAlertsSweden.pb`;
+}
+
 export const GTFS_CONFIG = {
   // GTFS Static data URL - requires API key from Trafiklab
-  staticUrl: process.env.GTFS_STATIC_URL || "",
-
-  // GTFS Realtime endpoints - requires API key from Trafiklab
-  realtimeUrls: {
-    tripUpdates: process.env.GTFS_REALTIME_TRIP_UPDATES_URL || "",
-    vehiclePositions: process.env.GTFS_REALTIME_VEHICLE_POSITIONS_URL || "",
-    serviceAlerts: process.env.GTFS_REALTIME_ALERTS_URL || "",
-  },
+  staticUrl: "https://opendata.samtrafiken.se/gtfs-sweden/sweden.zip",
 
   // API keys (get from Trafiklab)
   staticApiKey: process.env.GTFS_STATIC_KEY || "",

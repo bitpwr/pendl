@@ -12,7 +12,12 @@ import type {
   VehicleStopStatus,
   StopTimeScheduleRelationship,
 } from "./realtime-proto";
-import { GTFS_CONFIG } from "./config";
+import {
+  GTFS_CONFIG,
+  getTripUpdatesUrl,
+  getVehiclePositionsUrl,
+  getServiceAlertsUrl,
+} from "./config";
 import {
   trackServiceAlertDownload,
   trackTripUpdateDownload,
@@ -231,12 +236,10 @@ export async function fetchRealtimeFeed(url: string): Promise<FeedMessage> {
 /**
  * Fetch trip updates from GTFS Realtime
  */
-export async function fetchTripUpdates(): Promise<TripUpdate[]> {
-  const url = GTFS_CONFIG.realtimeUrls.tripUpdates;
-  if (!url) {
-    console.warn("GTFS_RT_TRIP_UPDATES_URL not configured");
-    return [];
-  }
+export async function fetchTripUpdates(
+  agencyTag: string,
+): Promise<TripUpdate[]> {
+  const url = getTripUpdatesUrl(agencyTag);
 
   trackTripUpdateDownload();
   const feed = await fetchRealtimeFeed(url);
@@ -248,12 +251,10 @@ export async function fetchTripUpdates(): Promise<TripUpdate[]> {
 /**
  * Fetch vehicle positions from GTFS Realtime
  */
-export async function fetchVehiclePositions(): Promise<VehiclePosition[]> {
-  const url = GTFS_CONFIG.realtimeUrls.vehiclePositions;
-  if (!url) {
-    console.warn("GTFS_RT_VEHICLE_POSITIONS_URL not configured");
-    return [];
-  }
+export async function fetchVehiclePositions(
+  agencyTag: string,
+): Promise<VehiclePosition[]> {
+  const url = getVehiclePositionsUrl(agencyTag);
 
   trackVehicleDownload();
   const feed = await fetchRealtimeFeed(url);
@@ -265,12 +266,10 @@ export async function fetchVehiclePositions(): Promise<VehiclePosition[]> {
 /**
  * Fetch service alerts from GTFS Realtime
  */
-export async function fetchServiceAlerts(): Promise<ServiceAlert[]> {
-  const url = GTFS_CONFIG.realtimeUrls.serviceAlerts;
-  if (!url) {
-    console.warn("GTFS_RT_SERVICE_ALERTS_URL not configured");
-    return [];
-  }
+export async function fetchServiceAlerts(
+  agencyTag: string,
+): Promise<ServiceAlert[]> {
+  const url = getServiceAlertsUrl(agencyTag);
 
   trackServiceAlertDownload();
   const feed = await fetchRealtimeFeed(url);

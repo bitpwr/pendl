@@ -25,7 +25,6 @@ type RealtimeWorkerState = {
   vehicleUpdateInProgress: boolean;
   tripUpdateInProgress: boolean;
   serviceAlertUpdateInProgress: boolean;
-  warnedAboutMissingFeeds: boolean;
 };
 
 declare global {
@@ -46,24 +45,16 @@ function getWorkerState(): RealtimeWorkerState {
       vehicleUpdateInProgress: false,
       tripUpdateInProgress: false,
       serviceAlertUpdateInProgress: false,
-      warnedAboutMissingFeeds: false,
     };
   }
 
   return globalThis.__pendlRealtimeWorkerState;
 }
 
-function hasConfiguredRealtimeFeed(): boolean {
-  const { tripUpdates, vehiclePositions, serviceAlerts } =
-    GTFS_CONFIG.realtimeUrls;
-
-  return Boolean(tripUpdates || vehiclePositions || serviceAlerts);
-}
-
 async function updateVehiclePositions(now: number): Promise<void> {
   const startedAt = now;
 
-  const vehiclePositions = await fetchVehiclePositions().catch((err) => {
+  const vehiclePositions = await fetchVehiclePositions("sl").catch((err) => {
     console.error("Failed to fetch vehicle positions:", err.message);
     return [];
   });
@@ -80,7 +71,7 @@ async function updateVehiclePositions(now: number): Promise<void> {
 async function updateTripUpdates(now: number): Promise<void> {
   const startedAt = now;
 
-  const tripUpdates = await fetchTripUpdates().catch((err) => {
+  const tripUpdates = await fetchTripUpdates("sl").catch((err) => {
     console.error("Failed to fetch trip updates:", err.message);
     return [];
   });
@@ -97,7 +88,7 @@ async function updateTripUpdates(now: number): Promise<void> {
 async function updateServiceAlerts(now: number): Promise<void> {
   const startedAt = now;
 
-  const serviceAlerts = await fetchServiceAlerts().catch((err) => {
+  const serviceAlerts = await fetchServiceAlerts("sl").catch((err) => {
     console.error("Failed to fetch service alerts:", err.message);
     return [];
   });
@@ -211,16 +202,6 @@ function startIntervals(): void {
  */
 async function ensureWorkerRunning(state: RealtimeWorkerState): Promise<void> {
   if (state.started) {
-    return;
-  }
-
-  if (!hasConfiguredRealtimeFeed()) {
-    if (!state.warnedAboutMissingFeeds) {
-      console.warn(
-        "Realtime worker not started: no GTFS realtime feed URLs are configured.",
-      );
-      state.warnedAboutMissingFeeds = true;
-    }
     return;
   }
 
