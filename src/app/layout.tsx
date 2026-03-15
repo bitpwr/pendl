@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 import { SWRegister } from "@/components/pwa/sw-register";
 
 const geistSans = Geist({
@@ -51,11 +52,12 @@ export default function RootLayout({
   return (
     <html lang="sv">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background grid grid-rows-[auto_1fr_auto]`}
       >
         <SWRegister />
         <Header />
-        <main className="mx-auto max-w-3xl px-5 py-6">{children}</main>
+        <main className="w-full mx-auto max-w-3xl px-5 py-6">{children}</main>
+        <Footer />
       </body>
     </html>
   );
