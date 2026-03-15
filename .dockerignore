@@ -39,7 +39,6 @@ scripts/call-sql.sh
 scripts/generate-changelog.sh
 scripts/dc-*.sh
 scripts/build-docker.sh
-scripts/realtime-worker.ts
 
 # Docs
 README.md

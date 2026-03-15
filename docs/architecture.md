@@ -502,160 +502,6 @@ async function runStaticWorker(config: GTFSStaticWorkerConfig): Promise<void> {
 }
 ```
 
-### GTFS Realtime Worker
-
-Runs every 10 seconds to fetch and process realtime updates.
-
-```typescript
-// scripts/realtime-worker.ts
-
-interface GTFSRealtimeWorkerConfig {
-  tripUpdatesUrl: string;
-  vehiclePositionsUrl: string;
-  serviceAlertsUrl: string;
-  apiKey?: string;
-  agencyId: string;
-}
-
-async function runRealtimeWorker(
-  config: GTFSRealtimeWorkerConfig,
-): Promise<void> {
-  const timestamp = Date.now();
-
-  // Fetch all feeds in parallel
-  const [tripUpdates, vehiclePositions, serviceAlerts] = await Promise.all([
-    fetchAndParseFeed(config.tripUpdatesUrl, config.apiKey),
-    fetchAndParseFeed(config.vehiclePositionsUrl, config.apiKey),
-    fetchAndParseFeed(config.serviceAlertsUrl, config.apiKey),
-  ]);
-
-  const pipeline = redis.pipeline();
-
-  // Process Trip Updates
-  for (const entity of tripUpdates.entity) {
-    if (!entity.tripUpdate) continue;
-
-    const tu = entity.tripUpdate;
-    const tripId = tu.trip.tripId;
-
-    // Filter by agency (requires trip lookup or route prefix check)
-    if (!isRelevantTrip(tripId, config.agencyId)) continue;
-
-    const update: TripUpdate = {
-      tripId,
-      routeId: tu.trip.routeId,
-      vehicleId: tu.vehicle?.id,
-      timestamp: Number(tu.timestamp) * 1000 || timestamp,
-      stopTimeUpdates: tu.stopTimeUpdate.map((stu) => ({
-        stopId: stu.stopId,
-        stopSequence: stu.stopSequence,
-        arrival: stu.arrival
-          ? {
-              delay: stu.arrival.delay || 0,
-              time: stu.arrival.time
-                ? Number(stu.arrival.time) * 1000
-                : undefined,
-            }
-          : undefined,
-        departure: stu.departure
-          ? {
-              delay: stu.departure.delay || 0,
-              time: stu.departure.time
-                ? Number(stu.departure.time) * 1000
-                : undefined,
-            }
-          : undefined,
-        scheduleRelationship: stu.scheduleRelationship || "SCHEDULED",
-      })),
-    };
-
-    pipeline.setex(`trip_update:${tripId}`, 120, JSON.stringify(update));
-
-    // Update stop indexes for quick lookup
-    for (const stu of update.stopTimeUpdates) {
-      pipeline.sadd(`stop_trips:${stu.stopId}`, tripId);
-      pipeline.expire(`stop_trips:${stu.stopId}`, 120);
-    }
-  }
-
-  // Process Vehicle Positions
-  for (const entity of vehiclePositions.entity) {
-    if (!entity.vehicle) continue;
-
-    const vp = entity.vehicle;
-    if (!vp.trip?.tripId || !vp.position) continue;
-
-    if (!isRelevantTrip(vp.trip.tripId, config.agencyId)) continue;
-
-    const position: VehiclePosition = {
-      vehicleId: vp.vehicle?.id || entity.id,
-      tripId: vp.trip.tripId,
-      routeId: vp.trip.routeId,
-      latitude: vp.position.latitude,
-      longitude: vp.position.longitude,
-      bearing: vp.position.bearing,
-      speed: vp.position.speed,
-      currentStopSequence: vp.currentStopSequence,
-      currentStatus: vp.currentStatus || "IN_TRANSIT_TO",
-      timestamp: Number(vp.timestamp) * 1000 || timestamp,
-    };
-
-    pipeline.setex(
-      `vehicle:${position.vehicleId}`,
-      60,
-      JSON.stringify(position),
-    );
-    pipeline.setex(`trip_vehicle:${position.tripId}`, 60, position.vehicleId);
-  }
-
-  // Process Service Alerts
-  for (const entity of serviceAlerts.entity) {
-    if (!entity.alert) continue;
-
-    const alert = entity.alert;
-    const alertId = entity.id;
-
-    const serviceAlert: ServiceAlert = {
-      alertId,
-      headerText: alert.headerText?.translation?.[0]?.text || "",
-      descriptionText: alert.descriptionText?.translation?.[0]?.text || "",
-      cause: alert.cause || "UNKNOWN_CAUSE",
-      effect: alert.effect || "UNKNOWN_EFFECT",
-      activePeriods:
-        alert.activePeriod?.map((ap) => ({
-          start: Number(ap.start) * 1000,
-          end: ap.end ? Number(ap.end) * 1000 : undefined,
-        })) || [],
-      informedEntities:
-        alert.informedEntity?.map((ie) => ({
-          agencyId: ie.agencyId,
-          routeId: ie.routeId,
-          stopId: ie.stopId,
-          tripId: ie.trip?.tripId,
-        })) || [],
-    };
-
-    pipeline.setex(`alert:${alertId}`, 3600, JSON.stringify(serviceAlert));
-
-    // Index by route
-    for (const ie of serviceAlert.informedEntities) {
-      if (ie.routeId) {
-        pipeline.sadd(`route_alerts:${ie.routeId}`, alertId);
-        pipeline.expire(`route_alerts:${ie.routeId}`, 3600);
-      }
-    }
-  }
-
-  await pipeline.exec();
-  console.log(`[${new Date().toISOString()}] Realtime update complete`);
-}
-
-// Run every 10 seconds
-setInterval(() => runRealtimeWorker(config).catch(console.error), 10_000);
-```
-
----
-
 ## API Design
 
 ### API Routes
@@ -838,7 +684,6 @@ pendl/
 │   ├── init-db.sql
 │   ├── import-gtfs.ts
 │   ├── import-gtfs-streaming.ts
-│   └── realtime-worker.ts
 │
 └── public/
     └── ...
@@ -1018,13 +863,6 @@ services:
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - pendl_redis:/data
-
-  realtime-worker:
-    image: bitpwr/pendl:latest
-    command: ["tsx", "scripts/realtime-worker.ts"]
-    depends_on:
-      - postgres
-      - redis
 
   gtfs-import:
     image: bitpwr/pendl:latest
