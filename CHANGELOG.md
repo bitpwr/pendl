@@ -1,3 +1,22 @@
+## [0.7.4] - 2026-03-19
+
+### 🐛 Bug Fixes
+
+- removed next.js favicon that blocked favicon in public folder (`388a8bd`)
+
+### ♻️ Refactoring
+
+- better use of singletons for redis and postgres (`4b7df68`)
+- prepare for several agencies by generating realtime urls (`0154c7c`)
+
+### 💎 Styling
+
+- add a clean footer (`664780b`)
+
+### 🧹 Maintenance
+
+- remove obsolete realtime-worker.ts script (`7806415`)
+
 ## [0.7.3] - 2026-03-12
 
 ### 🐛 Bug Fixes
