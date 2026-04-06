@@ -189,6 +189,19 @@ GROUP BY sa.area_id;
 
 CREATE UNIQUE INDEX idx_area_route_types_id ON area_route_types(area_id);
 
+-- Materialized view for agencies per area (for fast agency filtering)
+CREATE MATERIALIZED VIEW area_agencies AS
+SELECT DISTINCT sa.area_id, r.agency_id
+FROM stop_areas sa
+JOIN stops s ON s.stop_id = sa.stop_id
+JOIN stop_times st ON st.stop_id = s.stop_id
+JOIN trips t ON t.trip_id = st.trip_id
+JOIN routes r ON r.route_id = t.route_id
+WHERE s.location_type = 0;
+
+CREATE UNIQUE INDEX idx_area_agencies_pk ON area_agencies(area_id, agency_id);
+CREATE INDEX idx_area_agencies_agency ON area_agencies(agency_id);
+
 -- View for area center point (average of all stop locations)
 CREATE MATERIALIZED VIEW area_locations AS
 SELECT
@@ -211,5 +224,6 @@ BEGIN
     REFRESH MATERIALIZED VIEW CONCURRENTLY stop_route_types;
     REFRESH MATERIALIZED VIEW CONCURRENTLY area_route_types;
     REFRESH MATERIALIZED VIEW CONCURRENTLY area_locations;
+    REFRESH MATERIALIZED VIEW CONCURRENTLY area_agencies;
 END;
 $$ LANGUAGE plpgsql;

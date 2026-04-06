@@ -232,6 +232,7 @@ async function importGtfsStreaming(zipPath: string) {
     await client.query("REFRESH MATERIALIZED VIEW shape_lines");
     await client.query("REFRESH MATERIALIZED VIEW area_route_types");
     await client.query("REFRESH MATERIALIZED VIEW area_locations");
+    await client.query("REFRESH MATERIALIZED VIEW area_agencies");
 
     console.log("Import completed successfully!");
   } catch (error) {

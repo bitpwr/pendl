@@ -34,18 +34,11 @@ export async function searchAreas(
     .join(" & ");
 
   const params: (string | number)[] = [tsQuery];
-  let agencyFilter = "";
+  let agencyJoin = "";
 
   if (agencyId) {
     params.push(agencyId);
-    agencyFilter = `
-      AND EXISTS (
-        SELECT 1 FROM stop_areas sa2
-        JOIN stop_times st ON st.stop_id = sa2.stop_id
-        JOIN trips t ON t.trip_id = st.trip_id
-        JOIN routes r ON r.route_id = t.route_id
-        WHERE sa2.area_id = a.area_id AND r.agency_id = $${params.length}
-      )`;
+    agencyJoin = `JOIN area_agencies aa ON aa.area_id = a.area_id AND aa.agency_id = $${params.length}`;
   }
 
   params.push(limit);
@@ -63,9 +56,9 @@ export async function searchAreas(
     JOIN stops s ON s.stop_id = sa.stop_id
     LEFT JOIN area_locations al ON al.area_id = a.area_id
     LEFT JOIN area_route_types art ON art.area_id = a.area_id
+    ${agencyJoin}
     WHERE a.search_vector @@ to_tsquery('swedish', $1)
       AND s.location_type = 0
-      ${agencyFilter}
     GROUP BY a.area_id, a.area_name, al.latitude, al.longitude, art.route_types
     HAVING COUNT(sa.stop_id) > 0
     ORDER BY ts_rank(a.search_vector, to_tsquery('swedish', $1)) DESC
@@ -86,18 +79,11 @@ export async function findNearbyAreas(
   agencyId?: string,
 ): Promise<AreaSearchResult[]> {
   const params: (string | number)[] = [latitude, longitude, radiusMeters];
-  let agencyFilter = "";
+  let agencyJoin = "";
 
   if (agencyId) {
     params.push(agencyId);
-    agencyFilter = `
-      AND EXISTS (
-        SELECT 1 FROM stop_areas sa2
-        JOIN stop_times st ON st.stop_id = sa2.stop_id
-        JOIN trips t ON t.trip_id = st.trip_id
-        JOIN routes r ON r.route_id = t.route_id
-        WHERE sa2.area_id = a.area_id AND r.agency_id = $${params.length}
-      )`;
+    agencyJoin = `JOIN area_agencies aa ON aa.area_id = a.area_id AND aa.agency_id = $${params.length}`;
   }
 
   params.push(limit);
@@ -119,13 +105,13 @@ export async function findNearbyAreas(
     JOIN stops s ON s.stop_id = sa.stop_id
     JOIN area_locations al ON al.area_id = a.area_id
     LEFT JOIN area_route_types art ON art.area_id = a.area_id
+    ${agencyJoin}
     WHERE s.location_type = 0
       AND ST_DWithin(
         al.geom::geography,
         ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
         $3
       )
-      ${agencyFilter}
     GROUP BY a.area_id, a.area_name, al.latitude, al.longitude, al.geom, art.route_types
     HAVING COUNT(sa.stop_id) > 0
     ORDER BY ST_Distance(
