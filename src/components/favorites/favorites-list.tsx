@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star, ChevronRight, Trash2 } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
+import { getAgencyName } from "@/lib/config/agencies";
 
 export function FavoritesList() {
   const { favorites, removeFavorite } = useFavorites();
@@ -41,6 +42,11 @@ export function FavoritesList() {
                 <div className="flex items-center gap-3">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                   <span className="font-medium">{favorite.areaName}</span>
+                  {favorite.agencyId && (
+                    <span className="text-md text-muted-foreground">
+                      ({getAgencyName(favorite.agencyId)})
+                    </span>
+                  )}
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
@@ -85,6 +91,11 @@ export function FavoritesSection() {
               className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span>{favorite.areaName}</span>
+              {favorite.agencyId && (
+                <span className="text-md text-muted-foreground mr-auto ml-2">
+                  ({getAgencyName(favorite.agencyId)})
+                </span>
+              )}
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
           ))}
