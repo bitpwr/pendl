@@ -24,6 +24,7 @@ export interface Area {
 export async function searchAreas(
   searchQuery: string,
   limit = 10,
+  agencyId?: string,
 ): Promise<AreaSearchResult[]> {
   // Convert search query to tsquery format
   const tsQuery = searchQuery
@@ -31,6 +32,23 @@ export async function searchAreas(
     .split(/\s+/)
     .map((word) => word + ":*")
     .join(" & ");
+
+  const params: (string | number)[] = [tsQuery];
+  let agencyFilter = "";
+
+  if (agencyId) {
+    params.push(agencyId);
+    agencyFilter = `
+      AND EXISTS (
+        SELECT 1 FROM stop_areas sa2
+        JOIN stop_times st ON st.stop_id = sa2.stop_id
+        JOIN trips t ON t.trip_id = st.trip_id
+        JOIN routes r ON r.route_id = t.route_id
+        WHERE sa2.area_id = a.area_id AND r.agency_id = $${params.length}
+      )`;
+  }
+
+  params.push(limit);
 
   const sql = `
     SELECT
@@ -47,13 +65,14 @@ export async function searchAreas(
     LEFT JOIN area_route_types art ON art.area_id = a.area_id
     WHERE a.search_vector @@ to_tsquery('swedish', $1)
       AND s.location_type = 0
+      ${agencyFilter}
     GROUP BY a.area_id, a.area_name, al.latitude, al.longitude, art.route_types
     HAVING COUNT(sa.stop_id) > 0
     ORDER BY ts_rank(a.search_vector, to_tsquery('swedish', $1)) DESC
-    LIMIT $2
+    LIMIT $${params.length}
   `;
 
-  return query<AreaSearchResult>(sql, [tsQuery, limit]);
+  return query<AreaSearchResult>(sql, params);
 }
 
 /**
@@ -64,7 +83,25 @@ export async function findNearbyAreas(
   longitude: number,
   radiusMeters = 500,
   limit = 10,
+  agencyId?: string,
 ): Promise<AreaSearchResult[]> {
+  const params: (string | number)[] = [latitude, longitude, radiusMeters];
+  let agencyFilter = "";
+
+  if (agencyId) {
+    params.push(agencyId);
+    agencyFilter = `
+      AND EXISTS (
+        SELECT 1 FROM stop_areas sa2
+        JOIN stop_times st ON st.stop_id = sa2.stop_id
+        JOIN trips t ON t.trip_id = st.trip_id
+        JOIN routes r ON r.route_id = t.route_id
+        WHERE sa2.area_id = a.area_id AND r.agency_id = $${params.length}
+      )`;
+  }
+
+  params.push(limit);
+
   const sql = `
     SELECT
       a.area_id as "areaId",
@@ -88,21 +125,17 @@ export async function findNearbyAreas(
         ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography,
         $3
       )
+      ${agencyFilter}
     GROUP BY a.area_id, a.area_name, al.latitude, al.longitude, al.geom, art.route_types
     HAVING COUNT(sa.stop_id) > 0
     ORDER BY ST_Distance(
       al.geom::geography,
       ST_SetSRID(ST_MakePoint($2, $1), 4326)::geography
     )
-    LIMIT $4
+    LIMIT $${params.length}
   `;
 
-  return query<AreaSearchResult>(sql, [
-    latitude,
-    longitude,
-    radiusMeters,
-    limit,
-  ]);
+  return query<AreaSearchResult>(sql, params);
 }
 
 /**

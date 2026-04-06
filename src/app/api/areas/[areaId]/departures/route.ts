@@ -15,9 +15,10 @@ export async function GET(request: NextRequest, { params }: Props) {
   const searchParams = request.nextUrl.searchParams;
   const limit = parseInt(searchParams.get("limit") || "150", 10);
   const minutesAhead = parseInt(searchParams.get("minutes") || "50", 10);
+  const agencyId = searchParams.get("agencyId") || undefined;
 
   try {
-    await triggerTripUpdates();
+    await triggerTripUpdates(agencyId);
 
     // Get the area information
     const area = await getArea(areaId);
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest, { params }: Props) {
     const scheduled = await getScheduledDeparturesForStops(stopIds, {
       limit: Math.min(limit, 200),
       minutesAhead: Math.min(minutesAhead, 240),
+      agencyId,
     });
 
     // Get realtime updates for these trips

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
 import { Star, ArrowLeft } from "lucide-react";
@@ -12,7 +12,9 @@ import type { AreaDepartureResponse } from "@/types/api";
 export default function AreaPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const areaId = params.areaId as string;
+  const agencyId = searchParams.get("agency") || undefined;
   const { isFavorite, toggleFavorite } = useFavorites();
 
   const [data, setData] = useState<AreaDepartureResponse | undefined>();
@@ -26,8 +28,11 @@ export default function AreaPage() {
     setError(null);
 
     try {
+      const agencyParam = agencyId
+        ? `?agencyId=${encodeURIComponent(agencyId)}`
+        : "";
       const response = await fetch(
-        `/api/areas/${encodeURIComponent(areaId)}/departures`,
+        `/api/areas/${encodeURIComponent(areaId)}/departures${agencyParam}`,
       );
 
       if (!response.ok) {
@@ -42,7 +47,7 @@ export default function AreaPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [areaId]);
+  }, [areaId, agencyId]);
 
   useEffect(() => {
     fetchDepartures();
@@ -109,7 +114,7 @@ export default function AreaPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => toggleFavorite(areaId, areaName)}
+            onClick={() => toggleFavorite(areaId, areaName, agencyId || "")}
             title={isFavorite(areaId) ? "Ta bort favorit" : "Lägg till favorit"}
           >
             <Star
@@ -134,6 +139,7 @@ export default function AreaPage() {
         error={error}
         onRefresh={fetchDepartures}
         lastUpdated={lastUpdated}
+        agencyId={agencyId}
       />
     </div>
   );

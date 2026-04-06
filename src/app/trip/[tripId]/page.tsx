@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -59,7 +59,12 @@ interface TripVehicle {
 export default function TripPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const tripId = params.tripId as string;
+  const agencyId = searchParams.get("agency") || undefined;
+  const agencyParam = agencyId
+    ? `?agencyId=${encodeURIComponent(agencyId)}`
+    : "";
 
   const [data, setData] = useState<TripData | null>(null);
   const [vehicle, setVehicle] = useState<TripVehicle | null>(null);
@@ -69,7 +74,9 @@ export default function TripPage() {
 
   const fetchTrip = useCallback(async () => {
     try {
-      const response = await fetch(`/api/trips/${encodeURIComponent(tripId)}`);
+      const response = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}${agencyParam}`,
+      );
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -86,12 +93,12 @@ export default function TripPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [tripId]);
+  }, [tripId, agencyParam]);
 
   const fetchVehicle = useCallback(async () => {
     try {
       const response = await fetch(
-        `/api/trips/${encodeURIComponent(tripId)}/vehicle`,
+        `/api/trips/${encodeURIComponent(tripId)}/vehicle${agencyParam}`,
       );
 
       if (!response.ok) {
@@ -104,7 +111,7 @@ export default function TripPage() {
       // Vehicle data is optional; fall back to no realtime position.
       setVehicle(null);
     }
-  }, [tripId]);
+  }, [tripId, agencyParam]);
 
   // Scroll to top when page loads
   useEffect(() => {
@@ -272,6 +279,7 @@ export default function TripPage() {
         vehicle={vehicle}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
+        agencyId={agencyId}
       />
     </div>
   );

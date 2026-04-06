@@ -5,7 +5,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Pendl - Avgångar i realtid",
     short_name: "Pendl",
     description:
-      "Se avgångar och fordon i realtid för SL och kollektivtrafiken i Stockholm",
+      "Se avgångar och fordon i realtid för kollektivtrafiken i Stockholm och Uppsala.",
     start_url: "/",
     scope: "/",
     display: "standalone",

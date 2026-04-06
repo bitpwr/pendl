@@ -2,11 +2,12 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-const STORAGE_KEY = "pendl-area-favorites";
+const STORAGE_KEY = "pendl-area-favorites-v2";
 
 export interface FavoriteArea {
   areaId: string;
   areaName: string;
+  agencyId: string;
   addedAt: number;
 }
 
@@ -50,14 +51,20 @@ export function useFavorites() {
     getServerSnapshot,
   );
 
-  const addFavorite = useCallback((areaId: string, areaName: string) => {
-    const current = getSnapshot();
-    if (current.some((f) => f.areaId === areaId)) return;
+  const addFavorite = useCallback(
+    (areaId: string, areaName: string, agencyId: string) => {
+      const current = getSnapshot();
+      if (current.some((f) => f.areaId === areaId)) return;
 
-    const updated = [...current, { areaId, areaName, addedAt: Date.now() }];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    window.dispatchEvent(new Event("favorites-changed"));
-  }, []);
+      const updated = [
+        ...current,
+        { areaId, areaName, agencyId, addedAt: Date.now() },
+      ];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new Event("favorites-changed"));
+    },
+    [],
+  );
 
   const removeFavorite = useCallback((areaId: string) => {
     const current = getSnapshot();
@@ -74,11 +81,11 @@ export function useFavorites() {
   );
 
   const toggleFavorite = useCallback(
-    (areaId: string, areaName: string) => {
+    (areaId: string, areaName: string, agencyId: string) => {
       if (isFavorite(areaId)) {
         removeFavorite(areaId);
       } else {
-        addFavorite(areaId, areaName);
+        addFavorite(areaId, areaName, agencyId);
       }
     },
     [isFavorite, addFavorite, removeFavorite],

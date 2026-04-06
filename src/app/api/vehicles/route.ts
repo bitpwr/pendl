@@ -9,9 +9,10 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const routeTypeParam = searchParams.get("routeType");
   const routeTypeFilter = routeTypeParam ? parseInt(routeTypeParam, 10) : null;
+  const agencyId = searchParams.get("agencyId") || undefined;
 
   try {
-    await triggerVehiclePositions();
+    await triggerVehiclePositions(agencyId);
 
     // Get all vehicle positions
     const positions = await getAllVehiclePositions();
@@ -55,8 +56,10 @@ export async function GET(request: NextRequest) {
       route_long_name: string | null;
       route_type: number;
     }>(
-      `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1)`,
-      [allRouteIds],
+      agencyId
+        ? `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1) AND agency_id = $2`
+        : `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1)`,
+      agencyId ? [allRouteIds, agencyId] : [allRouteIds],
     );
 
     // console.log(`Found ${routes.length} routes in database`);

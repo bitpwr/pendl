@@ -1,7 +1,8 @@
 // List of agencies to include in data import
 // Add more agencies as needed
 export const INCLUDED_AGENCIES = [
-  { id: "505000000000000001", tag: "sl" },
+  { id: "505000000000000001", tag: "sl", name: "SL" },
+  { id: "505000000000000003", tag: "ul", name: "UL" },
   // Add more agencies here
 ] as const;
 
@@ -18,4 +19,8 @@ export function isIncludedAgency(agencyId: string): boolean {
 
 export function getAgencyTag(agencyId: string): AgencyTag | undefined {
   return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.tag;
+}
+
+export function getAgencyName(agencyId: string): string | undefined {
+  return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.name;
 }

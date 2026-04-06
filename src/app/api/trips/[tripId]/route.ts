@@ -39,9 +39,10 @@ export async function GET(
   { params }: { params: Promise<{ tripId: string }> },
 ) {
   const { tripId } = await params;
+  const agencyId = request.nextUrl.searchParams.get("agencyId") || undefined;
 
   try {
-    await triggerTripUpdates();
+    await triggerTripUpdates(agencyId);
 
     // Get trip info
     const tripInfoSql = `

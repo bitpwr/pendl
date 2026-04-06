@@ -36,12 +36,14 @@ interface TripStopListProps {
   vehicle: Vehicle | null;
   routeType: RouteType;
   routeName: string;
+  agencyId?: string;
 }
 
 export function TripStopList({
   stops,
   routeType,
   routeName,
+  agencyId,
 }: TripStopListProps) {
   const routeColor = routeTypeColor(routeType, parseInt(routeName));
   // Calculate current time in GTFS seconds for comparison
@@ -141,7 +143,7 @@ export function TripStopList({
                   {/* Stop info */}
                   <div className="flex-1 min-w-0">
                     <Link
-                      href={`/area/${encodeURIComponent(stop.areaId ?? "0")}`}
+                      href={`/area/${encodeURIComponent(stop.areaId ?? "0")}${agencyId ? `?agency=${agencyId}` : ""}`}
                       className="hover:underline"
                     >
                       <p

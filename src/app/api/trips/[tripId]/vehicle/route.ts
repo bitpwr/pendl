@@ -1,15 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getVehicleByTrip } from "@/lib/redis/realtime";
 import { triggerVehiclePositions } from "@/lib/realtime/background-worker";
 
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: { params: Promise<{ tripId: string }> },
 ) {
   const { tripId } = await params;
+  const agencyId = request.nextUrl.searchParams.get("agencyId") || undefined;
 
   try {
-    await triggerVehiclePositions();
+    await triggerVehiclePositions(agencyId);
     const vehicle = await getVehicleByTrip(tripId);
 
     return NextResponse.json({

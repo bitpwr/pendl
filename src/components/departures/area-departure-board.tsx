@@ -14,6 +14,7 @@ interface AreaDepartureBoardProps {
   error?: Error | null;
   onRefresh?: () => void;
   lastUpdated?: Date;
+  agencyId?: string;
 }
 
 export function AreaDepartureBoard({
@@ -22,6 +23,7 @@ export function AreaDepartureBoard({
   error,
   onRefresh,
   lastUpdated,
+  agencyId,
 }: AreaDepartureBoardProps) {
   if (isLoading && !data) {
     return <AreaDepartureBoardSkeleton />;
@@ -127,7 +129,7 @@ export function AreaDepartureBoard({
       )}
 
       {sortedGroups.map((group) => (
-        <StopGroupCard key={group.stopId} group={group} />
+        <StopGroupCard key={group.stopId} group={group} agencyId={agencyId} />
       ))}
     </div>
   );
@@ -135,9 +137,10 @@ export function AreaDepartureBoard({
 
 interface StopGroupCardProps {
   group: AreaDepartureGroup;
+  agencyId?: string;
 }
 
-function StopGroupCard({ group }: StopGroupCardProps) {
+function StopGroupCard({ group, agencyId }: StopGroupCardProps) {
   if (group.departures.length === 0) {
     return null;
   }
@@ -156,6 +159,7 @@ function StopGroupCard({ group }: StopGroupCardProps) {
             <DepartureRow
               key={`${departure.tripId}-${departure.scheduledDeparture}-${index}`}
               departure={departure}
+              agencyId={agencyId}
             />
           ))}
         </div>

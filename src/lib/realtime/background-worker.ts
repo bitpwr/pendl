@@ -12,6 +12,11 @@ import {
   storeTripUpdates,
   storeVehiclePositions,
 } from "@/lib/redis/realtime";
+import {
+  getAgencyTag,
+  INCLUDED_AGENCIES,
+  type AgencyTag,
+} from "@/lib/config/agencies";
 
 type RealtimeWorkerState = {
   started: boolean;
@@ -19,12 +24,12 @@ type RealtimeWorkerState = {
   vehicleInterval: NodeJS.Timeout | null;
   tripUpdateInterval: NodeJS.Timeout | null;
   serviceAlertInterval: NodeJS.Timeout | null;
-  lastVehicleConsumerActivityTime: number;
-  lastTripUpdateConsumerActivityTime: number;
-  lastServiceAlertConsumerActivityTime: number;
-  vehicleUpdateInProgress: boolean;
-  tripUpdateInProgress: boolean;
-  serviceAlertUpdateInProgress: boolean;
+  vehicleConsumerActivity: Map<string, number>;
+  tripUpdateConsumerActivity: Map<string, number>;
+  serviceAlertConsumerActivity: Map<string, number>;
+  vehicleUpdateInProgress: Set<string>;
+  tripUpdateInProgress: Set<string>;
+  serviceAlertUpdateInProgress: Set<string>;
 };
 
 declare global {
@@ -39,40 +44,62 @@ function getWorkerState(): RealtimeWorkerState {
       vehicleInterval: null,
       tripUpdateInterval: null,
       serviceAlertInterval: null,
-      lastVehicleConsumerActivityTime: 0,
-      lastTripUpdateConsumerActivityTime: 0,
-      lastServiceAlertConsumerActivityTime: 0,
-      vehicleUpdateInProgress: false,
-      tripUpdateInProgress: false,
-      serviceAlertUpdateInProgress: false,
+      vehicleConsumerActivity: new Map(),
+      tripUpdateConsumerActivity: new Map(),
+      serviceAlertConsumerActivity: new Map(),
+      vehicleUpdateInProgress: new Set(),
+      tripUpdateInProgress: new Set(),
+      serviceAlertUpdateInProgress: new Set(),
     };
   }
 
   return globalThis.__pendlRealtimeWorkerState;
 }
 
-async function updateVehiclePositions(now: number): Promise<void> {
+function resolveTag(agencyId?: string): AgencyTag {
+  if (agencyId) {
+    const tag = getAgencyTag(agencyId);
+    if (tag) return tag;
+  }
+  return INCLUDED_AGENCIES[0].tag;
+}
+
+async function updateVehiclePositions(
+  agencyTag: string,
+  now: number,
+): Promise<void> {
   const startedAt = now;
 
-  const vehiclePositions = await fetchVehiclePositions("sl").catch((err) => {
-    console.error("Failed to fetch vehicle positions:", err.message);
-    return [];
-  });
+  const vehiclePositions = await fetchVehiclePositions(agencyTag).catch(
+    (err) => {
+      console.error(
+        `Failed to fetch vehicle positions for ${agencyTag}:`,
+        err.message,
+      );
+      return [];
+    },
+  );
 
   await storeVehiclePositions(vehiclePositions);
   await setLastRealtimeUpdate();
 
   const duration = Date.now() - startedAt;
   console.log(
-    `Updated vehicle positions: ${vehiclePositions.length} vehicles (${duration}ms)`,
+    `Updated vehicle positions [${agencyTag}]: ${vehiclePositions.length} vehicles (${duration}ms)`,
   );
 }
 
-async function updateTripUpdates(now: number): Promise<void> {
+async function updateTripUpdates(
+  agencyTag: string,
+  now: number,
+): Promise<void> {
   const startedAt = now;
 
-  const tripUpdates = await fetchTripUpdates("sl").catch((err) => {
-    console.error("Failed to fetch trip updates:", err.message);
+  const tripUpdates = await fetchTripUpdates(agencyTag).catch((err) => {
+    console.error(
+      `Failed to fetch trip updates for ${agencyTag}:`,
+      err.message,
+    );
     return [];
   });
 
@@ -81,95 +108,114 @@ async function updateTripUpdates(now: number): Promise<void> {
 
   const duration = Date.now() - startedAt;
   console.log(
-    `Updated trip updates: ${tripUpdates.length} entries (${duration}ms)`,
+    `Updated trip updates [${agencyTag}]: ${tripUpdates.length} entries (${duration}ms)`,
   );
 }
 
-async function updateServiceAlerts(now: number): Promise<void> {
+async function updateServiceAlerts(
+  agencyTag: string,
+  now: number,
+): Promise<void> {
   const startedAt = now;
 
-  const serviceAlerts = await fetchServiceAlerts("sl").catch((err) => {
-    console.error("Failed to fetch service alerts:", err.message);
+  const serviceAlerts = await fetchServiceAlerts(agencyTag).catch((err) => {
+    console.error(
+      `Failed to fetch service alerts for ${agencyTag}:`,
+      err.message,
+    );
     return [];
   });
 
   await storeServiceAlerts(serviceAlerts);
-
   await setLastRealtimeUpdate();
 
   const duration = Date.now() - startedAt;
   console.log(
-    `Updated service alerts: ${serviceAlerts.length} entries (${duration}ms)`,
+    `Updated service alerts [${agencyTag}]: ${serviceAlerts.length} entries (${duration}ms)`,
   );
 }
 
-async function runVehicleTick(force = false): Promise<void> {
+async function runVehicleTick(forceTag?: string): Promise<void> {
   const state = getWorkerState();
-  if (state.vehicleUpdateInProgress) {
-    return;
-  }
-
-  // skip if no vehicle activity the the last 2 periods
   const now = Date.now();
-  if (
-    !force &&
-    now - state.lastVehicleConsumerActivityTime >
-      GTFS_CONFIG.realtimeVehicleUpdateInterval * 2
-  ) {
-    return;
+
+  const tagsToUpdate: string[] = [];
+  if (forceTag) {
+    tagsToUpdate.push(forceTag);
+  } else {
+    for (const [tag, lastActivity] of state.vehicleConsumerActivity) {
+      if (now - lastActivity <= GTFS_CONFIG.realtimeVehicleUpdateInterval * 2) {
+        tagsToUpdate.push(tag);
+      }
+    }
   }
 
-  state.vehicleUpdateInProgress = true;
-  try {
-    await updateVehiclePositions(now);
-  } catch (error) {
-    console.error("Error updating vehicle positions:", error);
-  } finally {
-    state.vehicleUpdateInProgress = false;
+  for (const tag of tagsToUpdate) {
+    if (state.vehicleUpdateInProgress.has(tag)) continue;
+    state.vehicleUpdateInProgress.add(tag);
+    try {
+      await updateVehiclePositions(tag, now);
+    } catch (error) {
+      console.error(`Error updating vehicle positions for ${tag}:`, error);
+    } finally {
+      state.vehicleUpdateInProgress.delete(tag);
+    }
   }
 }
 
-async function runTripUpdateTick(force = false): Promise<void> {
+async function runTripUpdateTick(forceTag?: string): Promise<void> {
   const state = getWorkerState();
-  if (state.tripUpdateInProgress) {
-    return;
-  }
-
-  // skip if no trip activity the last 20 seconds
   const now = Date.now();
-  if (!force && now - state.lastTripUpdateConsumerActivityTime > 20000) {
-    return;
+
+  const tagsToUpdate: string[] = [];
+  if (forceTag) {
+    tagsToUpdate.push(forceTag);
+  } else {
+    for (const [tag, lastActivity] of state.tripUpdateConsumerActivity) {
+      if (now - lastActivity <= 20000) {
+        tagsToUpdate.push(tag);
+      }
+    }
   }
 
-  state.tripUpdateInProgress = true;
-  try {
-    await updateTripUpdates(now);
-  } catch (error) {
-    console.error("Error updating trip updates:", error);
-  } finally {
-    state.tripUpdateInProgress = false;
+  for (const tag of tagsToUpdate) {
+    if (state.tripUpdateInProgress.has(tag)) continue;
+    state.tripUpdateInProgress.add(tag);
+    try {
+      await updateTripUpdates(tag, now);
+    } catch (error) {
+      console.error(`Error updating trip updates for ${tag}:`, error);
+    } finally {
+      state.tripUpdateInProgress.delete(tag);
+    }
   }
 }
 
-async function runServiceAlertTick(force = false): Promise<void> {
+async function runServiceAlertTick(forceTag?: string): Promise<void> {
   const state = getWorkerState();
-  if (state.serviceAlertUpdateInProgress) {
-    return;
-  }
-
-  // skip if no service alert activity the last 20 seconds
   const now = Date.now();
-  if (!force && now - state.lastServiceAlertConsumerActivityTime > 20000) {
-    return;
+
+  const tagsToUpdate: string[] = [];
+  if (forceTag) {
+    tagsToUpdate.push(forceTag);
+  } else {
+    for (const [tag, lastActivity] of state.serviceAlertConsumerActivity) {
+      if (now - lastActivity <= 20000) {
+        tagsToUpdate.push(tag);
+      }
+    }
   }
 
-  state.serviceAlertUpdateInProgress = true;
-  try {
-    await updateServiceAlerts(now);
-  } catch (error) {
-    console.error("Error updating service alerts:", error);
-  } finally {
-    state.serviceAlertUpdateInProgress = false;
+  for (const tag of tagsToUpdate) {
+    if (state.serviceAlertUpdateInProgress.has(tag)) continue;
+    state.serviceAlertUpdateInProgress.add(tag);
+    try {
+      await updateServiceAlerts(tag, now);
+    } catch (error) {
+      console.error(`Error updating service alerts for ${tag}:`, error);
+    } finally {
+      state.serviceAlertUpdateInProgress.delete(tag);
+    }
   }
 }
 
@@ -200,7 +246,10 @@ function startIntervals(): void {
  *
  * Call this from API routes that read realtime data.
  */
-async function ensureWorkerRunning(state: RealtimeWorkerState): Promise<void> {
+async function ensureWorkerRunning(
+  state: RealtimeWorkerState,
+  agencyTag: string,
+): Promise<void> {
   if (state.started) {
     return;
   }
@@ -223,9 +272,9 @@ async function ensureWorkerRunning(state: RealtimeWorkerState): Promise<void> {
     );
 
     await Promise.all([
-      runVehicleTick(true),
-      runTripUpdateTick(true),
-      runServiceAlertTick(true),
+      runVehicleTick(agencyTag),
+      runTripUpdateTick(agencyTag),
+      runServiceAlertTick(agencyTag),
     ]);
     startIntervals();
     state.started = true;
@@ -242,33 +291,39 @@ async function ensureWorkerRunning(state: RealtimeWorkerState): Promise<void> {
   await state.startupPromise;
 }
 
-export async function triggerVehiclePositions(): Promise<void> {
+export async function triggerVehiclePositions(
+  agencyId?: string,
+): Promise<void> {
+  const tag = resolveTag(agencyId);
   const state = getWorkerState();
-  // no need to force, checked often enough
-  state.lastVehicleConsumerActivityTime = Date.now();
-  await ensureWorkerRunning(state);
+  state.vehicleConsumerActivity.set(tag, Date.now());
+  await ensureWorkerRunning(state, tag);
 }
 
-export async function triggerTripUpdates(): Promise<void> {
+export async function triggerTripUpdates(agencyId?: string): Promise<void> {
+  const tag = resolveTag(agencyId);
   const state = getWorkerState();
   const now = Date.now();
   if (!state.started) {
-    await ensureWorkerRunning(state);
+    state.tripUpdateConsumerActivity.set(tag, now);
+    await ensureWorkerRunning(state, tag);
   } else {
-    // force update if no activity the last update period
-    if (
-      now - state.lastTripUpdateConsumerActivityTime >
-      GTFS_CONFIG.realtimeTripUpdateInterval
-    ) {
-      console.log("Forcing trip update tick due to consumer activity");
-      void runTripUpdateTick(true);
+    const lastActivity = state.tripUpdateConsumerActivity.get(tag) ?? 0;
+    if (now - lastActivity > GTFS_CONFIG.realtimeTripUpdateInterval) {
+      console.log(
+        `Forcing trip update tick for ${tag} due to consumer activity`,
+      );
+      state.tripUpdateConsumerActivity.set(tag, now);
+      void runTripUpdateTick(tag);
+    } else {
+      state.tripUpdateConsumerActivity.set(tag, now);
     }
   }
-  state.lastTripUpdateConsumerActivityTime = now;
 }
 
-export async function triggerServiceAlerts(): Promise<void> {
+export async function triggerServiceAlerts(agencyId?: string): Promise<void> {
+  const tag = resolveTag(agencyId);
   const state = getWorkerState();
-  state.lastServiceAlertConsumerActivityTime = Date.now();
-  await ensureWorkerRunning(state);
+  state.serviceAlertConsumerActivity.set(tag, Date.now());
+  await ensureWorkerRunning(state, tag);
 }

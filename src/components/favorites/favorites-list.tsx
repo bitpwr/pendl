@@ -35,7 +35,7 @@ export function FavoritesList() {
           <CardContent className="p-0">
             <div className="flex items-center">
               <Link
-                href={`/area/${favorite.areaId}`}
+                href={`/area/${favorite.areaId}${favorite.agencyId ? `?agency=${encodeURIComponent(favorite.agencyId)}` : ""}`}
                 className="flex flex-1 items-center justify-between rounded-lg py-3 px-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export function FavoritesSection() {
           {favorites.slice(0, 5).map((favorite) => (
             <Link
               key={favorite.areaId}
-              href={`/area/${favorite.areaId}`}
+              href={`/area/${favorite.areaId}${favorite.agencyId ? `?agency=${encodeURIComponent(favorite.agencyId)}` : ""}`}
               className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span>{favorite.areaName}</span>

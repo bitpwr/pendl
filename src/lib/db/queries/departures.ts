@@ -87,9 +87,10 @@ export async function getScheduledDepartures(
   options: {
     limit?: number;
     minutesAhead?: number;
+    agencyId?: string;
   } = {},
 ): Promise<ScheduledDeparture[]> {
-  const { limit = 50, minutesAhead = 60 } = options;
+  const { limit = 50, minutesAhead = 60, agencyId } = options;
   // Add buffer to include recently departed trips that might be delayed
   const start = new Date(Date.now() - offsetMinutes * 60 * 1000);
 
@@ -122,6 +123,7 @@ export async function getScheduledDepartures(
       WHERE st_next.trip_id = st.trip_id
       AND st_next.stop_sequence > st.stop_sequence
     )
+    ${agencyId ? "AND r.agency_id = $6" : ""}
     AND (
       -- Check if service is active for the specified date via calendar
       EXISTS (
@@ -163,13 +165,14 @@ export async function getScheduledDepartures(
 
   for (const window of windows) {
     const serviceDate = window.serviceDate.toISOString().split("T")[0];
-    const params = [
+    const params: (string | number)[] = [
       stopId,
       window.startTime,
       window.endTime,
       serviceDate,
       limit,
     ];
+    if (agencyId) params.push(agencyId);
 
     const rows = await query<ScheduledDeparture & { routeTypeRaw: number }>(
       sql,
@@ -216,11 +219,12 @@ export async function getScheduledDeparturesForStops(
     startTime?: string;
     limit?: number;
     minutesAhead?: number;
+    agencyId?: string;
   } = {},
 ): Promise<ScheduledDeparture[]> {
   if (stopIds.length === 0) return [];
 
-  const { limit = 50, minutesAhead = 60 } = options;
+  const { limit = 50, minutesAhead = 60, agencyId } = options;
 
   // Add buffer to include recently departed trips that might be delayed
   const start = new Date(Date.now() - offsetMinutes * 60 * 1000);
@@ -228,7 +232,13 @@ export async function getScheduledDeparturesForStops(
   // Calculate time windows (handles times after midnight)
   const windows = calculateGtfsTimeWindow(start, minutesAhead + offsetMinutes);
 
-  const stopIdPlaceholders = stopIds.map((_, i) => `$${i + 5}`).join(", ");
+  // $1=startTime, $2=endTime, $3=serviceDate, $4=limit, optionally $5=agencyId, then stopIds
+  const stopIdOffset = agencyId ? 6 : 5;
+  const stopIdPlaceholders = stopIds
+    .map((_, i) => `$${i + stopIdOffset}`)
+    .join(", ");
+
+  const agencyFilter = agencyId ? `AND r.agency_id = $5` : "";
 
   const sql = `
     SELECT
@@ -254,6 +264,7 @@ export async function getScheduledDeparturesForStops(
       WHERE st_next.trip_id = st.trip_id
       AND st_next.stop_sequence > st.stop_sequence
     )
+    ${agencyFilter}
     AND (
       -- Check if service is active for the specified date via calendar
       EXISTS (
@@ -295,13 +306,14 @@ export async function getScheduledDeparturesForStops(
 
   for (const window of windows) {
     const serviceDate = window.serviceDate.toISOString().split("T")[0];
-    const params = [
+    const params: (string | number)[] = [
       window.startTime,
       window.endTime,
       serviceDate,
       limit,
-      ...stopIds,
     ];
+    if (agencyId) params.push(agencyId);
+    params.push(...stopIds);
 
     const rows = await query<ScheduledDeparture & { routeTypeRaw: number }>(
       sql,

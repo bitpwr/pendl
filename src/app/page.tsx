@@ -5,12 +5,15 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { StopSearch } from "@/components/search/stop-search";
 import { AreaSearchResults } from "@/components/search/area-search-results";
 import { FavoritesSection } from "@/components/favorites/favorites-list";
+import { useAgency } from "@/hooks/use-agency";
 import type { AreaSearchResult } from "@/types/api";
 
 function HomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
+
+  const { agencyId, setAgency, agencies } = useAgency();
 
   const [searchResults, setSearchResults] = useState<AreaSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -37,7 +40,7 @@ function HomePageContent() {
 
       try {
         const response = await fetch(
-          `/api/areas/search?q=${encodeURIComponent(query)}`,
+          `/api/areas/search?q=${encodeURIComponent(query)}&agencyId=${encodeURIComponent(agencyId)}`,
         );
 
         if (!response.ok) {
@@ -54,7 +57,7 @@ function HomePageContent() {
         setIsSearching(false);
       }
     },
-    [router],
+    [router, agencyId],
   );
 
   // Restore search results on mount if query param exists
@@ -64,6 +67,15 @@ function HomePageContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty deps - only run on mount
+
+  // Re-search when agency changes if there's an active query
+  useEffect(() => {
+    const currentQuery = searchParams.get("q");
+    if (currentQuery && currentQuery.trim().length >= 3) {
+      handleSearch(currentQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agencyId]);
 
   const handleNearby = useCallback(async () => {
     if (!("geolocation" in navigator)) {
@@ -80,7 +92,7 @@ function HomePageContent() {
         try {
           const { latitude, longitude } = position.coords;
           const response = await fetch(
-            `/api/areas/nearby?lat=${latitude}&lon=${longitude}&radius=600`,
+            `/api/areas/nearby?lat=${latitude}&lon=${longitude}&radius=600&agencyId=${encodeURIComponent(agencyId)}`,
           );
 
           if (!response.ok) {
@@ -103,12 +115,29 @@ function HomePageContent() {
         setError("Kunde inte hämta din position");
       },
     );
-  }, []);
+  }, [agencyId]);
 
   return (
     <div className="space-y-6">
       <section>
         <h1 className="text-2xl font-bold mb-4">Hitta avgångar</h1>
+        <div className="flex items-center gap-2 mb-3">
+          <label htmlFor="agency-select" className="text-sm font-medium">
+            Trafikbolag
+          </label>
+          <select
+            id="agency-select"
+            value={agencyId}
+            onChange={(e) => setAgency(e.target.value as typeof agencyId)}
+            className="h-9 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {agencies.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <StopSearch
           onSearch={handleSearch}
           onNearby={handleNearby}
@@ -125,7 +154,11 @@ function HomePageContent() {
       {hasSearched ? (
         <section>
           <h2 className="text-lg font-semibold mb-3">Sökresultat</h2>
-          <AreaSearchResults results={searchResults} isLoading={isSearching} />
+          <AreaSearchResults
+            results={searchResults}
+            isLoading={isSearching}
+            agencyId={agencyId}
+          />
         </section>
       ) : (
         <FavoritesSection />

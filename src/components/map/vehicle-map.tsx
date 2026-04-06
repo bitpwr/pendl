@@ -40,6 +40,7 @@ interface VehicleMapProps {
   center?: [number, number];
   zoom?: number;
   height?: string;
+  agencyId?: string;
 }
 
 interface MapViewport {
@@ -83,6 +84,7 @@ export function VehicleMap({
   center = DEFAULT_CENTER,
   zoom = DEFAULT_ZOOM,
   height = "400px",
+  agencyId,
 }: VehicleMapProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [error, setError] = useState<Error | null>(null);
@@ -165,10 +167,11 @@ export function VehicleMap({
     setError(null);
 
     try {
-      const url =
-        selectedRouteType !== null
-          ? `/api/vehicles?routeType=${selectedRouteType}`
-          : "/api/vehicles";
+      const params = new URLSearchParams();
+      if (selectedRouteType !== null)
+        params.set("routeType", String(selectedRouteType));
+      if (agencyId) params.set("agencyId", agencyId);
+      const url = `/api/vehicles${params.size ? `?${params}` : ""}`;
 
       const response = await fetch(url);
       if (!response.ok) {
@@ -185,7 +188,7 @@ export function VehicleMap({
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Okänt fel"));
     }
-  }, [selectedRouteType]);
+  }, [selectedRouteType, agencyId]);
 
   useEffect(() => {
     if (!isMapInteracting) {
@@ -319,6 +322,7 @@ export function VehicleMap({
         L={L}
         onSelect={setSelectedVehicle}
         isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
+        agencyId={agencyId}
       />
     ));
   }, [
@@ -327,6 +331,7 @@ export function VehicleMap({
     L,
     selectedVehicle?.vehicleId,
     useLightweightMarkers,
+    agencyId,
   ]);
 
   if (!isClient) {
@@ -566,6 +571,7 @@ interface VehicleMarkerProps {
   L: typeof import("leaflet");
   onSelect: (vehicle: Vehicle | null) => void;
   isSelected: boolean;
+  agencyId?: string;
 }
 
 function VehicleMarkerComponent({
@@ -573,6 +579,7 @@ function VehicleMarkerComponent({
   L,
   onSelect,
   isSelected,
+  agencyId,
 }: VehicleMarkerProps) {
   const markerRef = useRef<LeafletMarker | null>(null);
 
@@ -616,7 +623,7 @@ function VehicleMarkerComponent({
             </div>
           )}
           <a
-            href={`/trip/${vehicle.tripId}`}
+            href={`/trip/${vehicle.tripId}${agencyId ? `?agency=${agencyId}` : ""}`}
             className="text-blue-600 hover:underline mt-1 inline-block"
           >
             Visa resa

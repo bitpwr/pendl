@@ -13,11 +13,13 @@ import { RouteBadge } from "../departures/route-badge";
 interface AreaSearchResultsProps {
   results: AreaSearchResult[];
   isLoading?: boolean;
+  agencyId: string;
 }
 
 export function AreaSearchResults({
   results,
   isLoading,
+  agencyId,
 }: AreaSearchResultsProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
 
@@ -60,7 +62,7 @@ export function AreaSearchResults({
           <CardContent className="p-0">
             <div className="flex items-center">
               <Link
-                href={`/area/${area.areaId}`}
+                href={`/area/${area.areaId}?agency=${encodeURIComponent(agencyId)}`}
                 className="flex-1 rounded-lg p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <div className="flex items-start justify-between">
@@ -92,7 +94,9 @@ export function AreaSearchResults({
                 variant="ghost"
                 size="icon"
                 className="mr-2"
-                onClick={() => toggleFavorite(area.areaId, area.areaName)}
+                onClick={() =>
+                  toggleFavorite(area.areaId, area.areaName, agencyId)
+                }
                 title={
                   isFavorite(area.areaId)
                     ? "Ta bort favorit"
