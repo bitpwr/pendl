@@ -5,7 +5,9 @@ import type {
   ServiceAlert,
 } from "@/types/realtime";
 
-const REALTIME_TTL = 120; // 2 minutes TTL for realtime data
+const VEHICLE_POSITION_TTL = 120;
+const TRIP_UPDATE_TTL = 300;
+const SERVICE_ALERT_TTL = 600;
 
 /**
  * Store a trip update in Redis
@@ -13,7 +15,7 @@ const REALTIME_TTL = 120; // 2 minutes TTL for realtime data
 export async function storeTripUpdate(tripUpdate: TripUpdate): Promise<void> {
   const redis = getRedis();
   const key = buildKey(REDIS_KEYS.TRIP_UPDATE, tripUpdate.tripId);
-  await redis.setex(key, REALTIME_TTL, JSON.stringify(tripUpdate));
+  await redis.setex(key, TRIP_UPDATE_TTL, JSON.stringify(tripUpdate));
 }
 
 /**
@@ -29,7 +31,7 @@ export async function storeTripUpdates(
 
   for (const update of tripUpdates) {
     const key = buildKey(REDIS_KEYS.TRIP_UPDATE, update.tripId);
-    pipeline.setex(key, REALTIME_TTL, JSON.stringify(update));
+    pipeline.setex(key, TRIP_UPDATE_TTL, JSON.stringify(update));
   }
 
   await pipeline.exec();
@@ -86,8 +88,8 @@ export async function storeVehiclePosition(
     ? (JSON.parse(previousData) as VehiclePosition)
     : null;
 
-  await redis.setex(vehicleKey, REALTIME_TTL, JSON.stringify(vehicle));
-  await redis.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
+  await redis.setex(vehicleKey, VEHICLE_POSITION_TTL, JSON.stringify(vehicle));
+  await redis.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
 
   if (previousVehicle && previousVehicle.tripId !== vehicle.tripId) {
     const oldTripKey = buildKey(
@@ -101,7 +103,7 @@ export async function storeVehiclePosition(
   if (vehicle.routeId) {
     const routeKey = buildKey(REDIS_KEYS.VEHICLES_BY_ROUTE, vehicle.routeId);
     await redis.sadd(routeKey, vehicle.vehicleId);
-    await redis.expire(routeKey, REALTIME_TTL);
+    await redis.expire(routeKey, VEHICLE_POSITION_TTL);
   }
 }
 
@@ -122,8 +124,8 @@ export async function storeVehiclePositions(
   for (const vehicle of vehicles) {
     const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
     const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
-    pipeline.setex(key, REALTIME_TTL, JSON.stringify(vehicle));
-    pipeline.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
+    pipeline.setex(key, VEHICLE_POSITION_TTL, JSON.stringify(vehicle));
+    pipeline.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
 
     if (vehicle.routeId) {
       if (!vehiclesByRoute.has(vehicle.routeId)) {
@@ -139,7 +141,7 @@ export async function storeVehiclePositions(
     // Delete old set and add new members
     pipeline.del(routeKey);
     pipeline.sadd(routeKey, ...vehicleIds);
-    pipeline.expire(routeKey, REALTIME_TTL);
+    pipeline.expire(routeKey, VEHICLE_POSITION_TTL);
   }
 
   await pipeline.exec();
@@ -222,7 +224,7 @@ export async function getVehicleByTrip(
   const vehicle = vehicles.find((v) => v.tripId === tripId) || null;
 
   if (vehicle) {
-    await redis.setex(tripKey, REALTIME_TTL, vehicle.vehicleId);
+    await redis.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
   }
 
   return vehicle;
@@ -235,7 +237,7 @@ export async function storeServiceAlert(alert: ServiceAlert): Promise<void> {
   const redis = getRedis();
   const key = buildKey(REDIS_KEYS.SERVICE_ALERT, alert.alertId);
   // Alerts have longer TTL (10 minutes)
-  await redis.setex(key, 600, JSON.stringify(alert));
+  await redis.setex(key, SERVICE_ALERT_TTL, JSON.stringify(alert));
 }
 
 /**
@@ -251,7 +253,7 @@ export async function storeServiceAlerts(
 
   for (const alert of alerts) {
     const key = buildKey(REDIS_KEYS.SERVICE_ALERT, alert.alertId);
-    pipeline.setex(key, 600, JSON.stringify(alert));
+    pipeline.setex(key, SERVICE_ALERT_TTL, JSON.stringify(alert));
   }
 
   await pipeline.exec();
