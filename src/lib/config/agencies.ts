@@ -1,8 +1,20 @@
 // List of agencies to include in data import
 // Add more agencies as needed
 export const INCLUDED_AGENCIES = [
-  { id: "505000000000000001", tag: "sl", name: "SL" },
-  { id: "505000000000000003", tag: "ul", name: "UL" },
+  {
+    id: "505000000000000001",
+    tag: "sl",
+    name: "SL",
+    mapCenter: [59.3293, 18.0686] as [number, number],
+    mapZoom: 10,
+  },
+  {
+    id: "505000000000000003",
+    tag: "ul",
+    name: "UL",
+    mapCenter: [59.8586, 17.6389] as [number, number],
+    mapZoom: 9,
+  },
   // Add more agencies here
 ] as const;
 
@@ -23,4 +35,18 @@ export function getAgencyTag(agencyId: string): AgencyTag | undefined {
 
 export function getAgencyName(agencyId: string): string | undefined {
   return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.name;
+}
+
+export function getAgencyMapConfig(agencyId: string | undefined): {
+  center: [number, number];
+  zoom: number;
+} {
+  const agency = INCLUDED_AGENCIES.find((a) => a.id === agencyId);
+  if (agency) {
+    return {
+      center: [agency.mapCenter[0], agency.mapCenter[1]],
+      zoom: agency.mapZoom,
+    };
+  }
+  return { center: [59.3293, 18.0686], zoom: 10 };
 }

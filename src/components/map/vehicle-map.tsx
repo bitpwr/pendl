@@ -10,6 +10,7 @@ import type { Marker as LeafletMarker } from "leaflet";
 import type { Vehicle } from "@/types/api";
 import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
+import { getAgencyMapConfig } from "@/lib/config/agencies";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -75,21 +76,27 @@ function vehicleTitle(vehicle: Vehicle): string {
   return `${routeTypeName(vehicle.routeType)} ${vehicle.routeShortName}`;
 }
 
-// Stockholm default center
-const DEFAULT_CENTER: [number, number] = [59.3293, 18.0686];
-const DEFAULT_ZOOM = 10;
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
 
 export function VehicleMap({
-  center = DEFAULT_CENTER,
-  zoom = DEFAULT_ZOOM,
+  center,
+  zoom,
   height = "400px",
   agencyId,
 }: VehicleMapProps) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
-  const [mapCenter, setMapCenter] = useState(center);
+  const [mapCenter, setMapCenter] = useState<[number, number]>(() => {
+    const config = getAgencyMapConfig(agencyId);
+    return center ?? config.center;
+  });
+  const [agencyZoom, setAgencyZoom] = useState(() => {
+    const config = getAgencyMapConfig(agencyId);
+    return zoom ?? config.zoom;
+  });
+  const [agencyChangeKey, setAgencyChangeKey] = useState(0);
+  const isFirstAgencyRender = useRef(true);
   const [isClient, setIsClient] = useState(false);
   const [selectedRouteType, setSelectedRouteType] = useState<RouteType | null>(
     null,
@@ -162,6 +169,17 @@ export function VehicleMap({
   useEffect(() => {
     isMapInteractingRef.current = isMapInteracting;
   }, [isMapInteracting]);
+
+  useEffect(() => {
+    if (isFirstAgencyRender.current) {
+      isFirstAgencyRender.current = false;
+      return;
+    }
+    const config = getAgencyMapConfig(agencyId);
+    setMapCenter(config.center);
+    setAgencyZoom(config.zoom);
+    setAgencyChangeKey((k) => k + 1);
+  }, [agencyId]);
 
   const fetchVehicles = useCallback(async () => {
     setError(null);
@@ -433,14 +451,16 @@ export function VehicleMap({
         >
           <MapContainer
             center={mapCenter}
-            zoom={zoom}
+            zoom={agencyZoom}
             style={{ height: "100%", width: "100%" }}
             scrollWheelZoom={true}
             preferCanvas={true}
           >
             <MapUpdater
               center={mapCenter}
+              zoom={agencyZoom}
               locateKey={locateKey}
+              agencyChangeKey={agencyChangeKey}
               onInteractionChange={setIsMapInteracting}
               onViewportChange={setMapViewport}
             />
@@ -495,12 +515,16 @@ const MapUpdater = dynamic(
 
       return function MapUpdaterComponent({
         center,
+        zoom,
         locateKey,
+        agencyChangeKey,
         onInteractionChange,
         onViewportChange,
       }: {
         center: [number, number];
+        zoom: number;
         locateKey: number;
+        agencyChangeKey: number;
         onInteractionChange: (isInteracting: boolean) => void;
         onViewportChange: (viewport: MapViewport) => void;
       }) {
@@ -552,6 +576,12 @@ const MapUpdater = dynamic(
             map.flyTo(center, 12, { duration: 1.5 });
           }
         }, [locateKey, center, map, emitViewport]);
+
+        useEffect(() => {
+          if (agencyChangeKey > 0) {
+            map.flyTo(center, zoom, { duration: 1.5 });
+          }
+        }, [agencyChangeKey, center, zoom, map]);
 
         useEffect(() => {
           return () => {
