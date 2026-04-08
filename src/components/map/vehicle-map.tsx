@@ -649,7 +649,9 @@ function VehicleMarkerComponent({
           <div className="font-bold">{vehicleTitle(vehicle)}</div>
           {speedMps > 0 && (
             <div className="text-gray-600 mt-1">
-              Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
+              {vehicle.routeType === RouteType.Ferry
+                ? `Hastighet: ${(speedMps * 1.94).toFixed(0)} knop`
+                : `Hastighet: ${(speedMps * 3.6).toFixed(0)} km/h`}
             </div>
           )}
           <a
