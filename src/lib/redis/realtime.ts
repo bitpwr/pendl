@@ -77,6 +77,8 @@ export async function getTripUpdates(
 export async function storeVehiclePosition(
   vehicle: VehiclePosition,
 ): Promise<void> {
+  if (!vehicle.tripId) return;
+
   const redis = getRedis();
   const vehicleKey = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
   const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
@@ -121,7 +123,7 @@ export async function storeVehiclePositions(
   // Group vehicles by route
   const vehiclesByRoute = new Map<string, string[]>();
 
-  for (const vehicle of vehicles) {
+  for (const vehicle of vehicles.filter((v) => v.tripId)) {
     const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
     const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
     pipeline.setex(key, VEHICLE_POSITION_TTL, JSON.stringify(vehicle));
