@@ -11,6 +11,7 @@ import { TripMap } from "@/components/trip/trip-map";
 import { TripStopList } from "@/components/trip/trip-stop-list";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { routeTypeName, type RouteType } from "@/types/gtfs";
+import { getAgencyName } from "@/lib/config/agencies";
 
 interface TripStop {
   stopId: string;
@@ -152,10 +153,16 @@ export default function TripPage() {
       body: JSON.stringify({
         key: "trip",
         value: `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName}`,
+        agency: getAgencyName(agencyId ?? ""),
       }),
       keepalive: true,
     });
-  }, [data?.trip?.tripId, data?.trip?.routeType, data?.trip?.routeShortName]);
+  }, [
+    data?.trip?.tripId,
+    data?.trip?.routeType,
+    data?.trip?.routeShortName,
+    agencyId,
+  ]);
 
   useEffect(() => {
     if (!data || !data.trip || !data.stops) {

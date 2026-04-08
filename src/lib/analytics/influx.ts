@@ -123,9 +123,11 @@ async function writePoints(points: Point[]): Promise<void> {
 export function trackPageLoad(
   page: "area" | "trip" | "map",
   value: string,
+  agency?: string,
 ): void {
   const point = new Point("page_loads")
     .tag("page", page)
+    .tag("agency", agency || "")
     .stringField("value", value || "")
     .intField("count", 1)
     .timestamp(new Date());
@@ -185,6 +187,7 @@ async function flushMetrics(): Promise<void> {
     points.push(
       new Point("page_loads")
         .tag("page", page)
+        .tag("agency", "")
         .stringField("value", "")
         .intField("count", 0)
         .timestamp(new Date(now)),

@@ -4,6 +4,7 @@ import { trackPageLoad } from "@/lib/analytics/influx";
 interface AnalyticsPayload {
   key?: string;
   value?: string;
+  agency?: string;
 }
 
 // always return 200 to avoid any issues with analytics requests
@@ -28,9 +29,10 @@ export async function POST(request: NextRequest) {
     console.info("[analytics]", {
       key: payload.key,
       value: payload.value,
+      agency: payload.agency,
     });
 
-    trackPageLoad(payload.key, payload.value);
+    trackPageLoad(payload.key, payload.value, payload.agency);
   } catch (error) {
     console.error("Error logging analytics:", error);
   }

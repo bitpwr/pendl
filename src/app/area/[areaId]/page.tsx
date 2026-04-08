@@ -8,6 +8,7 @@ import { Star, ArrowLeft } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { AreaDepartureResponse } from "@/types/api";
+import { getAgencyName } from "@/lib/config/agencies";
 
 export default function AreaPage() {
   const params = useParams();
@@ -86,10 +87,11 @@ export default function AreaPage() {
       body: JSON.stringify({
         key: "area",
         value: data.area.areaName,
+        agency: getAgencyName(agencyId ?? ""),
       }),
       keepalive: true,
     });
-  }, [data?.area?.areaId, data?.area?.areaName]);
+  }, [data?.area?.areaId, data?.area?.areaName, agencyId]);
 
   const areaName = data?.area?.areaName || "Laddar...";
 

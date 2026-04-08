@@ -5,19 +5,16 @@ import { VehicleMap } from "@/components/map/vehicle-map";
 import { useAgency } from "@/hooks/use-agency";
 
 export default function MapPage() {
-  const hasLoggedMapView = useRef(false);
-  const { agencyId, setAgency, agencies } = useAgency();
+  const { agencyId, agencyName, setAgency, agencies } = useAgency();
+  const lastReportedAgency = useRef<string | null>(null);
 
   useEffect(() => {
     document.title = "Karta | Pendl";
   }, []);
 
   useEffect(() => {
-    if (hasLoggedMapView.current) {
-      return;
-    }
-
-    hasLoggedMapView.current = true;
+    if (lastReportedAgency.current === agencyName) return;
+    lastReportedAgency.current = agencyName;
 
     void fetch("/api/analytics", {
       method: "POST",
@@ -27,10 +24,11 @@ export default function MapPage() {
       body: JSON.stringify({
         key: "map",
         value: "",
+        agency: agencyName,
       }),
       keepalive: true,
     });
-  }, []);
+  }, [agencyName]);
 
   return (
     <div className="space-y-5">
