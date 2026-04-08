@@ -76,7 +76,7 @@ function vehicleTitle(vehicle: Vehicle): string {
   return `${routeTypeName(vehicle.routeType)} ${vehicle.routeShortName}`;
 }
 
-const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
+const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 300;
 
 export function VehicleMap({
   center,
@@ -624,7 +624,7 @@ function VehicleMarkerComponent({
 
   // Create custom arrow icon
   const icon = useMemo(
-    () => createVehicleLeafletIcon(L, color, bearing, isSelected ? 48 : 32),
+    () => createVehicleLeafletIcon(L, color, bearing, isSelected ? 48 : 30),
     [L, color, bearing, isSelected],
   );
 
@@ -697,11 +697,11 @@ function LightVehicleMarker({
   return (
     <CircleMarker
       center={[vehicle.latitude, vehicle.longitude]}
-      radius={isSelected ? 7 : 5}
+      radius={isSelected ? 7 : 4}
       fillColor={color}
       color="#FFFFFF"
-      weight={2}
-      fillOpacity={0.9}
+      weight={0.5}
+      fillOpacity={1}
       eventHandlers={{
         click: () => onSelect(vehicle),
       }}

@@ -17,11 +17,7 @@ export function createVehicleArrowIcon(
         <path d="M 16 4 L 22 22 L 16 18 L 10 22 Z"
               fill="${color}"
               stroke="#FFFFFF"
-              stroke-width="1.5" />
-        <!-- Inner highlight -->
-        <path d="M 16 6 L 20 20 L 16 17 L 12 20 Z"
-              fill="${color}"
-              opacity="0.8" />
+              stroke-width="0.5" />
       </g>
     </svg>
   `;

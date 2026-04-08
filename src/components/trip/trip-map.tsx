@@ -163,7 +163,7 @@ export function TripMap({
                       : "#ffffff"
                 }
                 color={routeColor}
-                weight={2}
+                weight={1.5}
                 fillOpacity={1}
               >
                 <Popup>
