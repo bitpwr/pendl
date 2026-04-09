@@ -1,3 +1,32 @@
+## [0.8.0] - 2026-04-09
+
+### ✨ Features
+
+- add support for UL agency (`8832276`)
+- map flies to selected agency (`307e6e4`)
+
+### 🐛 Bug Fixes
+
+- boat speed is shown in knots (`196998f`)
+
+### ⚡ Performance
+
+- do not add vehicles without trip (`3f31255`)
+- improve area search (`6ab27af`)
+
+### 💎 Styling
+
+- improve page titles (`4adafc3`)
+- show agency for each favorites (`2b9e1c8`)
+- nicer and more efficient vehicle icons (`71ef794`)
+
+### 🧹 Maintenance
+
+- include agency in page load telemetry (`7dce6c6`)
+- use different redis ttl for different data (`c586bcc`)
+- remove unused getScheduledDepartures() (`6b2d5b1`)
+- show more search results (`9026c31`)
+
 ## [0.7.4] - 2026-03-19
 
 ### 🐛 Bug Fixes
