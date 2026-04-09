@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
-import { Star, ArrowLeft } from "lucide-react";
+import { AreaMap } from "@/components/map/area-map";
+import { Star, ArrowLeft, Map } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { AreaDepartureResponse } from "@/types/api";
@@ -22,6 +23,7 @@ export default function AreaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
+  const [showMap, setShowMap] = useState(false);
   const lastLoggedAreaId = useRef<string | null>(null);
 
   const fetchDepartures = useCallback(async () => {
@@ -128,12 +130,30 @@ export default function AreaPage() {
               )}
             />
           </Button>
-          {/* <Button variant="outline" size="sm">
+          <Button
+            variant={showMap ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowMap((v) => !v)}
+          >
             <Map className="mr-2 h-4 w-4" />
-            Visa på karta
-          </Button> */}
+          </Button>
         </div>
       </div>
+
+      {data?.area && (
+        <div
+          className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+          style={{ gridTemplateRows: showMap ? "1fr" : "0fr" }}
+        >
+          <div className="overflow-hidden">
+            <AreaMap
+              latitude={data.area.latitude}
+              longitude={data.area.longitude}
+              areaName={data.area.areaName}
+            />
+          </div>
+        </div>
+      )}
 
       <AreaDepartureBoard
         data={data}
