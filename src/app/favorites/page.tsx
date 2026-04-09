@@ -1,6 +1,13 @@
+"use client";
+
 import { FavoritesList } from "@/components/favorites/favorites-list";
+import { useEffect } from "react";
 
 export default function FavoritesPage() {
+  useEffect(() => {
+    document.title = "Favoriter | Pendl";
+  }, []);
+
   return (
     <div className="space-y-8">
       <section>

@@ -169,7 +169,7 @@ export default function TripPage() {
       return;
     }
 
-    const title = `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName} → ${data.stops.at(-1)?.stopName}`;
+    const title = `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName} mot ${data.stops.at(-1)?.stopName}`;
 
     document.title = `${title} | Pendl`;
   }, [data]);
