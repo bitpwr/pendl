@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, MapPin, Loader2 } from "lucide-react";
+import { Search, MapPin, Loader2, X } from "lucide-react";
 
 interface StopSearchProps {
   onSearch: (query: string) => void;
@@ -44,6 +44,11 @@ export function StopSearch({
     [onSearch],
   );
 
+  const handleClear = useCallback(() => {
+    setQuery("");
+    onSearch("");
+  }, [onSearch]);
+
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
       <div className="relative flex-1">
@@ -53,11 +58,22 @@ export function StopSearch({
           placeholder="Sök station eller hållplats..."
           value={query}
           onChange={handleInputChange}
-          className="h-11 pl-10 text-base bg-card dark:bg-card"
+          className="h-11 pl-10 pr-10 text-base bg-card dark:bg-card"
           autoComplete="off"
         />
-        {isLoading && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+        {query ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Rensa"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        ) : (
+          isLoading && (
+            <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )
         )}
       </div>
       <Button
