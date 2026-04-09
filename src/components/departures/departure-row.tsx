@@ -33,7 +33,7 @@ export function DepartureRow({ departure, agencyId }: DepartureRowProps) {
       />
 
       <div className="flex-1 min-w-0">
-        <p className="font-medium truncate leading-snug">
+        <p className="font-medium leading-snug break-words">
           {departure.headsign}
         </p>
       </div>

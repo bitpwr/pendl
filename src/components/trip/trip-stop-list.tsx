@@ -148,7 +148,7 @@ export function TripStopList({
                     >
                       <p
                         className={cn(
-                          "font-medium truncate",
+                          "font-medium break-words",
                           (isFirst || isLast) && "font-semibold",
                         )}
                       >
