@@ -1,3 +1,15 @@
+## [0.9.0] - 2026-04-11
+
+### ✨ Features
+
+- add option to show a map for an area (`89d431f`)
+- add a button to clear the search field (`9ed2db9`)
+
+### 💎 Styling
+
+- better alignment in page titles (`29c870e`)
+- break words for long stop names (`c410266`)
+
 ## [0.8.0] - 2026-04-09
 
 ### ✨ Features
