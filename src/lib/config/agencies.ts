@@ -1,3 +1,5 @@
+import { RouteType } from "@/types/gtfs";
+
 // List of agencies to include in data import
 // Add more agencies as needed
 export const INCLUDED_AGENCIES = [
@@ -7,6 +9,13 @@ export const INCLUDED_AGENCIES = [
     name: "SL",
     mapCenter: [59.3293, 18.0686] as [number, number],
     mapZoom: 10,
+    routeTypes: [
+      RouteType.Metro,
+      RouteType.Train,
+      RouteType.Bus,
+      RouteType.Tram,
+      RouteType.Ferry,
+    ],
   },
   {
     id: "505000000000000003",
@@ -14,6 +23,7 @@ export const INCLUDED_AGENCIES = [
     name: "UL",
     mapCenter: [59.8586, 17.6389] as [number, number],
     mapZoom: 9,
+    routeTypes: [RouteType.Bus],
   },
   // Add more agencies here
 ] as const;
@@ -49,4 +59,17 @@ export function getAgencyMapConfig(agencyId: string | undefined): {
     };
   }
   return { center: [59.3293, 18.0686], zoom: 10 };
+}
+
+const DEFAULT_ROUTE_TYPES: RouteType[] = [
+  RouteType.Metro,
+  RouteType.Train,
+  RouteType.Bus,
+  RouteType.Tram,
+  RouteType.Ferry,
+];
+
+export function getAgencyRouteTypes(agencyId: string | undefined): RouteType[] {
+  const agency = INCLUDED_AGENCIES.find((a) => a.id === agencyId);
+  return agency ? [...agency.routeTypes] : DEFAULT_ROUTE_TYPES;
 }

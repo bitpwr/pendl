@@ -10,7 +10,7 @@ import type { Marker as LeafletMarker } from "leaflet";
 import type { Vehicle } from "@/types/api";
 import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
-import { getAgencyMapConfig } from "@/lib/config/agencies";
+import { getAgencyMapConfig, getAgencyRouteTypes } from "@/lib/config/agencies";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -179,6 +179,10 @@ export function VehicleMap({
     setMapCenter(config.center);
     setAgencyZoom(config.zoom);
     setAgencyChangeKey((k) => k + 1);
+    const available = getAgencyRouteTypes(agencyId);
+    setSelectedRouteType((prev) =>
+      prev !== null && !available.includes(prev) ? null : prev,
+    );
   }, [agencyId]);
 
   const fetchVehicles = useCallback(async () => {
@@ -370,13 +374,7 @@ export function VehicleMap({
     );
   }
 
-  const routeTypes = [
-    RouteType.Metro,
-    RouteType.Train,
-    RouteType.Bus,
-    RouteType.Tram,
-    RouteType.Ferry,
-  ];
+  const routeTypes = getAgencyRouteTypes(agencyId);
 
   return (
     <Card>
