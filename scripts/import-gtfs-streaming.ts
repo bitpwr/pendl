@@ -22,6 +22,7 @@ async function main() {
   const forceDownload = args.includes("--force") || args.includes("-f");
   const useExisting = args.includes("--use-existing");
 
+  const startTime = Date.now();
   console.log("=== GTFS Static Import Worker (Streaming Mode) ===");
   console.log(`Time: ${new Date().toISOString()}`);
   console.log("Memory limit: " + (process.env.NODE_OPTIONS || "default"));
@@ -70,9 +71,11 @@ async function main() {
     console.log("");
 
     await importGtfsStreaming(zipPath);
+    const elapsedMs = Date.now() - startTime;
+    const elapsedMin = (elapsedMs / 1000 / 60).toFixed(1);
 
     console.log("");
-    console.log("=== Import Complete ===");
+    console.log(`=== Import complete, took ${elapsedMin} minutes ===`);
   } catch (error) {
     console.error("Import failed:", error);
     process.exit(1);
