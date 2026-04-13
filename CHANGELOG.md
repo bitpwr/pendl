@@ -1,3 +1,23 @@
+## [0.10.0] - 2026-04-13
+
+### ✨ Features
+
+- include stop times in trip map popup (`15bc994`)
+- larger touch area for stops on trip map (`4eb0c64`)
+- only show available vehicle types for selection on map page (`76dece0`)
+
+### ♻️ Refactoring
+
+- move common time functions to time-utils (`b4a1b77`)
+- combine sql queries for all vehicles (`0b259b9`)
+- do not import more areas than needed (`1f1f310`)
+
+### 🧹 Maintenance
+
+- include route info for trip vehicles (`4e541a9`)
+- after complete import, print total time it took (`3969e3a`)
+- reset page telemetry for every agency (`5f64877`)
+
 ## [0.9.0] - 2026-04-11
 
 ### ✨ Features
