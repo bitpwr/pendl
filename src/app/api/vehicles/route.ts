@@ -24,86 +24,53 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Get unique route IDs and trip IDs
-    const routeIds = [
-      ...new Set(positions.map((p) => p.routeId).filter(Boolean)),
-    ];
+    // Get unique trip IDs
     const tripIds = [...new Set(positions.map((p) => p.tripId))];
 
-    // console.log(
-    //   `Processing ${positions.length} vehicles, ${tripIds.length} unique trips, ${routeIds.length} with routeId`,
-    // );
-
-    // Fetch trip data which includes route_id
-    const trips = await query<{
+    // Fetch route data via trip join in a single query
+    const tripRoutes = await query<{
       trip_id: string;
-      route_id: string;
-    }>(`SELECT trip_id, route_id FROM trips WHERE trip_id = ANY($1)`, [
-      tripIds,
-    ]);
-
-    // console.log(`Found ${trips.length} trips in database`);
-
-    // Get all route IDs from trips
-    const allRouteIds = [
-      ...new Set([...routeIds, ...trips.map((t) => t.route_id)]),
-    ];
-
-    // Fetch route data
-    const routes = await query<{
       route_id: string;
       route_short_name: string | null;
       route_long_name: string | null;
       route_type: number;
     }>(
       agencyId
-        ? `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1) AND agency_id = $2`
-        : `SELECT route_id, route_short_name, route_long_name, route_type FROM routes WHERE route_id = ANY($1)`,
-      agencyId ? [allRouteIds, agencyId] : [allRouteIds],
+        ? `SELECT t.trip_id, r.route_id, r.route_short_name, r.route_long_name, r.route_type
+           FROM trips t JOIN routes r ON r.route_id = t.route_id
+           WHERE t.trip_id = ANY($1) AND r.agency_id = $2`
+        : `SELECT t.trip_id, r.route_id, r.route_short_name, r.route_long_name, r.route_type
+           FROM trips t JOIN routes r ON r.route_id = t.route_id
+           WHERE t.trip_id = ANY($1)`,
+      agencyId ? [tripIds, agencyId] : [tripIds],
     );
 
-    // console.log(`Found ${routes.length} routes in database`);
-
-    // Create lookup maps
-    const routeMap = new Map(
-      routes.map((r) => [
-        r.route_id,
+    // Create lookup map by trip_id
+    const tripRouteMap = new Map(
+      tripRoutes.map((r) => [
+        r.trip_id,
         {
+          routeId: r.route_id,
           shortName: r.route_short_name,
           longName: r.route_long_name,
           routeType: toRouteType(r.route_type),
         },
       ]),
     );
-    const tripMap = new Map(
-      trips.map((t) => [t.trip_id, { routeId: t.route_id }]),
-    );
 
     // Transform to API response format and filter
     const allVehicles: (Vehicle | null)[] = positions.map((pos) => {
-      // Get route ID from vehicle or from trip
-      const tripInfo = tripMap.get(pos.tripId);
-      const routeId = pos.routeId || tripInfo?.routeId;
+      const route = tripRouteMap.get(pos.tripId);
 
-      if (!routeId) {
-        return null;
-      }
-
-      const route = routeMap.get(routeId);
-
-      // Skip vehicles without route data
       if (!route) {
-        // console.log(
-        //   `No route data for route ${routeId} (vehicle ${pos.vehicleId})`,
-        // );
         return null;
       }
 
       return {
         vehicleId: pos.vehicleId,
         tripId: pos.tripId,
-        routeId: routeId,
-        routeShortName: route.shortName || routeId,
+        routeId: route.routeId,
+        routeShortName: route.shortName || route.routeId,
         routeType: route.routeType,
         headsign: route.longName || route.shortName || "",
         latitude: pos.latitude,
@@ -116,15 +83,10 @@ export async function GET(request: NextRequest) {
     const vehiclesBeforeFilter = allVehicles.filter(
       (v): v is Vehicle => v !== null,
     );
-    // console.log(`${vehiclesBeforeFilter.length} vehicles with route data`);
 
     const vehicles = vehiclesBeforeFilter.filter(
       (v) => routeTypeFilter === null || v.routeType === routeTypeFilter,
     );
-
-    // console.log(
-    //   `${vehicles.length} vehicles after routeType filter (filter: ${routeTypeFilter})`,
-    // );
 
     return NextResponse.json({
       vehicles,
