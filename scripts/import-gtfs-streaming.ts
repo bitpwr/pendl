@@ -105,7 +105,9 @@ async function importGtfsStreaming(zipPath: string) {
       filter: (row) => isIncludedAgency(row.agency_id),
     });
     const agencyIds = new Set(agencies.used.map((a) => a.agency_id));
-    console.log(`Found ${agencies.used.length} agencies to import`);
+    console.log(
+      `Found ${agencies.used.length} agencies to import out of ${agencies.total}`,
+    );
 
     await importAgencies(client, agencies.used);
 
@@ -115,7 +117,9 @@ async function importGtfsStreaming(zipPath: string) {
       filter: (row) => agencyIds.has(row.agency_id),
     });
     const routeIds = new Set(routes.used.map((r) => r.route_id));
-    console.log(`Found ${routes.used.length} routes to import`);
+    console.log(
+      `Found ${routes.used.length} routes to import out of ${routes.total}`,
+    );
 
     await importRoutes(client, routes.used);
 
@@ -127,7 +131,9 @@ async function importGtfsStreaming(zipPath: string) {
     const tripIds = new Set(trips.used.map((t) => t.trip_id));
     const serviceIds = new Set(trips.used.map((t) => t.service_id));
     const shapeIds = new Set(trips.used.map((t) => t.shape_id).filter(Boolean));
-    console.log(`Found ${trips.used.length} trips to import`);
+    console.log(
+      `Found ${trips.used.length} trips to import out of ${trips.total}`,
+    );
 
     await importTrips(client, trips.used);
 
@@ -139,7 +145,9 @@ async function importGtfsStreaming(zipPath: string) {
     const calendar = await parseGtfsFile(zipPath, "calendar.txt", {
       filter: (row) => serviceIds.has(row.service_id),
     });
-    console.log(`Found ${calendar.used.length} calendar entries`);
+    console.log(
+      `Found ${calendar.used.length} calendar entries to import out of ${calendar.total}`,
+    );
 
     await importCalendar(client, calendar.used);
 
@@ -148,7 +156,9 @@ async function importGtfsStreaming(zipPath: string) {
     const calendarDates = await parseGtfsFile(zipPath, "calendar_dates.txt", {
       filter: (row) => serviceIds.has(row.service_id),
     });
-    console.log(`Found ${calendarDates.used.length} calendar date exceptions`);
+    console.log(
+      `Found ${calendarDates.used.length} calendar date exceptions to import out of ${calendarDates.total}`,
+    );
 
     await importCalendarDates(client, calendarDates.used);
 
@@ -165,7 +175,7 @@ async function importGtfsStreaming(zipPath: string) {
     }
 
     console.log(
-      `Found ${stopTimeResult.used.length} stop times (will import after stops)`,
+      `Found ${stopTimeResult.used.length} stop times (will import after stops), total in file: ${stopTimeResult.total}`,
     );
 
     // Phase 7: Stops (filtered by usage) - MUST be imported before stop_times
@@ -177,7 +187,9 @@ async function importGtfsStreaming(zipPath: string) {
     // const parentStations = new Set(
     //   stops.used.map((s) => s.parent_station).filter(Boolean),
     // );
-    console.log(`Found ${stops.used.length} stops to import`);
+    console.log(
+      `Found ${stops.used.length} stops to import out of ${stops.total}`,
+    );
 
     await importStops(client, stops.used);
 
@@ -193,25 +205,47 @@ async function importGtfsStreaming(zipPath: string) {
     const shapes = await parseGtfsFile(zipPath, "shapes.txt", {
       filter: (row) => shapeIds.has(row.shape_id),
     });
-    console.log(`Found ${shapes.used.length} shape points to import`);
+    console.log(
+      `Found ${shapes.used.length} shape points to import out of ${shapes.total}`,
+    );
 
     await importShapesBatched(client, shapes.used);
 
     // Clear shapes from memory
     shapes.used.length = 0;
 
-    // Phase 9: Areas
-    console.log("\n=== Phase 9: Areas ===");
-    const areas = await parseGtfsFile(zipPath, "areas.txt");
-    console.log(`Found ${areas.used.length} areas`);
+    // Phase 9: Stop Areas - parse first to determine which areas are needed
+    console.log("\n=== Phase 9: Stop Areas ===");
+    const stopAreas = await parseGtfsFile(zipPath, "stop_areas.txt");
+
+    // Find which area_ids are actually used (have child stops in imported data)
+    const parentToStopsForFilter = new Map<string, string[]>();
+    for (const stop of stops.used) {
+      if (stop.parent_station) {
+        const children = parentToStopsForFilter.get(stop.parent_station) || [];
+        children.push(stop.stop_id);
+        parentToStopsForFilter.set(stop.parent_station, children);
+      }
+    }
+    const usedAreaIds = new Set(
+      stopAreas.used
+        .filter((sa) => parentToStopsForFilter.has(sa.stop_id))
+        .map((sa) => sa.area_id),
+    );
+    console.log(
+      `Found ${stopAreas.used.length} stop-area mappings out of ${stopAreas.total}, referencing ${usedAreaIds.size} areas`,
+    );
+
+    // Phase 10: Areas - filtered to only those referenced by used stop_areas
+    console.log("\n=== Phase 10: Areas ===");
+    const areas = await parseGtfsFile(zipPath, "areas.txt", {
+      filter: (row) => usedAreaIds.has(row.area_id),
+    });
+    console.log(
+      `Found ${areas.used.length} areas to import out of ${areas.total}`,
+    );
 
     await importAreas(client, areas.used);
-
-    // Phase 10: Stop Areas
-    console.log("\n=== Phase 10: Stop Areas ===");
-    const stopAreas = await parseGtfsFile(zipPath, "stop_areas.txt");
-    console.log(`Found ${stopAreas.used.length} stop-area mappings`);
-
     await importStopAreas(client, stopAreas.used, stops.used);
 
     console.log("\n=== Finalizing ===");

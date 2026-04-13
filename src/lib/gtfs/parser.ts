@@ -14,6 +14,7 @@ export interface ParseOptions {
 
 /**
  * Parse a CSV file from a GTFS zip
+ * Returns both the used rows and the total count of rows in the file (before filtering)
  */
 export async function parseGtfsFile<T extends Record<string, string>>(
   zipPath: string,
