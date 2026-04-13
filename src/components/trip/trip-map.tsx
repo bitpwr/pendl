@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useSyncExternalStore, useEffect, useState } from "react";
+import {
+  useMemo,
+  useSyncExternalStore,
+  useEffect,
+  useState,
+  Fragment,
+} from "react";
 import dynamic from "next/dynamic";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -155,35 +161,49 @@ export function TripMap({
 
             {/* Stop markers */}
             {stops.map((stop, index) => (
-              <CircleMarker
-                key={stop.stopSequence}
-                center={[stop.latitude, stop.longitude]}
-                radius={index === 0 || index === stops.length - 1 ? 8 : 5}
-                fillColor={
-                  index === 0
-                    ? "#22c55e"
-                    : index === stops.length - 1
-                      ? "#ef4444"
-                      : "#ffffff"
-                }
-                color={routeColor}
-                weight={1.5}
-                fillOpacity={1}
-              >
-                <Popup>
-                  <div className="text-sm">
-                    <Link
-                      href={`/area/${encodeURIComponent(stop.areaId ?? "0")}`}
-                      className="font-bold text-inherit! no-underline hover:underline"
-                    >
-                      {stop.stopName}
-                    </Link>
-                    <div className="text-gray-600 mt-1">
-                      {formatDepartureTime(stop)}
+              <Fragment key={stop.stopSequence}>
+                {/* Visual circle (non-interactive) */}
+                <CircleMarker
+                  center={[stop.latitude, stop.longitude]}
+                  radius={index === 0 || index === stops.length - 1 ? 8 : 5}
+                  fillColor={
+                    index === 0
+                      ? "#22c55e"
+                      : index === stops.length - 1
+                        ? "#ef4444"
+                        : "#ffffff"
+                  }
+                  color={routeColor}
+                  weight={1.5}
+                  fillOpacity={1}
+                  interactive={false}
+                />
+                {/* Larger transparent touch/hover target */}
+                <CircleMarker
+                  center={[stop.latitude, stop.longitude]}
+                  radius={20}
+                  fillOpacity={0}
+                  opacity={0}
+                  eventHandlers={{
+                    mouseover: (e) => e.target.openPopup(),
+                    mouseout: (e) => e.target.closePopup(),
+                  }}
+                >
+                  <Popup>
+                    <div className="text-sm">
+                      <Link
+                        href={`/area/${encodeURIComponent(stop.areaId ?? "0")}`}
+                        className="font-bold text-inherit! no-underline hover:underline"
+                      >
+                        {stop.stopName}
+                      </Link>
+                      <div className="text-gray-600 mt-1">
+                        {formatDepartureTime(stop)}
+                      </div>
                     </div>
-                  </div>
-                </Popup>
-              </CircleMarker>
+                  </Popup>
+                </CircleMarker>
+              </Fragment>
             ))}
 
             {/* Vehicle marker */}
