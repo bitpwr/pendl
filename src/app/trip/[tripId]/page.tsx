@@ -55,6 +55,9 @@ interface TripVehicle {
   speed?: number;
   currentStatus: string;
   timestamp: number;
+  routeType: RouteType;
+  routeShortName: string | null;
+  headsign: string | null;
 }
 
 export default function TripPage() {
