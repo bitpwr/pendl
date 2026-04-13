@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { RouteType, routeTypeColor, routeTypeName } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "@/components/map/vehicle-arrow-icon";
 import Link from "next/link";
+import { formatDepartureTime } from "@/lib/gtfs/time-utils";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -40,6 +41,9 @@ interface TripStop {
   stopSequence: number;
   latitude: number;
   longitude: number;
+  departureTime: string;
+  realtimeDeparture?: string;
+  delaySeconds?: number;
 }
 
 interface Vehicle {
@@ -152,7 +156,7 @@ export function TripMap({
             {/* Stop markers */}
             {stops.map((stop, index) => (
               <CircleMarker
-                key={stop.stopId}
+                key={stop.stopSequence}
                 center={[stop.latitude, stop.longitude]}
                 radius={index === 0 || index === stops.length - 1 ? 8 : 5}
                 fillColor={
@@ -174,6 +178,9 @@ export function TripMap({
                     >
                       {stop.stopName}
                     </Link>
+                    <div className="text-gray-600 mt-1">
+                      {formatDepartureTime(stop)}
+                    </div>
                   </div>
                 </Popup>
               </CircleMarker>
@@ -230,7 +237,9 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
           </div>{" "}
           {speedMps > 0 && (
             <div className="text-gray-600 mt-1">
-              Hastighet: {(speedMps * 3.6).toFixed(0)} km/h
+              {routeType === RouteType.Ferry
+                ? `Hastighet: ${(speedMps * 1.94).toFixed(0)} knop`
+                : `Hastighet: ${(speedMps * 3.6).toFixed(0)} km/h`}
             </div>
           )}
         </Popup>
