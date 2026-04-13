@@ -4,7 +4,11 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RouteType, routeTypeColor } from "@/types/gtfs";
 import { cn } from "@/lib/utils";
-import { parseGtfsTime, getCurrentGtfsSeconds } from "@/lib/gtfs/time-utils";
+import {
+  parseGtfsTime,
+  getCurrentGtfsSeconds,
+  formatDepartureTime,
+} from "@/lib/gtfs/time-utils";
 
 interface TripStop {
   stopId: string;
@@ -48,30 +52,6 @@ export function TripStopList({
   const routeColor = routeTypeColor(routeType, parseInt(routeName));
   // Calculate current time in GTFS seconds for comparison
   const currentSeconds = getCurrentGtfsSeconds();
-
-  // Helper to format GTFS time (HH:MM:SS) to display (HH:MM)
-  const formatGtfsTime = (gtfsTime: string) => {
-    const parsed = parseGtfsTime(gtfsTime);
-    const h = parsed.hours.toString().padStart(2, "0");
-    const m = parsed.minutes.toString().padStart(2, "0");
-    return `${h}:${m}`;
-  };
-
-  // Get actual departure time considering realtime updates
-  const formatDepartureTime = (stop: TripStop) => {
-    if (stop.delaySeconds && stop.delaySeconds !== 0) {
-      // Add delay to scheduled time
-      const parsed = parseGtfsTime(stop.departureTime);
-      const delayedSeconds = parsed.totalSeconds + stop.delaySeconds;
-      const h = Math.floor(delayedSeconds / 3600) % 24;
-      const m = Math.floor((delayedSeconds % 3600) / 60);
-      return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-    }
-
-    // Fall back to scheduled time
-    return formatGtfsTime(stop.departureTime);
-  };
-
   // Find the index of the next stop (first stop that hasn't passed yet)
   const nextStopIndex = stops.findIndex((stop) => {
     return (
@@ -106,7 +86,7 @@ export function TripStopList({
 
               return (
                 <li
-                  key={`${stop.stopId}-${stop.stopSequence}`}
+                  key={stop.stopSequence}
                   className={cn(
                     "relative flex items-center gap-4 py-2 px-4",
                     stop.isSkipped && "opacity-50 line-through",
