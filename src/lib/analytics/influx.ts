@@ -1,4 +1,5 @@
 import { InfluxDB, Point, WriteApi } from "@influxdata/influxdb-client";
+import { INCLUDED_AGENCY_NAMES } from "../config/agencies";
 
 type InfluxState = {
   writeApi: WriteApi | null;
@@ -184,14 +185,16 @@ async function flushMetrics(): Promise<void> {
   const pageTypes: Array<string> = ["area", "trip", "map"];
 
   for (const page of pageTypes) {
-    points.push(
-      new Point("page_loads")
-        .tag("page", page)
-        .tag("agency", "")
-        .stringField("value", "")
-        .intField("count", 0)
-        .timestamp(new Date(now)),
-    );
+    for (const agency of INCLUDED_AGENCY_NAMES) {
+      points.push(
+        new Point("page_loads")
+          .tag("page", page)
+          .tag("agency", agency)
+          .stringField("value", "")
+          .intField("count", 0)
+          .timestamp(new Date(now)),
+      );
+    }
   }
 
   await writePoints(points);

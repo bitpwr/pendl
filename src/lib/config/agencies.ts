@@ -34,6 +34,7 @@ export type AgencyTag = Agency["tag"];
 
 // Derived array of agency IDs for convenience
 export const INCLUDED_AGENCY_IDS = INCLUDED_AGENCIES.map((a) => a.id);
+export const INCLUDED_AGENCY_NAMES = INCLUDED_AGENCIES.map((a) => a.name);
 
 export function isIncludedAgency(agencyId: string): boolean {
   return INCLUDED_AGENCIES.some((a) => a.id === agencyId);
