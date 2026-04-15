@@ -249,17 +249,6 @@ export default function TripPage() {
           />
           <h1 className="text-xl font-bold">{data.stops.at(-1)?.stopName}</h1>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => {
-            void fetchTrip();
-            void fetchVehicle();
-          }}
-          disabled={isLoading}
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
-        </Button>
       </div>
 
       <div className="flex items-center gap-2 text-sm text-muted-foreground">

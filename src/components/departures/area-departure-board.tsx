@@ -103,19 +103,6 @@ export function AreaDepartureBoard({
             </span>
           )}
         </div>
-        {onRefresh && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={onRefresh}
-            disabled={isLoading}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-            />
-          </Button>
-        )}
       </div>
 
       {!hasRealtimePositions && (
