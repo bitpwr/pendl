@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
 import { AreaMap } from "@/components/map/area-map";
-import { Star, ArrowLeft, Map } from "lucide-react";
+import { Star, ArrowLeft, Map as MapIcon } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { AreaDepartureResponse } from "@/types/api";
+import type { RouteType } from "@/types/gtfs";
 import { getAgencyName } from "@/lib/config/agencies";
+import { RouteBadge } from "@/components/departures/route-badge";
 
 export default function AreaPage() {
   const params = useParams();
@@ -24,7 +26,67 @@ export default function AreaPage() {
   const [error, setError] = useState<Error | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [showMap, setShowMap] = useState(false);
+  const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set());
   const lastLoggedAreaId = useRef<string | null>(null);
+  const storageKey = `pendl-route-filter-${areaId}`;
+
+  const uniqueRoutes = useMemo(() => {
+    if (!data) return [];
+    const seen = new Map<string, { shortName: string; routeType: RouteType }>();
+    for (const group of data.groups) {
+      for (const d of group.departures) {
+        const key = `${d.routeShortName}-${d.routeType}`;
+        if (!seen.has(key)) {
+          seen.set(key, {
+            shortName: d.routeShortName,
+            routeType: d.routeType,
+          });
+        }
+      }
+    }
+    return [...seen.entries()]
+      .map(([key, v]) => ({ key, ...v }))
+      .sort((a, b) =>
+        a.routeType !== b.routeType
+          ? a.routeType - b.routeType
+          : a.shortName.localeCompare(b.shortName, undefined, {
+              numeric: true,
+            }),
+      );
+  }, [data]);
+
+  const filteredData = useMemo(() => {
+    if (!data || selectedRoutes.size === 0) return data;
+    return {
+      ...data,
+      groups: data.groups
+        .map((group) => ({
+          ...group,
+          departures: group.departures.filter((d) =>
+            selectedRoutes.has(`${d.routeShortName}-${d.routeType}`),
+          ),
+        }))
+        .filter((group) => group.departures.length > 0),
+    };
+  }, [data, selectedRoutes]);
+
+  const toggleRoute = useCallback(
+    (key: string) => {
+      setSelectedRoutes((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+
+        if (next.size === 0) {
+          localStorage.removeItem(storageKey);
+        } else {
+          localStorage.setItem(storageKey, JSON.stringify([...next]));
+        }
+        return next;
+      });
+    },
+    [storageKey],
+  );
 
   const fetchDepartures = useCallback(async () => {
     setIsLoading(true);
@@ -71,6 +133,17 @@ export default function AreaPage() {
   }, [fetchDepartures]);
 
   useEffect(() => {
+    try {
+      const stored = localStorage.getItem(storageKey);
+      setSelectedRoutes(
+        stored ? new Set(JSON.parse(stored) as string[]) : new Set(),
+      );
+    } catch {
+      setSelectedRoutes(new Set());
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
     if (!data?.area?.areaId || !data.area.areaName) {
       return;
     }
@@ -109,7 +182,12 @@ export default function AreaPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <Button variant="ghost" size="icon" className="-ml-2" onClick={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="-ml-2"
+            onClick={() => router.back()}
+          >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <h1 className="text-xl font-bold">{areaName}</h1>
@@ -135,7 +213,7 @@ export default function AreaPage() {
             size="sm"
             onClick={() => setShowMap((v) => !v)}
           >
-            <Map className="mr-2 h-4 w-4" />
+            <MapIcon className="mr-2 h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -155,8 +233,33 @@ export default function AreaPage() {
         </div>
       )}
 
+      {uniqueRoutes.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          {uniqueRoutes.map(({ key, shortName, routeType }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => toggleRoute(key)}
+              aria-pressed={selectedRoutes.has(key)}
+              className={cn(
+                "rounded-md transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                selectedRoutes.size > 0 && !selectedRoutes.has(key)
+                  ? "opacity-35"
+                  : "opacity-100",
+              )}
+            >
+              <RouteBadge
+                shortName={shortName}
+                routeType={routeType}
+                size="sm"
+              />
+            </button>
+          ))}
+        </div>
+      )}
+
       <AreaDepartureBoard
-        data={data}
+        data={filteredData}
         isLoading={isLoading}
         error={error}
         onRefresh={fetchDepartures}
