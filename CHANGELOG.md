@@ -1,3 +1,18 @@
+## [0.11.0] - 2026-04-15
+
+### ✨ Features
+
+- make stops collapsible in area page (`6b31d1c`)
+- add selection of routes in area page (`23aa565`)
+
+### 💎 Styling
+
+- make missing realtime less prominent (`96b4832`)
+
+### 🧹 Maintenance
+
+- remove refresh buttons not needed (`7e4eab8`)
+
 ## [0.10.0] - 2026-04-13
 
 ### ✨ Features
