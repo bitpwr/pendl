@@ -105,19 +105,19 @@ export function AreaDepartureBoard({
         </div>
       </div>
 
+      {sortedGroups.map((group) => (
+        <StopGroupCard key={group.stopId} group={group} agencyId={agencyId} />
+      ))}
+
       {!hasRealtimePositions && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
           </span>
-          Avvikelser från tidtabellen inte tillgängliga
+          Avvikelser från tidtabellen inte tillgängliga än
         </div>
       )}
-
-      {sortedGroups.map((group) => (
-        <StopGroupCard key={group.stopId} group={group} agencyId={agencyId} />
-      ))}
     </div>
   );
 }

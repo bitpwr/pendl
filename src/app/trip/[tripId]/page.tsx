@@ -266,7 +266,7 @@ export default function TripPage() {
         </span>
         {vehicle
           ? "Realtidsposition tillgänglig"
-          : "Realtidsposition inte tillgänglig"}
+          : "Realtidsposition inte tillgänglig än"}
       </div>
 
       <TripMap
