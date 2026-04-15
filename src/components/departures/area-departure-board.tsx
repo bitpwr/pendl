@@ -1,10 +1,11 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DepartureRow } from "./departure-row";
-import { RefreshCw, AlertTriangle, Clock } from "lucide-react";
+import { RefreshCw, AlertTriangle, Clock, ChevronDown } from "lucide-react";
 import type { AreaDepartureResponse, AreaDepartureGroup } from "@/types/api";
 import { formatTime } from "@/lib/gtfs/time-utils";
 
@@ -15,6 +16,7 @@ interface AreaDepartureBoardProps {
   onRefresh?: () => void;
   lastUpdated?: Date;
   agencyId?: string;
+  areaId?: string;
 }
 
 export function AreaDepartureBoard({
@@ -24,7 +26,37 @@ export function AreaDepartureBoard({
   onRefresh,
   lastUpdated,
   agencyId,
+  areaId,
 }: AreaDepartureBoardProps) {
+  const storageKey = areaId ? `pendl-hidden-stops-${areaId}` : null;
+
+  const [collapsedStops, setCollapsedStops] = useState<Set<string>>(() => {
+    if (!areaId || typeof window === "undefined") return new Set();
+    try {
+      const stored = localStorage.getItem(`pendl-hidden-stops-${areaId}`);
+      return stored ? new Set(JSON.parse(stored) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  useEffect(() => {
+    if (!storageKey) return;
+    if (collapsedStops.size === 0) {
+      localStorage.removeItem(storageKey);
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify([...collapsedStops]));
+    }
+  }, [collapsedStops, storageKey]);
+
+  const toggleStop = useCallback((stopId: string) => {
+    setCollapsedStops((prev) => {
+      const next = new Set(prev);
+      if (next.has(stopId)) next.delete(stopId);
+      else next.add(stopId);
+      return next;
+    });
+  }, []);
   if (isLoading && !data) {
     return <AreaDepartureBoardSkeleton />;
   }
@@ -106,7 +138,13 @@ export function AreaDepartureBoard({
       </div>
 
       {sortedGroups.map((group) => (
-        <StopGroupCard key={group.stopId} group={group} agencyId={agencyId} />
+        <StopGroupCard
+          key={group.stopId}
+          group={group}
+          agencyId={agencyId}
+          isCollapsed={collapsedStops.has(group.stopId)}
+          onToggle={toggleStop}
+        />
       ))}
 
       {!hasRealtimePositions && (
@@ -125,32 +163,67 @@ export function AreaDepartureBoard({
 interface StopGroupCardProps {
   group: AreaDepartureGroup;
   agencyId?: string;
+  isCollapsed: boolean;
+  onToggle: (stopId: string) => void;
 }
 
-function StopGroupCard({ group, agencyId }: StopGroupCardProps) {
+function StopGroupCard({
+  group,
+  agencyId,
+  isCollapsed,
+  onToggle,
+}: StopGroupCardProps) {
+  const open = !isCollapsed;
+
   if (group.departures.length === 0) {
     return null;
   }
 
   return (
     <Card className="overflow-hidden py-2">
-      <CardHeader className="px-4 py-3">
-        <CardTitle className="flex items-baseline gap-2">
-          <span className="text-base font-semibold">{group.stopName}</span>
-          {group.platformCode && <span>({group.platformCode})</span>}
+      <CardHeader className={`px-4 ${open ? "py-3" : "pt-3 pb-0"}`}>
+        <CardTitle>
+          <button
+            onClick={() => onToggle(group.stopId)}
+            aria-expanded={open}
+            aria-label={open ? "Dölj avgångar" : "Visa avgångar"}
+            className="flex w-full items-baseline gap-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm"
+          >
+            <span className="text-base font-semibold">{group.stopName}</span>
+            {group.platformCode && <span>({group.platformCode})</span>}
+            <ChevronDown
+              className="ml-auto h-4 w-4 self-center text-muted-foreground transition-transform duration-300"
+              style={{ transform: open ? "rotate(0deg)" : "rotate(-90deg)" }}
+            />
+          </button>
+          {!open && (
+            <p className="mt-0.5 text-xs font-normal text-muted-foreground">
+              {(() => {
+                const count = Math.min(group.departures.length, 10);
+                return count === 1
+                  ? "1 dold avgång"
+                  : `${count} dolda avgångar`;
+              })()}
+            </p>
+          )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-0">
-        <div className="divide-y divide-border/50">
-          {group.departures.slice(0, 8).map((departure, index) => (
-            <DepartureRow
-              key={`${departure.tripId}-${departure.scheduledDeparture}-${index}`}
-              departure={departure}
-              agencyId={agencyId}
-            />
-          ))}
-        </div>
-      </CardContent>
+      <div
+        className="grid transition-all duration-300 ease-in-out"
+        style={{ gridTemplateRows: open ? "1fr" : "0fr" }}
+      >
+        <CardContent className="overflow-hidden p-0">
+          <div className="divide-y divide-border/50">
+            {group.departures.slice(0, 10).map((departure, index) => (
+              <DepartureRow
+                key={`${departure.tripId}-${departure.scheduledDeparture}-${index}`}
+                departure={departure}
+                agencyId={agencyId}
+              />
+            ))}
+          </div>
+        </CardContent>
+      </div>
     </Card>
   );
 }

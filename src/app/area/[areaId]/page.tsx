@@ -265,6 +265,7 @@ export default function AreaPage() {
         onRefresh={fetchDepartures}
         lastUpdated={lastUpdated}
         agencyId={agencyId}
+        areaId={areaId}
       />
     </div>
   );
