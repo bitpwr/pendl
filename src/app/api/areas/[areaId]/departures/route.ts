@@ -54,63 +54,64 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     // Build response
     const now = new Date();
-    const departures: Departure[] = scheduled.map((dep) => {
-      const scheduledTime = gtfsTimeToActualDate(dep.departureTime, now);
-      const tripUpdate = tripUpdates.get(dep.tripId);
-      const stopInfo = stopMap.get(dep.stopId);
+    const departures: [stopId: string, departure: Departure][] = scheduled.map(
+      (dep) => {
+        const scheduledTime = gtfsTimeToActualDate(dep.departureTime, now);
+        const tripUpdate = tripUpdates.get(dep.tripId);
 
-      // Calculate realtime delay if available
-      let realtimeTime: Date | undefined;
-      let delaySeconds: number | undefined;
+        // Calculate realtime delay if available
+        let realtimeTime: Date | undefined;
+        let delaySeconds: number | undefined;
 
-      if (tripUpdate) {
-        // Find the stop time update for this stop
-        const stopUpdate = tripUpdate.stopTimeUpdates?.find(
-          (stu) => stu.stopId === dep.stopId,
-        );
+        if (tripUpdate) {
+          // Find the stop time update for this stop
+          const stopUpdate = tripUpdate.stopTimeUpdates?.find(
+            (stu) => stu.stopId === dep.stopId,
+          );
 
-        if (stopUpdate?.departure) {
-          if (stopUpdate.departure.delay !== undefined) {
-            delaySeconds = stopUpdate.departure.delay;
-            realtimeTime = new Date(
-              scheduledTime.getTime() + delaySeconds * 1000,
-            );
-          } else if (stopUpdate.departure.time) {
-            realtimeTime = new Date(stopUpdate.departure.time * 1000);
-            delaySeconds = Math.round(
-              (realtimeTime.getTime() - scheduledTime.getTime()) / 1000,
-            );
+          if (stopUpdate?.departure) {
+            if (stopUpdate.departure.delay !== undefined) {
+              delaySeconds = stopUpdate.departure.delay;
+              realtimeTime = new Date(
+                scheduledTime.getTime() + delaySeconds * 1000,
+              );
+            } else if (stopUpdate.departure.time) {
+              realtimeTime = new Date(stopUpdate.departure.time * 1000);
+              delaySeconds = Math.round(
+                (realtimeTime.getTime() - scheduledTime.getTime()) / 1000,
+              );
+            }
           }
         }
-      }
 
-      return {
-        tripId: dep.tripId,
-        routeId: dep.routeId,
-        routeShortName: dep.routeShortName,
-        routeLongName: dep.routeLongName,
-        routeType: dep.routeType,
-        headsign: dep.tripHeadsign,
-        scheduledDeparture: scheduledTime.toISOString(),
-        realtimeDeparture: realtimeTime?.toISOString(),
-        delaySeconds,
-        isCancelled: tripUpdate?.scheduleRelationship === "CANCELED",
-        stopId: dep.stopId,
-        directionId: dep.directionId,
-        platform: stopInfo?.platformCode || undefined,
-        stopName: stopInfo?.stopName,
-      };
-    });
+        return [
+          dep.stopId,
+          {
+            tripId: dep.tripId,
+            routeId: dep.routeId,
+            routeShortName: dep.routeShortName,
+            routeLongName: dep.routeLongName,
+            routeType: dep.routeType,
+            headsign: dep.tripHeadsign,
+            scheduledDeparture: scheduledTime.toISOString(),
+            realtimeDeparture: realtimeTime?.toISOString(),
+            delaySeconds,
+            isCancelled: tripUpdate?.scheduleRelationship === "CANCELED",
+            directionId: dep.directionId,
+          },
+        ];
+      },
+    );
 
     // Filter out past departures and cancelled ones
     const filteredDepartures = departures
-      .filter((d) => {
+      .filter(([, d]) => {
         const depTime = d.realtimeDeparture
           ? new Date(d.realtimeDeparture)
           : new Date(d.scheduledDeparture);
         return depTime > now && !d.isCancelled;
       })
-      .sort((a, b) => {
+      .sort(([, a], [, b]) => {
         const aTime = a.realtimeDeparture || a.scheduledDeparture;
         const bTime = b.realtimeDeparture || b.scheduledDeparture;
         return new Date(aTime).getTime() - new Date(bTime).getTime();
@@ -118,12 +119,11 @@ export async function GET(request: NextRequest, { params }: Props) {
 
     // Group departures by stop
     const groupedByStop = new Map<string, Departure[]>();
-    for (const dep of filteredDepartures) {
-      const key = dep.stopId;
-      if (!groupedByStop.has(key)) {
-        groupedByStop.set(key, []);
+    for (const [stopId, dep] of filteredDepartures) {
+      if (!groupedByStop.has(stopId)) {
+        groupedByStop.set(stopId, []);
       }
-      groupedByStop.get(key)!.push(dep);
+      groupedByStop.get(stopId)!.push(dep);
     }
 
     // Convert to array of groups

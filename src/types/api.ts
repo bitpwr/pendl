@@ -41,10 +41,7 @@ export interface Departure {
   realtimeDeparture?: string; // ISO datetime (if realtime available)
   delaySeconds?: number;
   isCancelled?: boolean;
-  stopId: string;
-  stopName?: string;
   directionId: number;
-  platform?: string;
   vehicleId?: string;
   alerts?: AlertSummary[];
 }
