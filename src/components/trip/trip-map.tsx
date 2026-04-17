@@ -39,6 +39,9 @@ const CircleMarker = dynamic(
   () => import("react-leaflet").then((mod) => mod.CircleMarker),
   { ssr: false },
 );
+const Pane = dynamic(() => import("react-leaflet").then((mod) => mod.Pane), {
+  ssr: false,
+});
 
 interface TripStop {
   stopId: string;
@@ -149,15 +152,18 @@ export function TripMap({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Route shape */}
-            {polylinePositions && (
-              <Polyline
-                positions={polylinePositions}
-                color={routeColor}
-                weight={4}
-                opacity={0.8}
-              />
-            )}
+            {/* Route shape — rendered in a pane below the overlay pane (z-index 400)
+                so stop circles always appear on top regardless of load order */}
+            <Pane name="shape-pane" style={{ zIndex: 350 }}>
+              {polylinePositions && (
+                <Polyline
+                  positions={polylinePositions}
+                  color={routeColor}
+                  weight={4}
+                  opacity={0.8}
+                />
+              )}
+            </Pane>
 
             {/* Stop markers */}
             {stops.map((stop, index) => (

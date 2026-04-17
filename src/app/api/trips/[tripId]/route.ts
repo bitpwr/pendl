@@ -28,12 +28,6 @@ interface TripInfoRow {
   directionId: number;
 }
 
-interface ShapePointRow {
-  shapePtLat: number;
-  shapePtLon: number;
-  shapePtSequence: number;
-}
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ tripId: string }> },
@@ -103,31 +97,6 @@ export async function GET(
       stops.at(-1)?.stopName ??
       null;
 
-    // Get shape if available
-    let shape = null;
-    if (tripInfo.shapeId) {
-      const shapeSql = `
-        SELECT
-          shape_pt_lat as "shapePtLat",
-          shape_pt_lon as "shapePtLon",
-          shape_pt_sequence as "shapePtSequence"
-        FROM shapes
-        WHERE shape_id = $1
-        ORDER BY shape_pt_sequence
-      `;
-
-      const shapePoints = await query<ShapePointRow>(shapeSql, [
-        tripInfo.shapeId,
-      ]);
-
-      if (shapePoints.length > 0) {
-        shape = {
-          type: "LineString" as const,
-          coordinates: shapePoints.map((p) => [p.shapePtLon, p.shapePtLat]),
-        };
-      }
-    }
-
     // Get realtime trip updates (delays/skips)
     const tripUpdate = await getTripUpdate(tripId);
 
@@ -171,7 +140,6 @@ export async function GET(
         directionId: tripInfo.directionId,
       },
       stops: stopsWithRealtime,
-      shape,
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {

@@ -40,10 +40,6 @@ interface TripData {
     directionId: number;
   };
   stops: TripStop[];
-  shape: {
-    type: "LineString";
-    coordinates: [number, number][];
-  } | null;
   updatedAt: string;
 }
 
@@ -71,6 +67,10 @@ export default function TripPage() {
     : "";
 
   const [data, setData] = useState<TripData | null>(null);
+  const [shape, setShape] = useState<{
+    type: "LineString";
+    coordinates: [number, number][];
+  } | null>(null);
   const [vehicle, setVehicle] = useState<TripVehicle | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -98,6 +98,20 @@ export default function TripPage() {
       setIsLoading(false);
     }
   }, [tripId, agencyParam]);
+
+  const fetchShape = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}/shape`,
+      );
+      if (response.ok) {
+        const shapeData = await response.json();
+        setShape(shapeData.shape ?? null);
+      }
+    } catch {
+      // Shape is optional; fall back to no shape.
+    }
+  }, [tripId]);
 
   const fetchVehicle = useCallback(async () => {
     try {
@@ -136,6 +150,11 @@ export default function TripPage() {
       clearInterval(vehicleInterval);
     };
   }, [fetchTrip, fetchVehicle]);
+
+  // Fetch shape once — it does not change during the trip view.
+  useEffect(() => {
+    void fetchShape();
+  }, [fetchShape]);
 
   useEffect(() => {
     if (!data?.trip?.tripId || !data.trip.routeShortName) {
@@ -270,7 +289,7 @@ export default function TripPage() {
       </div>
 
       <TripMap
-        shape={data.shape}
+        shape={shape}
         stops={data.stops}
         vehicle={vehicle}
         routeType={data.trip.routeType}

@@ -267,7 +267,9 @@ export function VehicleMap({
 
     const fetchTripShape = async () => {
       try {
-        const response = await fetch(`/api/trips/${selectedVehicle.tripId}`);
+        const response = await fetch(
+          `/api/trips/${selectedVehicle.tripId}/shape`,
+        );
         if (!response.ok) return;
 
         const data = await response.json();
