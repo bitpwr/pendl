@@ -309,10 +309,10 @@ export function VehicleMap({
 
     return displayedVehicles.reduce((count, vehicle) => {
       const isVisible =
-        vehicle.latitude >= mapViewport.south &&
-        vehicle.latitude <= mapViewport.north &&
-        vehicle.longitude >= mapViewport.west &&
-        vehicle.longitude <= mapViewport.east;
+        vehicle.lat >= mapViewport.south &&
+        vehicle.lat <= mapViewport.north &&
+        vehicle.long >= mapViewport.west &&
+        vehicle.long <= mapViewport.east;
 
       return isVisible ? count + 1 : count;
     }, 0);
@@ -637,7 +637,7 @@ function VehicleMarkerComponent({
   return (
     <Marker
       ref={markerRef}
-      position={[vehicle.latitude, vehicle.longitude]}
+      position={[vehicle.lat, vehicle.long]}
       icon={icon}
       eventHandlers={{
         click: () => onSelect(vehicle),
@@ -671,8 +671,8 @@ const VehicleMarker = memo(
   (prev, next) =>
     prev.isSelected === next.isSelected &&
     prev.vehicle.vehicleId === next.vehicle.vehicleId &&
-    prev.vehicle.latitude === next.vehicle.latitude &&
-    prev.vehicle.longitude === next.vehicle.longitude &&
+    prev.vehicle.lat === next.vehicle.lat &&
+    prev.vehicle.long === next.vehicle.long &&
     prev.vehicle.bearing === next.vehicle.bearing &&
     prev.vehicle.speed === next.vehicle.speed &&
     prev.vehicle.routeShortName === next.vehicle.routeShortName,
@@ -696,7 +696,7 @@ function LightVehicleMarker({
 
   return (
     <CircleMarker
-      center={[vehicle.latitude, vehicle.longitude]}
+      center={[vehicle.lat, vehicle.long]}
       radius={isSelected ? 7 : 4}
       fillColor={color}
       color="#FFFFFF"

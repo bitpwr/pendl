@@ -73,8 +73,8 @@ export async function GET(request: NextRequest) {
         routeShortName: route.shortName || route.routeId,
         routeType: route.routeType,
         headsign: route.longName || route.shortName || "",
-        latitude: pos.latitude,
-        longitude: pos.longitude,
+        lat: pos.latitude,
+        long: pos.longitude,
         bearing: pos.bearing,
         speed: pos.speed,
       };

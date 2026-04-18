@@ -28,8 +28,8 @@ interface TripStop {
 
 interface Vehicle {
   vehicleId: string;
-  latitude: number;
-  longitude: number;
+  lat: number;
+  long: number;
   bearing?: number;
   currentStatus: string;
   currentStopSequence?: number;

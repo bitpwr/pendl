@@ -64,8 +64,8 @@ export interface Vehicle {
   routeShortName: string;
   routeType: RouteType;
   headsign: string;
-  latitude: number;
-  longitude: number;
+  lat: number;
+  long: number;
   bearing?: number;
   speed?: number;
   currentStatus?: string;

@@ -38,8 +38,8 @@ export async function GET(
     return NextResponse.json({
       vehicle: {
         vehicleId: vehicle.vehicleId,
-        latitude: vehicle.latitude,
-        longitude: vehicle.longitude,
+        lat: vehicle.latitude,
+        long: vehicle.longitude,
         bearing: vehicle.bearing,
         currentStatus: vehicle.currentStatus,
         speed: vehicle.speed,

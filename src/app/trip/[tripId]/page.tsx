@@ -45,8 +45,8 @@ interface TripData {
 
 interface TripVehicle {
   vehicleId: string;
-  latitude: number;
-  longitude: number;
+  lat: number;
+  long: number;
   bearing?: number;
   speed?: number;
   currentStatus: string;
