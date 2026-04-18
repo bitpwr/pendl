@@ -299,7 +299,6 @@ export default function TripPage() {
 
       <TripStopList
         stops={data.stops}
-        vehicle={vehicle}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
         agencyId={agencyId}

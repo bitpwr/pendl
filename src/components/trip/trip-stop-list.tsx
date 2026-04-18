@@ -26,18 +26,8 @@ interface TripStop {
   isSkipped?: boolean;
 }
 
-interface Vehicle {
-  vehicleId: string;
-  lat: number;
-  long: number;
-  bearing?: number;
-  currentStatus: string;
-  currentStopSequence?: number;
-}
-
 interface TripStopListProps {
   stops: TripStop[];
-  vehicle: Vehicle | null;
   routeType: RouteType;
   routeName: string;
   agencyId?: string;
