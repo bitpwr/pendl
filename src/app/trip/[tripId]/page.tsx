@@ -29,6 +29,15 @@ interface TripStop {
   isSkipped?: boolean;
 }
 
+interface StopRealtime {
+  stopId: string;
+  stopSequence: number;
+  realtimeArrival?: string;
+  realtimeDeparture?: string;
+  delaySeconds?: number;
+  isSkipped?: boolean;
+}
+
 interface TripData {
   trip: {
     tripId: string;
@@ -72,6 +81,7 @@ export default function TripPage() {
     coordinates: [number, number][];
   } | null>(null);
   const [vehicle, setVehicle] = useState<TripVehicle | null>(null);
+  const [realtimeStops, setRealtimeStops] = useState<StopRealtime[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const lastLoggedTripId = useRef<string | null>(null);
@@ -131,25 +141,41 @@ export default function TripPage() {
     }
   }, [tripId, agencyParam]);
 
+  const fetchRealtime = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/trips/${encodeURIComponent(tripId)}/realtime${agencyParam}`,
+      );
+      if (response.ok) {
+        const realtimeData = await response.json();
+        setRealtimeStops(realtimeData.stops ?? []);
+      }
+    } catch {
+      // Realtime data is optional; keep previous values.
+    }
+  }, [tripId, agencyParam]);
+
   // Scroll to top when page loads
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
 
   useEffect(() => {
+    // Fetch trip and shape once — static data does not change during the trip view.
     fetchTrip();
     fetchVehicle();
+    fetchRealtime();
 
-    // Refresh trip details less frequently.
-    const tripInterval = setInterval(fetchTrip, 15000);
     // Refresh vehicle position frequently for smooth realtime movement.
     const vehicleInterval = setInterval(fetchVehicle, 2000);
+    // Refresh realtime stop data at a lower rate.
+    const realtimeInterval = setInterval(fetchRealtime, 15000);
 
     return () => {
-      clearInterval(tripInterval);
       clearInterval(vehicleInterval);
+      clearInterval(realtimeInterval);
     };
-  }, [fetchTrip, fetchVehicle]);
+  }, [fetchTrip, fetchVehicle, fetchRealtime]);
 
   // Fetch shape once — it does not change during the trip view.
   useEffect(() => {
@@ -216,6 +242,7 @@ export default function TripPage() {
               onClick={() => {
                 void fetchTrip();
                 void fetchVehicle();
+                void fetchRealtime();
               }}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -248,6 +275,19 @@ export default function TripPage() {
       </div>
     );
   }
+
+  const realtimeMap = new Map(realtimeStops.map((r) => [r.stopSequence, r]));
+  const stopsWithRealtime = data.stops.map((stop) => {
+    const rt = realtimeMap.get(stop.stopSequence);
+    if (!rt) return stop;
+    return {
+      ...stop,
+      realtimeArrival: rt.realtimeArrival,
+      realtimeDeparture: rt.realtimeDeparture,
+      delaySeconds: rt.delaySeconds,
+      isSkipped: rt.isSkipped,
+    };
+  });
 
   return (
     <div className="space-y-4">
@@ -290,7 +330,7 @@ export default function TripPage() {
 
       <TripMap
         shape={shape}
-        stops={data.stops}
+        stops={stopsWithRealtime}
         vehicle={vehicle}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
@@ -298,7 +338,7 @@ export default function TripPage() {
       />
 
       <TripStopList
-        stops={data.stops}
+        stops={stopsWithRealtime}
         routeType={data.trip.routeType}
         routeName={data.trip.routeShortName}
         agencyId={agencyId}

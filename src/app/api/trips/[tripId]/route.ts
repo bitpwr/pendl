@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
-import { getTripUpdate } from "@/lib/redis/realtime";
-import { triggerTripUpdates } from "@/lib/realtime/background-worker";
 import { toRouteType } from "@/types/gtfs";
-import type { StopTimeUpdate } from "@/types/realtime";
 
 interface TripStopRow {
   stopId: string;
@@ -33,11 +30,8 @@ export async function GET(
   { params }: { params: Promise<{ tripId: string }> },
 ) {
   const { tripId } = await params;
-  const agencyId = request.nextUrl.searchParams.get("agencyId") || undefined;
 
   try {
-    await triggerTripUpdates(agencyId);
-
     // Get trip info
     const tripInfoSql = `
       SELECT
@@ -97,37 +91,6 @@ export async function GET(
       stops.at(-1)?.stopName ??
       null;
 
-    // Get realtime trip updates (delays/skips)
-    const tripUpdate = await getTripUpdate(tripId);
-
-    // Merge realtime updates with stops
-    const stopsWithRealtime = stops.map((stop) => {
-      const realtimeUpdate = tripUpdate?.stopTimeUpdates?.find(
-        (u: StopTimeUpdate) =>
-          u.stopId === stop.stopId || u.stopSequence === stop.stopSequence,
-      );
-
-      return {
-        stopId: stop.stopId,
-        areaId: stop.areaId ?? undefined,
-        stopName: stop.stopName,
-        stopSequence: stop.stopSequence,
-        arrivalTime: stop.arrivalTime,
-        departureTime: stop.departureTime,
-        platform: stop.platformCode || undefined,
-        latitude: stop.latitude,
-        longitude: stop.longitude,
-        realtimeArrival: realtimeUpdate?.arrival?.time
-          ? new Date(realtimeUpdate.arrival.time).toISOString()
-          : undefined,
-        realtimeDeparture: realtimeUpdate?.departure?.time
-          ? new Date(realtimeUpdate.departure.time).toISOString()
-          : undefined,
-        delaySeconds: realtimeUpdate?.departure?.delay,
-        isSkipped: realtimeUpdate?.scheduleRelationship === "SKIPPED",
-      };
-    });
-
     return NextResponse.json({
       trip: {
         tripId: tripInfo.tripId,
@@ -139,7 +102,17 @@ export async function GET(
           stopHeadsign || tripInfo.routeLongName || tripInfo.routeShortName,
         directionId: tripInfo.directionId,
       },
-      stops: stopsWithRealtime,
+      stops: stops.map((stop) => ({
+        stopId: stop.stopId,
+        areaId: stop.areaId ?? undefined,
+        stopName: stop.stopName,
+        stopSequence: stop.stopSequence,
+        arrivalTime: stop.arrivalTime,
+        departureTime: stop.departureTime,
+        platform: stop.platformCode || undefined,
+        latitude: stop.latitude,
+        longitude: stop.longitude,
+      })),
       updatedAt: new Date().toISOString(),
     });
   } catch (error) {
