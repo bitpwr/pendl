@@ -8,6 +8,7 @@ import {
   parseGtfsTime,
   getCurrentGtfsSeconds,
   formatDepartureTime,
+  formatDelay,
 } from "@/lib/gtfs/time-utils";
 
 interface TripStop {
@@ -133,7 +134,7 @@ export function TripStopList({
                       className={cn(
                         "text-sm font-semibold",
                         stop.delaySeconds &&
-                          stop.delaySeconds > 60 &&
+                          stop.delaySeconds > 180 &&
                           "text-amber-600 dark:text-amber-400",
                         stop.delaySeconds &&
                           stop.delaySeconds > 300 &&
@@ -145,7 +146,7 @@ export function TripStopList({
                     {stop.delaySeconds !== undefined &&
                       stop.delaySeconds > 0 && (
                         <p className="text-xs text-amber-600">
-                          +{Math.round(stop.delaySeconds / 60)} min
+                          {formatDelay(stop.delaySeconds)}
                         </p>
                       )}
                   </div>
