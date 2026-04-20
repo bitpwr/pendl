@@ -18,12 +18,36 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Pendl - Avgångar i realtid",
   description:
-    "Se avgångar och fordon i realtid för SL och kollektivtrafiken i Stockholm",
+    "Se avgångar och fordon i realtid för kollektivtrafiken i Stockholm (SL) och Uppsala (UL).",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "Pendl",
     statusBarStyle: "default",
+  },
+  openGraph: {
+    type: "website",
+    url: "https://pendl.se",
+    siteName: "Pendl.se",
+    title: "Pendl - Avgångar i realtid",
+    description:
+      "Se avgångar och fordon i realtid för kollektivtrafiken i Stockholm (SL) och Uppsala (UL).",
+    locale: "sv_SE",
+    images: [
+      {
+        url: "https://pendl.se/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "Pendl",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "Pendl - Avgångar i realtid",
+    description:
+      "Se avgångar och fordon i realtid för kollektivtrafiken i Stockholm (SL) och Uppsala (UL).",
+    images: ["https://pendl.se/icon-512.png"],
   },
   icons: {
     icon: [
