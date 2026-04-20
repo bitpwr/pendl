@@ -1,3 +1,21 @@
+## [0.11.1] - 2026-04-20
+
+### ⚡ Performance
+
+- rename lat and long for vehicle positions (`c045ee0`)
+- remove duplicate data in area departures route (`17f62e7`)
+- give trip realtime a dedicated route (`e6b2949`)
+- give trip shape a dedicated route (`7e31c6a`)
+
+### 💎 Styling
+
+- show delay in area and trip pages in the same way (`8603b37`)
+
+### 🧹 Maintenance
+
+- remove vehicle from TripStopList (`ee2b2fe`)
+- add proper open graph metadata (`88db747`)
+
 ## [0.11.0] - 2026-04-15
 
 ### ✨ Features
