@@ -160,7 +160,7 @@ export function TripMap({
                   positions={polylinePositions}
                   color={routeColor}
                   weight={4}
-                  opacity={0.8}
+                  opacity={0.7}
                 />
               )}
             </Pane>

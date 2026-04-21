@@ -47,31 +47,31 @@ export function routeTypeColor(
   if (routeType === RouteType.Bus) {
     return "#444455";
   } else if (routeType === RouteType.Train) {
-    return "#F266A6";
+    return "#CC417F";
   } else if (routeType === RouteType.Metro) {
     if (route === 10 || route === 11) {
-      return "#0089CA";
+      return "#007DB8";
     } else if (route === 13 || route === 14) {
       return "#D71D24";
     }
-    return "#17944D";
+    return "#148541";
   } else if (routeType === RouteType.Tram) {
     if (route === 7) {
-      return "#878A83";
+      return "#747770";
     } else if (route === 12) {
-      return "#C0C0C0";
+      return "#627892";
     } else if (route === 21) {
-      return "#B4792B";
+      return "#A54905";
     } else if (route === 30 || route === 31) {
-      return "#985141";
+      return "#B65F1F";
     } else if (route === 25 || route === 26) {
-      return "#008F93";
+      return "#028387";
     } else if (route >= 27 && route <= 29) {
       return "#9F599A";
     }
-    return "#985141";
+    return "#B65F1F";
   } else if (routeType === RouteType.Ferry) {
-    return "#0891B2";
+    return "#007DB8";
   }
 
   return "#6B7280";
