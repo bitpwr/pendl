@@ -13,7 +13,9 @@
 import { downloadGtfsStatic, getLatestGtfsZip } from "@/lib/gtfs/download";
 import { parseGtfsFile } from "@/lib/gtfs/parser";
 import { isIncludedAgency } from "@/lib/config/agencies";
-import { statSync } from "fs";
+import { statSync, readdirSync, unlinkSync } from "fs";
+import path from "path";
+import { GTFS_CONFIG } from "@/lib/gtfs/config";
 import { closePool, getPool } from "@/lib/db";
 import type { PoolClient } from "pg";
 
@@ -76,11 +78,37 @@ async function main() {
 
     console.log("");
     console.log(`=== Import complete, took ${elapsedMin} minutes ===`);
+
+    cleanupOldZips();
   } catch (error) {
     console.error("Import failed:", error);
     process.exit(1);
   } finally {
     await closePool();
+  }
+}
+
+/**
+ * Remove all GTFS zip files except the most recent one
+ */
+function cleanupOldZips(): void {
+  const dataDir = GTFS_CONFIG.dataDir;
+  const files = readdirSync(dataDir)
+    .filter((f) => f.startsWith("gtfs-") && f.endsWith(".zip"))
+    .map((f) => ({
+      name: f,
+      path: path.join(dataDir, f),
+      mtime: statSync(path.join(dataDir, f)).mtime,
+    }))
+    .sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
+
+  const toDelete = files.slice(1);
+  if (toDelete.length === 0) return;
+
+  console.log(`Removing ${toDelete.length} old zip file(s)...`);
+  for (const file of toDelete) {
+    unlinkSync(file.path);
+    console.log(`  Deleted ${file.name}`);
   }
 }
 
