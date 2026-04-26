@@ -123,7 +123,7 @@ function HomePageContent() {
         <h1 className="text-2xl font-bold mb-4">Hitta avgångar</h1>
         <div className="flex items-center gap-2 mb-3">
           <label htmlFor="agency-select" className="text-sm font-medium">
-            Trafikbolag
+            Trafikområde:
           </label>
           <select
             id="agency-select"
@@ -133,7 +133,7 @@ function HomePageContent() {
           >
             {agencies.map((a) => (
               <option key={a.id} value={a.id}>
-                {a.name}
+                {a.longName}
               </option>
             ))}
           </select>

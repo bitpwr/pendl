@@ -7,6 +7,7 @@ export const INCLUDED_AGENCIES = [
     id: "505000000000000001",
     tag: "sl",
     name: "SL",
+    longName: "Stockholm",
     mapCenter: [59.3293, 18.0686] as [number, number],
     mapZoom: 10,
     routeTypes: [
@@ -21,6 +22,7 @@ export const INCLUDED_AGENCIES = [
     id: "505000000000000003",
     tag: "ul",
     name: "UL",
+    longName: "Uppland",
     mapCenter: [59.8586, 17.6389] as [number, number],
     mapZoom: 9,
     routeTypes: [RouteType.Bus],
@@ -46,6 +48,10 @@ export function getAgencyTag(agencyId: string): AgencyTag | undefined {
 
 export function getAgencyName(agencyId: string): string | undefined {
   return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.name;
+}
+
+export function getAgencyLongName(agencyId: string): string | undefined {
+  return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.longName;
 }
 
 export function getAgencyMapConfig(agencyId: string | undefined): {
