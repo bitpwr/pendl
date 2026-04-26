@@ -5,13 +5,17 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AreaDepartureBoard } from "@/components/departures/area-departure-board";
 import { AreaMap } from "@/components/map/area-map";
-import { Star, ArrowLeft, Map as MapIcon } from "lucide-react";
+import { Star, ArrowLeft, Map as MapIcon, RefreshCw } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { cn } from "@/lib/utils";
 import type { AreaDepartureResponse } from "@/types/api";
 import type { RouteType } from "@/types/gtfs";
 import { getAgencyName } from "@/lib/config/agencies";
 import { RouteBadge } from "@/components/departures/route-badge";
+
+const refreshInterval = 15000;
+const inactivityTimeout = 30 * 60 * 1000;
+const initialRefreshDelay = 1500;
 
 export default function AreaPage() {
   const params = useParams();
@@ -27,7 +31,14 @@ export default function AreaPage() {
   const [lastUpdated, setLastUpdated] = useState<Date>();
   const [showMap, setShowMap] = useState(false);
   const [selectedRoutes, setSelectedRoutes] = useState<Set<string>>(new Set());
+  const [autoRefreshPaused, setAutoRefreshPaused] = useState(false);
   const lastLoggedAreaId = useRef<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined,
+  );
+  const pauseTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const storageKey = `pendl-route-filter-${areaId}`;
 
   const uniqueRoutes = useMemo(() => {
@@ -114,20 +125,41 @@ export default function AreaPage() {
     }
   }, [areaId, agencyId]);
 
+  const startAutoRefresh = useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (pauseTimeoutRef.current) clearTimeout(pauseTimeoutRef.current);
+    setAutoRefreshPaused(false);
+    void fetchDepartures();
+    intervalRef.current = setInterval(fetchDepartures, refreshInterval);
+    pauseTimeoutRef.current = setTimeout(() => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      setAutoRefreshPaused(true);
+    }, inactivityTimeout);
+  }, [fetchDepartures]);
+
   useEffect(() => {
+    setAutoRefreshPaused(false);
     fetchDepartures();
 
-    // First refresh after 2 seconds, then every 15 seconds
-    let interval: ReturnType<typeof setInterval> | undefined;
+    // First refresh after 1.5 seconds, then every 15 seconds
     const firstTimeout = setTimeout(() => {
       fetchDepartures();
-      interval = setInterval(fetchDepartures, 15000);
-    }, 1500);
+      intervalRef.current = setInterval(fetchDepartures, refreshInterval);
+      pauseTimeoutRef.current = setTimeout(() => {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setAutoRefreshPaused(true);
+      }, inactivityTimeout);
+    }, initialRefreshDelay);
 
     return () => {
       clearTimeout(firstTimeout);
-      if (interval) {
-        clearInterval(interval);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = undefined;
+      }
+      if (pauseTimeoutRef.current) {
+        clearTimeout(pauseTimeoutRef.current);
+        pauseTimeoutRef.current = undefined;
       }
     };
   }, [fetchDepartures]);
@@ -255,6 +287,23 @@ export default function AreaPage() {
               />
             </button>
           ))}
+        </div>
+      )}
+
+      {autoRefreshPaused && (
+        <div className="flex items-center gap-3 rounded-lg border border-yellow-400/50 bg-yellow-50 px-4 py-3 text-sm dark:border-yellow-500/40 dark:bg-yellow-950/50">
+          <span className="flex-1 font-medium text-yellow-900 dark:text-yellow-200">
+            Uppdatering pausad pga inaktivitet.
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startAutoRefresh}
+            className="border-yellow-400/70 bg-yellow-100 text-yellow-900 hover:bg-yellow-200 dark:border-yellow-500/50 dark:bg-yellow-900/50 dark:text-yellow-200 dark:hover:bg-yellow-900"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Starta igen
+          </Button>
         </div>
       )}
 
