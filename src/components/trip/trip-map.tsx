@@ -56,9 +56,9 @@ interface TripStop {
 }
 
 interface Vehicle {
-  vehicleId: string;
+  id: string;
   lat: number;
-  long: number;
+  lon: number;
   bearing?: number;
   currentStatus: string;
   speed?: number;
@@ -256,7 +256,7 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
           border: none !important;
         }
       `}</style>
-      <Marker position={[vehicle.lat, vehicle.long]} icon={icon}>
+      <Marker position={[vehicle.lat, vehicle.lon]} icon={icon}>
         <Popup>
           <div className="text-sm font-bold">
             {routeTypeName(routeType)} {routeName}

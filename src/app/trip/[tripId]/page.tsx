@@ -42,7 +42,7 @@ interface TripData {
   trip: {
     tripId: string;
     routeId: string;
-    routeShortName: string;
+    routeName: string;
     routeLongName: string;
     routeType: RouteType;
     headsign: string;
@@ -53,15 +53,15 @@ interface TripData {
 }
 
 interface TripVehicle {
-  vehicleId: string;
+  id: string;
   lat: number;
-  long: number;
+  lon: number;
   bearing?: number;
   speed?: number;
   currentStatus: string;
   timestamp: number;
   routeType: RouteType;
-  routeShortName: string | null;
+  routeName: string | null;
   headsign: string | null;
 }
 
@@ -183,7 +183,7 @@ export default function TripPage() {
   }, [fetchShape]);
 
   useEffect(() => {
-    if (!data?.trip?.tripId || !data.trip.routeShortName) {
+    if (!data?.trip?.tripId || !data.trip.routeName) {
       return;
     }
 
@@ -200,7 +200,7 @@ export default function TripPage() {
       },
       body: JSON.stringify({
         key: "trip",
-        value: `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName}`,
+        value: `${routeTypeName(data.trip.routeType)} ${data.trip.routeName}`,
         agency: getAgencyName(agencyId ?? ""),
       }),
       keepalive: true,
@@ -208,7 +208,7 @@ export default function TripPage() {
   }, [
     data?.trip?.tripId,
     data?.trip?.routeType,
-    data?.trip?.routeShortName,
+    data?.trip?.routeName,
     agencyId,
   ]);
 
@@ -217,7 +217,7 @@ export default function TripPage() {
       return;
     }
 
-    const title = `${routeTypeName(data.trip.routeType)} ${data.trip.routeShortName} mot ${data.stops.at(-1)?.stopName}`;
+    const title = `${routeTypeName(data.trip.routeType)} ${data.trip.routeName} mot ${data.stops.at(-1)?.stopName}`;
 
     document.title = `${title} | Pendl`;
   }, [data]);
@@ -302,7 +302,7 @@ export default function TripPage() {
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <RouteBadge
-            shortName={data.trip.routeShortName}
+            shortName={data.trip.routeName}
             routeType={data.trip.routeType}
             size="lg"
           />
@@ -333,14 +333,14 @@ export default function TripPage() {
         stops={stopsWithRealtime}
         vehicle={vehicle}
         routeType={data.trip.routeType}
-        routeName={data.trip.routeShortName}
+        routeName={data.trip.routeName}
         height="300px"
       />
 
       <TripStopList
         stops={stopsWithRealtime}
         routeType={data.trip.routeType}
-        routeName={data.trip.routeShortName}
+        routeName={data.trip.routeName}
         agencyId={agencyId}
       />
     </div>

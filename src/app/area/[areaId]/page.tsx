@@ -46,10 +46,10 @@ export default function AreaPage() {
     const seen = new Map<string, { shortName: string; routeType: RouteType }>();
     for (const group of data.groups) {
       for (const d of group.departures) {
-        const key = `${d.routeShortName}-${d.routeType}`;
+        const key = `${d.routeName}-${d.routeType}`;
         if (!seen.has(key)) {
           seen.set(key, {
-            shortName: d.routeShortName,
+            shortName: d.routeName,
             routeType: d.routeType,
           });
         }
@@ -74,7 +74,7 @@ export default function AreaPage() {
         .map((group) => ({
           ...group,
           departures: group.departures.filter((d) =>
-            selectedRoutes.has(`${d.routeShortName}-${d.routeType}`),
+            selectedRoutes.has(`${d.routeName}-${d.routeType}`),
           ),
         }))
         .filter((group) => group.departures.length > 0),

@@ -89,7 +89,7 @@ export async function GET(request: NextRequest, { params }: Props) {
           {
             tripId: dep.tripId,
             routeId: dep.routeId,
-            routeShortName: dep.routeShortName,
+            routeName: dep.routeName,
             routeLongName: dep.routeLongName,
             routeType: dep.routeType,
             headsign: dep.tripHeadsign,

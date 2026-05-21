@@ -6,7 +6,7 @@ const offsetMinutes = 15; // Add buffer to include recently departed trips that 
 export interface ScheduledDeparture {
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeLongName: string;
   routeType: RouteType;
   tripHeadsign: string;
@@ -112,7 +112,7 @@ export async function getScheduledDeparturesForStops(
     SELECT
       t.trip_id as "tripId",
       r.route_id as "routeId",
-      r.route_short_name as "routeShortName",
+      r.route_short_name as "routeName",
       r.route_long_name as "routeLongName",
       r.route_type as "routeTypeRaw",
       COALESCE(NULLIF(st.stop_headsign, ''), r.route_long_name) as "tripHeadsign",
@@ -207,7 +207,7 @@ export async function getScheduledDeparturesForStops(
   return limitedResults.map((row) => ({
     tripId: row.tripId,
     routeId: row.routeId,
-    routeShortName: row.routeShortName,
+    routeName: row.routeName,
     routeLongName: row.routeLongName,
     routeType: toRouteType(row.routeTypeRaw),
     tripHeadsign: row.tripHeadsign,

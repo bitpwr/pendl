@@ -69,11 +69,11 @@ function vehicleType(routeType: RouteType | null): string {
 }
 
 function vehicleTitle(vehicle: Vehicle): string {
-  if (vehicle.routeShortName !== vehicle.headsign) {
+  if (vehicle.routeName !== vehicle.headsign) {
     return vehicle.headsign;
   }
 
-  return `${routeTypeName(vehicle.routeType)} ${vehicle.routeShortName}`;
+  return `${routeTypeName(vehicle.routeType)} ${vehicle.routeName}`;
 }
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
@@ -229,10 +229,7 @@ export function VehicleMap({
 
   // Clear selected vehicle if it's no longer in the vehicles list
   useEffect(() => {
-    if (
-      selectedVehicle &&
-      !vehicles.some((v) => v.vehicleId === selectedVehicle.vehicleId)
-    ) {
+    if (selectedVehicle && !vehicles.some((v) => v.id === selectedVehicle.id)) {
       setSelectedVehicle(null);
     }
   }, [vehicles, selectedVehicle]);
@@ -297,7 +294,7 @@ export function VehicleMap({
   // Filter vehicles based on selection
   const displayedVehicles = useMemo(() => {
     if (selectedVehicle) {
-      return vehicles.filter((v) => v.vehicleId === selectedVehicle.vehicleId);
+      return vehicles.filter((v) => v.id === selectedVehicle.id);
     }
     return vehicles;
   }, [vehicles, selectedVehicle]);
@@ -311,8 +308,8 @@ export function VehicleMap({
       const isVisible =
         vehicle.lat >= mapViewport.south &&
         vehicle.lat <= mapViewport.north &&
-        vehicle.long >= mapViewport.west &&
-        vehicle.long <= mapViewport.east;
+        vehicle.lon >= mapViewport.west &&
+        vehicle.lon <= mapViewport.east;
 
       return isVisible ? count + 1 : count;
     }, 0);
@@ -329,7 +326,7 @@ export function VehicleMap({
     if (useLightweightMarkers) {
       return displayedVehicles.map((vehicle) => (
         <LightVehicleMarker
-          key={vehicle.vehicleId}
+          key={vehicle.id}
           vehicle={vehicle}
           onSelect={setSelectedVehicle}
           isSelected={false}
@@ -341,11 +338,11 @@ export function VehicleMap({
 
     return displayedVehicles.map((vehicle) => (
       <VehicleMarker
-        key={vehicle.vehicleId}
+        key={vehicle.id}
         vehicle={vehicle}
         L={L}
         onSelect={setSelectedVehicle}
-        isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
+        isSelected={selectedVehicle?.id === vehicle.id}
         agencyId={agencyId}
         zoom={mapViewport?.zoom ?? agencyZoom}
       />
@@ -354,7 +351,7 @@ export function VehicleMap({
     displayedVehicles,
     isClient,
     L,
-    selectedVehicle?.vehicleId,
+    selectedVehicle?.id,
     useLightweightMarkers,
     agencyId,
     mapViewport?.zoom,
@@ -494,7 +491,7 @@ export function VehicleMap({
                   selectedVehicle
                     ? routeTypeColor(
                         selectedVehicle.routeType,
-                        parseInt(selectedVehicle.routeShortName),
+                        parseInt(selectedVehicle.routeName),
                       )
                     : "#3B82F6"
                 }
@@ -622,10 +619,7 @@ function VehicleMarkerComponent({
   const bearing = vehicle.bearing ?? 0;
   const speedMps = vehicle.speed ?? 0;
 
-  const color = routeTypeColor(
-    vehicle.routeType,
-    parseInt(vehicle.routeShortName),
-  );
+  const color = routeTypeColor(vehicle.routeType, parseInt(vehicle.routeName));
 
   // Create custom arrow icon
   const size = isSelected ? 40 : zoom <= 12 ? 20 : 28;
@@ -643,7 +637,7 @@ function VehicleMarkerComponent({
   return (
     <Marker
       ref={markerRef}
-      position={[vehicle.lat, vehicle.long]}
+      position={[vehicle.lat, vehicle.lon]}
       icon={icon}
       eventHandlers={{
         click: () => onSelect(vehicle),
@@ -677,12 +671,12 @@ const VehicleMarker = memo(
   (prev, next) =>
     prev.isSelected === next.isSelected &&
     prev.zoom === next.zoom &&
-    prev.vehicle.vehicleId === next.vehicle.vehicleId &&
+    prev.vehicle.id === next.vehicle.id &&
     prev.vehicle.lat === next.vehicle.lat &&
-    prev.vehicle.long === next.vehicle.long &&
+    prev.vehicle.lon === next.vehicle.lon &&
     prev.vehicle.bearing === next.vehicle.bearing &&
     prev.vehicle.speed === next.vehicle.speed &&
-    prev.vehicle.routeShortName === next.vehicle.routeShortName,
+    prev.vehicle.routeName === next.vehicle.routeName,
 );
 
 interface LightVehicleMarkerProps {
@@ -698,12 +692,12 @@ function LightVehicleMarker({
 }: LightVehicleMarkerProps) {
   const color = routeTypeColor(
     vehicle.routeType,
-    Number.parseInt(vehicle.routeShortName),
+    Number.parseInt(vehicle.routeName),
   );
 
   return (
     <CircleMarker
-      center={[vehicle.lat, vehicle.long]}
+      center={[vehicle.lat, vehicle.lon]}
       radius={isSelected ? 7 : 4}
       fillColor={color}
       color="#FFFFFF"

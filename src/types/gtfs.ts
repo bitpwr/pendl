@@ -22,7 +22,7 @@ export interface Stop {
 export interface Route {
   routeId: string;
   agencyId?: string;
-  routeShortName?: string;
+  routeName?: string;
   routeLongName?: string;
   routeType: RouteType;
 }

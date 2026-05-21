@@ -37,15 +37,15 @@ export async function GET(
 
     return NextResponse.json({
       vehicle: {
-        vehicleId: vehicle.vehicleId,
+        id: vehicle.vehicleId,
         lat: vehicle.latitude,
-        long: vehicle.longitude,
+        lon: vehicle.longitude,
         bearing: vehicle.bearing,
         currentStatus: vehicle.currentStatus,
         speed: vehicle.speed,
         timestamp: vehicle.timestamp,
         routeType: route ? toRouteType(route.route_type) : null,
-        routeShortName: route?.route_short_name ?? null,
+        routeName: route?.route_short_name ?? null,
         headsign: route?.route_long_name ?? route?.route_short_name ?? null,
       },
       updatedAt: new Date().toISOString(),

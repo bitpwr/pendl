@@ -33,7 +33,7 @@ export interface AreaDepartureResponse {
 export interface Departure {
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeLongName: string;
   routeType: RouteType;
   headsign: string;
@@ -58,14 +58,14 @@ export interface VehicleResponse {
 }
 
 export interface Vehicle {
-  vehicleId: string;
+  id: string;
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeType: RouteType;
   headsign: string;
   lat: number;
-  long: number;
+  lon: number;
   bearing?: number;
   speed?: number;
   currentStatus?: string;
@@ -99,14 +99,14 @@ export interface AreaSearchResult {
 
 export interface RouteSummary {
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeType: RouteType;
 }
 
 export interface TripDetails {
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   headsign: string;
   stops: TripStop[];
   shape?: GeoJSONLineString;

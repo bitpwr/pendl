@@ -27,7 +27,7 @@ export function DepartureRow({ departure, agencyId }: DepartureRowProps) {
       )}
     >
       <RouteBadge
-        shortName={departure.routeShortName}
+        shortName={departure.routeName}
         routeType={departure.routeType}
         size="md"
       />

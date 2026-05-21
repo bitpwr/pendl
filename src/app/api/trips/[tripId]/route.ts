@@ -18,7 +18,7 @@ interface TripStopRow {
 interface TripInfoRow {
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeLongName: string;
   routeType: number;
   shapeId: string | null;
@@ -37,7 +37,7 @@ export async function GET(
       SELECT
         t.trip_id as "tripId",
         r.route_id as "routeId",
-        r.route_short_name as "routeShortName",
+        r.route_short_name as "routeName",
         r.route_long_name as "routeLongName",
         r.route_type as "routeType",
         t.shape_id as "shapeId",
@@ -95,11 +95,10 @@ export async function GET(
       trip: {
         tripId: tripInfo.tripId,
         routeId: tripInfo.routeId,
-        routeShortName: tripInfo.routeShortName,
+        routeName: tripInfo.routeName,
         routeLongName: tripInfo.routeLongName,
         routeType: toRouteType(tripInfo.routeType),
-        headsign:
-          stopHeadsign || tripInfo.routeLongName || tripInfo.routeShortName,
+        headsign: stopHeadsign || tripInfo.routeLongName || tripInfo.routeName,
         directionId: tripInfo.directionId,
       },
       stops: stops.map((stop) => ({

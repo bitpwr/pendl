@@ -67,14 +67,14 @@ export async function GET(request: NextRequest) {
       }
 
       return {
-        vehicleId: pos.vehicleId,
+        id: pos.vehicleId,
         tripId: pos.tripId,
         routeId: route.routeId,
-        routeShortName: route.shortName || route.routeId,
+        routeName: route.shortName || route.routeId,
         routeType: route.routeType,
         headsign: route.longName || route.shortName || "",
         lat: pos.latitude,
-        long: pos.longitude,
+        lon: pos.longitude,
         bearing: pos.bearing,
         speed: pos.speed,
       };

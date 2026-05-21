@@ -540,7 +540,7 @@ interface DepartureResponse {
 interface Departure {
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeType: RouteType;
   headsign: string;
   scheduledDeparture: string; // ISO datetime
@@ -561,7 +561,7 @@ interface Vehicle {
   vehicleId: string;
   tripId: string;
   routeId: string;
-  routeShortName: string;
+  routeName: string;
   routeType: RouteType;
   headsign: string;
   latitude: number;
