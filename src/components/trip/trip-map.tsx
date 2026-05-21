@@ -246,7 +246,7 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
   const bearing = vehicle.bearing ?? 0;
   const speedMps = vehicle.speed ?? 0;
   const color = routeTypeColor(routeType, parseInt(routeName));
-  const icon = createVehicleLeafletIcon(L, color, bearing, 48);
+  const icon = createVehicleLeafletIcon(L, color, bearing, 40);
 
   return (
     <>

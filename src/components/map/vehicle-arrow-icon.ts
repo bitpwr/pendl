@@ -14,10 +14,10 @@ export function createVehicleArrowIcon(
     <svg width="${size}" height="${size}" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
       <g transform="rotate(${bearing} 16 16)">
         <!-- Main arrow -->
-        <path d="M 16 4 L 22 22 L 16 18 L 10 22 Z"
+        <path d="M 16 4 L 24 26 L 16 23 L 8 26 Z"
               fill="${color}"
               stroke="#FFFFFF"
-              stroke-width="0.5" />
+              stroke-width="0.8" />
       </g>
     </svg>
   `;

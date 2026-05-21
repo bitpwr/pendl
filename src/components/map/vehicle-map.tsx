@@ -76,7 +76,7 @@ function vehicleTitle(vehicle: Vehicle): string {
   return `${routeTypeName(vehicle.routeType)} ${vehicle.routeShortName}`;
 }
 
-const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 300;
+const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
 
 export function VehicleMap({
   center,
@@ -347,6 +347,7 @@ export function VehicleMap({
         onSelect={setSelectedVehicle}
         isSelected={selectedVehicle?.vehicleId === vehicle.vehicleId}
         agencyId={agencyId}
+        zoom={mapViewport?.zoom ?? agencyZoom}
       />
     ));
   }, [
@@ -356,6 +357,8 @@ export function VehicleMap({
     selectedVehicle?.vehicleId,
     useLightweightMarkers,
     agencyId,
+    mapViewport?.zoom,
+    agencyZoom,
   ]);
 
   if (!isClient) {
@@ -602,6 +605,7 @@ interface VehicleMarkerProps {
   onSelect: (vehicle: Vehicle | null) => void;
   isSelected: boolean;
   agencyId?: string;
+  zoom: number;
 }
 
 function VehicleMarkerComponent({
@@ -610,6 +614,7 @@ function VehicleMarkerComponent({
   onSelect,
   isSelected,
   agencyId,
+  zoom,
 }: VehicleMarkerProps) {
   const markerRef = useRef<LeafletMarker | null>(null);
 
@@ -623,9 +628,10 @@ function VehicleMarkerComponent({
   );
 
   // Create custom arrow icon
+  const size = isSelected ? 40 : zoom <= 12 ? 20 : 28;
   const icon = useMemo(
-    () => createVehicleLeafletIcon(L, color, bearing, isSelected ? 48 : 30),
-    [L, color, bearing, isSelected],
+    () => createVehicleLeafletIcon(L, color, bearing, size),
+    [L, color, bearing, size],
   );
 
   useEffect(() => {
@@ -670,6 +676,7 @@ const VehicleMarker = memo(
   VehicleMarkerComponent,
   (prev, next) =>
     prev.isSelected === next.isSelected &&
+    prev.zoom === next.zoom &&
     prev.vehicle.vehicleId === next.vehicle.vehicleId &&
     prev.vehicle.lat === next.vehicle.lat &&
     prev.vehicle.long === next.vehicle.long &&
