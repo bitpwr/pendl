@@ -190,21 +190,25 @@ async function importGtfsStreaming(zipPath: string) {
 
     await importCalendarDates(client, calendarDates.used);
 
-    // Phase 6: Parse Stop Times to collect stop IDs (don't import yet)
-    console.log("\n=== Phase 6: Parse Stop Times ===");
+    // Phase 6: Stream stop_times.txt to collect stop IDs only (no row storage)
+    console.log("\n=== Phase 6: Collect Stop IDs from Stop Times ===");
     const stopIds = new Set<string>();
-    const stopTimeResult = await parseGtfsFile(zipPath, "stop_times.txt", {
-      filter: (row) => tripIds.has(row.trip_id),
-    });
-
-    // Collect stop IDs (needed to filter stops)
-    for (const st of stopTimeResult.used) {
-      stopIds.add(st.stop_id);
-    }
-
-    console.log(
-      `Found ${stopTimeResult.used.length} stop times (will import after stops), total in file: ${stopTimeResult.total}`,
+    let stopTimesFiltered = 0;
+    const { total: stopTimesTotal } = await parseGtfsFile(
+      zipPath,
+      "stop_times.txt",
+      {
+        filter: (row) => tripIds.has(row.trip_id),
+        onRow: (row) => {
+          stopIds.add(row.stop_id);
+          stopTimesFiltered++;
+        },
+      },
     );
+    console.log(
+      `Found ${stopTimesFiltered} stop times (will import after stops), total in file: ${stopTimesTotal}`,
+    );
+    console.log(`  Unique stop IDs referenced: ${stopIds.size}`);
 
     // Phase 7: Stops (filtered by usage) - MUST be imported before stop_times
     console.log("\n=== Phase 7: Stops ===");
@@ -212,21 +216,15 @@ async function importGtfsStreaming(zipPath: string) {
       filter: (row) =>
         stopIds.has(row.stop_id) || stopIds.has(row.parent_station),
     });
-    // const parentStations = new Set(
-    //   stops.used.map((s) => s.parent_station).filter(Boolean),
-    // );
     console.log(
       `Found ${stops.used.length} stops to import out of ${stops.total}`,
     );
 
     await importStops(client, stops.used);
 
-    // Phase 6b: Now import Stop Times (after stops exist)
-    console.log("\n=== Phase 6b: Import Stop Times ===");
-    await importStopTimesBatched(client, stopTimeResult.used);
-
-    // Clear stop times from memory
-    stopTimeResult.used.length = 0;
+    // Phase 6b: Import stop times by streaming the zip again, batching directly to DB
+    console.log("\n=== Phase 6b: Import Stop Times (streaming) ===");
+    await streamImportStopTimes(client, zipPath, tripIds, stopTimesFiltered);
 
     // Phase 8: Shapes (filtered by usage)
     console.log("\n=== Phase 8: Shapes ===");
@@ -464,46 +462,76 @@ async function importTrips(
   console.log(`  Imported ${trips.length} trips`);
 }
 
-async function importStopTimesBatched(
+async function insertStopTimesBatch(
   client: PoolClient,
-  stopTimes: Record<string, string>[],
+  batch: Record<string, string>[],
+): Promise<void> {
+  if (batch.length === 0) return;
+  const values: unknown[] = [];
+  const placeholders: string[] = [];
+
+  batch.forEach((st, idx) => {
+    const offset = idx * 6;
+    placeholders.push(
+      `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`,
+    );
+    values.push(
+      st.trip_id,
+      st.stop_id,
+      st.arrival_time,
+      st.departure_time,
+      parseInt(st.stop_sequence),
+      st.stop_headsign || null,
+    );
+  });
+
+  await client.query(
+    `INSERT INTO stop_times (trip_id, stop_id, arrival_time, departure_time, stop_sequence, stop_headsign)
+     VALUES ${placeholders.join(", ")}
+     ON CONFLICT (trip_id, stop_sequence) DO NOTHING`,
+    values,
+  );
+}
+
+/**
+ * Stream stop_times.txt from the zip and insert directly to DB in batches.
+ * Never holds more than `batchSize` rows in memory at once.
+ */
+async function streamImportStopTimes(
+  client: PoolClient,
+  zipPath: string,
+  tripIds: Set<string>,
+  expectedCount: number,
 ): Promise<void> {
   const batchSize = 5000;
-  for (let i = 0; i < stopTimes.length; i += batchSize) {
-    const batch = stopTimes.slice(i, i + batchSize);
-    const values: unknown[] = [];
-    const placeholders: string[] = [];
+  let batch: Record<string, string>[] = [];
+  let imported = 0;
 
-    batch.forEach((st, idx) => {
-      const offset = idx * 6;
-      placeholders.push(
-        `($${offset + 1}, $${offset + 2}, $${offset + 3}, $${offset + 4}, $${offset + 5}, $${offset + 6})`,
-      );
-      values.push(
-        st.trip_id,
-        st.stop_id,
-        st.arrival_time,
-        st.departure_time,
-        parseInt(st.stop_sequence),
-        st.stop_headsign || null,
-      );
-    });
-
-    await client.query(
-      `INSERT INTO stop_times (trip_id, stop_id, arrival_time, departure_time, stop_sequence, stop_headsign)
-       VALUES ${placeholders.join(", ")}
-       ON CONFLICT (trip_id, stop_sequence) DO NOTHING`,
-      values,
-    );
-
-    if ((i + batchSize) % 50000 === 0) {
-      const memUsage = process.memoryUsage();
+  const flush = async () => {
+    if (batch.length === 0) return;
+    await insertStopTimesBatch(client, batch);
+    imported += batch.length;
+    batch = [];
+    if (imported % 100000 === 0) {
+      const mem = process.memoryUsage();
       console.log(
-        `  Progress: ${i + batchSize}/${stopTimes.length} | Heap: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+        `  Progress: ${imported}/${expectedCount} | Heap: ${Math.round(mem.heapUsed / 1024 / 1024)}MB`,
       );
     }
-  }
-  console.log(`  Imported ${stopTimes.length} stop times`);
+  };
+
+  await parseGtfsFile(zipPath, "stop_times.txt", {
+    filter: (row) => tripIds.has(row.trip_id),
+    onRow: async (row) => {
+      batch.push(row);
+      if (batch.length >= batchSize) {
+        await flush();
+      }
+    },
+  });
+
+  await flush(); // flush remaining rows
+  console.log(`  Imported ${imported} stop times`);
 }
 
 async function importShapesBatched(

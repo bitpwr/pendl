@@ -1,4 +1,3 @@
-import { createReadStream } from "fs";
 import { parse } from "csv-parse";
 import * as unzipper from "unzipper";
 import type { GtfsFileName } from "./config";
@@ -10,68 +9,77 @@ export interface ParseOptions {
   transform?: (row: Record<string, string>) => Record<string, string>;
   /** Limit number of rows (for testing) */
   limit?: number;
+  /**
+   * Called for each row passing the filter. When provided, rows are NOT
+   * accumulated in `used` (which will be empty). Supports async — the parser
+   * pauses until the returned promise resolves, providing backpressure.
+   */
+  onRow?: (row: Record<string, string>) => void | Promise<void>;
 }
 
 /**
- * Parse a CSV file from a GTFS zip
- * Returns both the used rows and the total count of rows in the file (before filtering)
+ * Parse a CSV file from a GTFS zip.
+ * Uses random-access open (reads central directory) to seek directly to the
+ * target file, avoiding sequential decompression of the entire archive.
+ * Returns both the used rows and the total count of rows in the file (before filtering).
  */
 export async function parseGtfsFile<T extends Record<string, string>>(
   zipPath: string,
   fileName: GtfsFileName,
   options: ParseOptions = {},
 ): Promise<{ used: T[]; total: number }> {
-  const { filter, transform, limit } = options;
+  const { filter, transform, limit, onRow } = options;
   const results: T[] = [];
 
+  // Open the zip by reading its central directory, then seek to the target file.
+  const directory = await unzipper.Open.file(zipPath);
+  const entry = directory.files.find((f) => f.path === fileName);
+  if (!entry) {
+    return { used: [], total: 0 };
+  }
+
   return new Promise((resolve, reject) => {
-    const zipStream = createReadStream(zipPath).pipe(unzipper.Parse());
+    const fileStream = entry.stream();
+    const parser = parse({
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_column_count: true,
+    });
 
-    zipStream.on("entry", async (entry) => {
-      let count = 0;
-      if (entry.path === fileName) {
-        const parser = parse({
-          columns: true,
-          skip_empty_lines: true,
-          trim: true,
-          relax_column_count: true,
-        });
+    fileStream.pipe(parser);
 
-        entry.pipe(parser);
+    let count = 0;
+    parser.on("data", (row: Record<string, string>) => {
+      count += 1;
+      if (limit && results.length >= limit) {
+        return;
+      }
 
-        parser.on("data", (row: Record<string, string>) => {
-          count += 1;
-          if (limit && results.length >= limit) {
-            return;
+      let processedRow = row;
+      if (transform) {
+        processedRow = transform(row);
+      }
+
+      if (!filter || filter(processedRow)) {
+        if (onRow) {
+          const result = onRow(processedRow);
+          if (result instanceof Promise) {
+            parser.pause();
+            result.then(() => parser.resume()).catch(reject);
           }
-
-          let processedRow = row;
-          if (transform) {
-            processedRow = transform(row);
-          }
-
-          if (!filter || filter(processedRow)) {
-            results.push(processedRow as T);
-          }
-        });
-
-        parser.on("end", () => {
-          resolve({ used: results, total: count });
-        });
-
-        parser.on("error", reject);
-      } else {
-        entry.autodrain();
+        } else {
+          results.push(processedRow as T);
+        }
       }
     });
 
-    zipStream.on("error", reject);
-    zipStream.on("close", () => {
-      // File not found in zip
-      if (results.length === 0) {
-        resolve({ used: [], total: 0 });
-      }
+    parser.on("end", () => {
+      resolve({ used: results, total: count });
     });
+
+    parser.on("error", reject);
+    fileStream.on("error", reject);
   });
 }
 
