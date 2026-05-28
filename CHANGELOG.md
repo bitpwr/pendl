@@ -1,3 +1,24 @@
+## [0.11.2] - 2026-05-28
+
+### ✨ Features
+
+- vehicle arrow size depends on zoom level (`e5fe5f2`)
+
+### ⚡ Performance
+
+- pause area updates after 30 minutes (`6301f68`)
+
+### 💎 Styling
+
+- select traffic area instead of agency (`20ee77f`)
+- use correct SL colors for vehicle types (`68d024d`)
+
+### 🧹 Maintenance
+
+- make gtfs importing more memory efficient (`1c1444f`)
+- delete old static files after import (`344078b`)
+- rename properties in vehicle object (`97c7d4f`)
+
 ## [0.11.1] - 2026-04-20
 
 ### ⚡ Performance
