@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RouteType, routeTypeColor } from "@/types/gtfs";
 import { cn } from "@/lib/utils";
@@ -52,6 +54,13 @@ export function TripStopList({
     );
   });
 
+  // Stops between the first stop and the one just before the current stop can
+  // be collapsed into a single row. The count follows nextStopIndex, so it
+  // stays up to date as the trip progresses.
+  const [passedExpanded, setPassedExpanded] = useState(false);
+  const collapsedCount = nextStopIndex > 1 ? nextStopIndex - 2 : 0;
+  const isCollapsed = !passedExpanded && collapsedCount > 2;
+
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -70,6 +79,33 @@ export function TripStopList({
 
           <ul className="divide-y">
             {stops.map((stop, index) => {
+              if (isCollapsed && index >= 1 && index < nextStopIndex - 1) {
+                if (index > 1) return null;
+                return (
+                  <li key={stop.stopSequence}>
+                    <button
+                      type="button"
+                      onClick={() => setPassedExpanded(true)}
+                      className="relative flex w-full items-center gap-4 py-2 px-4 text-left hover:bg-muted/50"
+                    >
+                      {/* Stop marker */}
+                      <div className="relative z-10 flex items-center justify-center w-5 h-5">
+                        <div
+                          className="rounded-full border-2 w-3 h-3 border-dashed bg-background"
+                          style={{ borderColor: routeColor }}
+                        />
+                      </div>
+
+                      <span className="flex-1 min-w-0 text-sm text-muted-foreground">
+                        {collapsedCount} hållplatser passerade
+                      </span>
+
+                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  </li>
+                );
+              }
+
               const isFirst = index === 0;
               const isLast = index === stops.length - 1;
               const isPassed = index < nextStopIndex;
