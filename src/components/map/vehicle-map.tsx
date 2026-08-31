@@ -11,6 +11,7 @@ import type { Vehicle } from "@/types/api";
 import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
 import { getAgencyMapConfig, getAgencyRouteTypes } from "@/lib/config/agencies";
+import { filterToViewport, type MapViewport } from "./viewport";
 
 // Dynamically import Leaflet components to avoid SSR issues
 const MapContainer = dynamic(
@@ -44,14 +45,6 @@ interface VehicleMapProps {
   agencyId?: string;
 }
 
-interface MapViewport {
-  north: number;
-  south: number;
-  east: number;
-  west: number;
-  zoom: number;
-}
-
 function vehicleType(routeType: RouteType | null): string {
   switch (routeType) {
     case RouteType.Metro:
@@ -78,9 +71,6 @@ function vehicleTitle(vehicle: Vehicle): string {
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
 const POLL_INTERVAL_MS = 2000;
-// Keep a margin of off-screen markers so they do not pop in at the edges
-// while panning, since the viewport only updates on moveend.
-const VIEWPORT_PADDING_RATIO = 0.25;
 
 export function VehicleMap({
   center,
@@ -343,30 +333,7 @@ export function VehicleMap({
       return routeTypeVehicles.filter((v) => v.id === selectedVehicle.id);
     }
 
-    if (!mapViewport) {
-      return routeTypeVehicles;
-    }
-
-    const latPadding =
-      (mapViewport.north - mapViewport.south) * VIEWPORT_PADDING_RATIO;
-    const lonPadding =
-      (mapViewport.east - mapViewport.west) * VIEWPORT_PADDING_RATIO;
-
-    const south = mapViewport.south - latPadding;
-    const north = mapViewport.north + latPadding;
-    const west = mapViewport.west - lonPadding;
-    const east = mapViewport.east + lonPadding;
-
-    // Zoomed far enough out that the bounds wrap the globe, so longitude
-    // carries no information.
-    const spansAllLongitudes = east - west >= 360;
-
-    return routeTypeVehicles.filter(
-      (v) =>
-        v.lat >= south &&
-        v.lat <= north &&
-        (spansAllLongitudes || (v.lon >= west && v.lon <= east)),
-    );
+    return filterToViewport(routeTypeVehicles, mapViewport);
   }, [routeTypeVehicles, selectedVehicle, mapViewport]);
 
   const useLightweightMarkers =

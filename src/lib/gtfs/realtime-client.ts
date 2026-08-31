@@ -24,8 +24,9 @@ import {
   trackVehicleDownload,
 } from "@/lib/analytics/influx";
 
-// GTFS Realtime proto definition (inline for simplicity)
-const protoDefinition = `
+// GTFS Realtime proto definition (inline for simplicity).
+// Exported so tests can encode feeds against the exact same field numbers.
+export const protoDefinition = `
 syntax = "proto2";
 
 package transit_realtime;
