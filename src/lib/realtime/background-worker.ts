@@ -144,7 +144,7 @@ async function runVehicleTick(forceTag?: string): Promise<void> {
     tagsToUpdate.push(forceTag);
   } else {
     for (const [tag, lastActivity] of state.vehicleConsumerActivity) {
-      if (now - lastActivity <= GTFS_CONFIG.realtimeVehicleUpdateInterval * 2) {
+      if (now - lastActivity < GTFS_CONFIG.realtimeVehicleUpdateInterval * 2) {
         tagsToUpdate.push(tag);
       }
     }
@@ -172,7 +172,7 @@ async function runTripUpdateTick(forceTag?: string): Promise<void> {
     tagsToUpdate.push(forceTag);
   } else {
     for (const [tag, lastActivity] of state.tripUpdateConsumerActivity) {
-      if (now - lastActivity <= 20000) {
+      if (now - lastActivity < GTFS_CONFIG.realtimeTripUpdateInterval * 2) {
         tagsToUpdate.push(tag);
       }
     }
@@ -200,7 +200,10 @@ async function runServiceAlertTick(forceTag?: string): Promise<void> {
     tagsToUpdate.push(forceTag);
   } else {
     for (const [tag, lastActivity] of state.serviceAlertConsumerActivity) {
-      if (now - lastActivity <= 20000) {
+      if (
+        now - lastActivity <
+        GTFS_CONFIG.realtimeServiceAlertUpdateInterval * 2
+      ) {
         tagsToUpdate.push(tag);
       }
     }
@@ -313,11 +316,9 @@ export async function triggerTripUpdates(agencyId?: string): Promise<void> {
       console.log(
         `Forcing trip update tick for ${tag} due to consumer activity`,
       );
-      state.tripUpdateConsumerActivity.set(tag, now);
       void runTripUpdateTick(tag);
-    } else {
-      state.tripUpdateConsumerActivity.set(tag, now);
     }
+    state.tripUpdateConsumerActivity.set(tag, now);
   }
 }
 
