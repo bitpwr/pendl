@@ -78,6 +78,9 @@ function vehicleTitle(vehicle: Vehicle): string {
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
 const POLL_INTERVAL_MS = 2000;
+// Keep a margin of off-screen markers so they do not pop in at the edges
+// while panning, since the viewport only updates on moveend.
+const VIEWPORT_PADDING_RATIO = 0.25;
 
 export function VehicleMap({
   center,
@@ -107,7 +110,10 @@ export function VehicleMap({
     null,
   );
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [tripShape, setTripShape] = useState<[number, number][]>([]);
+  const [tripShape, setTripShape] = useState<{
+    vehicleId: string;
+    coordinates: [number, number][];
+  } | null>(null);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null);
   const isMapInteractingRef = useRef(false);
@@ -283,14 +289,18 @@ export function VehicleMap({
   // Fetch trip shape when a vehicle is selected
   useEffect(() => {
     if (!selectedVehicle) {
-      setTripShape([]);
+      setTripShape(null);
       return;
     }
+
+    const vehicleId = selectedVehicle.id;
+    const controller = new AbortController();
 
     const fetchTripShape = async () => {
       try {
         const response = await fetch(
           `/api/trips/${selectedVehicle.tripId}/shape`,
+          { signal: controller.signal },
         );
         if (!response.ok) return;
 
@@ -301,19 +311,22 @@ export function VehicleMap({
           Array.isArray(data.shape.coordinates)
         ) {
           // Shape is GeoJSON format with [lon, lat] coordinates
-          setTripShape(
-            data.shape.coordinates.map((coord: [number, number]) => [
-              coord[1],
-              coord[0],
-            ]),
-          );
+          setTripShape({
+            vehicleId,
+            coordinates: data.shape.coordinates.map(
+              (coord: [number, number]) => [coord[1], coord[0]],
+            ),
+          });
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         console.error("Failed to fetch trip shape:", err);
       }
     };
 
     fetchTripShape();
+
+    return () => controller.abort();
   }, [selectedVehicle]);
 
   // The API returns every vehicle for the agency, so the route type filter is
@@ -323,33 +336,42 @@ export function VehicleMap({
     return vehicles.filter((v) => v.routeType === selectedRouteType);
   }, [vehicles, selectedRouteType]);
 
-  // Filter vehicles based on selection
+  // Only markers in view are worth handing to Leaflet - zoomed in, that is a
+  // few dozen instead of the whole region.
   const displayedVehicles = useMemo(() => {
     if (selectedVehicle) {
       return routeTypeVehicles.filter((v) => v.id === selectedVehicle.id);
     }
-    return routeTypeVehicles;
-  }, [routeTypeVehicles, selectedVehicle]);
 
-  const visibleVehicleCount = useMemo(() => {
     if (!mapViewport) {
-      return displayedVehicles.length;
+      return routeTypeVehicles;
     }
 
-    return displayedVehicles.reduce((count, vehicle) => {
-      const isVisible =
-        vehicle.lat >= mapViewport.south &&
-        vehicle.lat <= mapViewport.north &&
-        vehicle.lon >= mapViewport.west &&
-        vehicle.lon <= mapViewport.east;
+    const latPadding =
+      (mapViewport.north - mapViewport.south) * VIEWPORT_PADDING_RATIO;
+    const lonPadding =
+      (mapViewport.east - mapViewport.west) * VIEWPORT_PADDING_RATIO;
 
-      return isVisible ? count + 1 : count;
-    }, 0);
-  }, [displayedVehicles, mapViewport]);
+    const south = mapViewport.south - latPadding;
+    const north = mapViewport.north + latPadding;
+    const west = mapViewport.west - lonPadding;
+    const east = mapViewport.east + lonPadding;
+
+    // Zoomed far enough out that the bounds wrap the globe, so longitude
+    // carries no information.
+    const spansAllLongitudes = east - west >= 360;
+
+    return routeTypeVehicles.filter(
+      (v) =>
+        v.lat >= south &&
+        v.lat <= north &&
+        (spansAllLongitudes || (v.lon >= west && v.lon <= east)),
+    );
+  }, [routeTypeVehicles, selectedVehicle, mapViewport]);
 
   const useLightweightMarkers =
     isMobileDevice &&
-    visibleVehicleCount > LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD &&
+    displayedVehicles.length > LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD &&
     selectedVehicle === null;
   // Create vehicle markers only on client
   const vehicleMarkers = useMemo(() => {
@@ -520,17 +542,13 @@ export function VehicleMap({
                 </Popup>
               </CircleMarker>
             )}
-            {tripShape.length > 0 && (
+            {selectedVehicle && tripShape?.vehicleId === selectedVehicle.id && (
               <Polyline
-                positions={tripShape}
-                color={
-                  selectedVehicle
-                    ? routeTypeColor(
-                        selectedVehicle.routeType,
-                        parseInt(selectedVehicle.routeName),
-                      )
-                    : "#3B82F6"
-                }
+                positions={tripShape.coordinates}
+                color={routeTypeColor(
+                  selectedVehicle.routeType,
+                  parseInt(selectedVehicle.routeName),
+                )}
                 weight={4}
                 opacity={0.7}
               />
