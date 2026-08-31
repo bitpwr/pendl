@@ -77,6 +77,7 @@ function vehicleTitle(vehicle: Vehicle): string {
 }
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
+const POLL_INTERVAL_MS = 2000;
 
 export function VehicleMap({
   center,
@@ -108,7 +109,6 @@ export function VehicleMap({
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [tripShape, setTripShape] = useState<[number, number][]>([]);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
-  const [isMapInteracting, setIsMapInteracting] = useState(false);
   const [mapViewport, setMapViewport] = useState<MapViewport | null>(null);
   const isMapInteractingRef = useRef(false);
   const [L, setL] = useState<typeof import("leaflet") | null>(null);
@@ -166,9 +166,9 @@ export function VehicleMap({
     import("leaflet").then((leaflet) => setL(leaflet));
   }, [isClient]);
 
-  useEffect(() => {
-    isMapInteractingRef.current = isMapInteracting;
-  }, [isMapInteracting]);
+  const handleInteractionChange = useCallback((isInteracting: boolean) => {
+    isMapInteractingRef.current = isInteracting;
+  }, []);
 
   useEffect(() => {
     if (isFirstAgencyRender.current) {
@@ -185,47 +185,72 @@ export function VehicleMap({
     );
   }, [agencyId]);
 
-  const fetchVehicles = useCallback(async () => {
-    setError(null);
+  const fetchVehicles = useCallback(
+    async (signal?: AbortSignal) => {
+      setError(null);
 
-    try {
-      const params = new URLSearchParams();
-      if (agencyId) params.set("agencyId", agencyId);
-      const url = `/api/vehicles${params.size ? `?${params}` : ""}`;
+      try {
+        const params = new URLSearchParams();
+        if (agencyId) params.set("agencyId", agencyId);
+        const url = `/api/vehicles${params.size ? `?${params}` : ""}`;
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Kunde inte hämta fordonspositioner");
+        const response = await fetch(url, { signal });
+        if (!response.ok) {
+          throw new Error("Kunde inte hämta fordonspositioner");
+        }
+
+        const data = await response.json();
+        if (isMapInteractingRef.current) {
+          return;
+        }
+
+        setVehicles(data.vehicles || []);
+        if (data.updatedAt) {
+          setLastUpdated(new Date(data.updatedAt));
+        }
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          return;
+        }
+        setError(err instanceof Error ? err : new Error("Okänt fel"));
       }
-
-      const data = await response.json();
-      if (isMapInteractingRef.current) {
-        return;
-      }
-
-      setVehicles(data.vehicles || []);
-      if (data.updatedAt) {
-        setLastUpdated(new Date(data.updatedAt));
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error("Okänt fel"));
-    }
-  }, [agencyId]);
+    },
+    [agencyId],
+  );
 
   useEffect(() => {
-    if (!isMapInteracting) {
-      fetchVehicles();
-    }
+    const controller = new AbortController();
+    let inFlight = false;
 
-    // Auto-refresh every 2 seconds (paused while interacting)
-    const interval = setInterval(() => {
-      if (!isMapInteracting) {
-        fetchVehicles();
+    // Paused while interacting and while the tab is hidden; skipped entirely
+    // if the previous request has not come back yet.
+    const tick = async () => {
+      if (inFlight) return;
+      if (isMapInteractingRef.current) return;
+      if (document.visibilityState === "hidden") return;
+
+      inFlight = true;
+      try {
+        await fetchVehicles(controller.signal);
+      } finally {
+        inFlight = false;
       }
-    }, 2000);
+    };
 
-    return () => clearInterval(interval);
-  }, [fetchVehicles, isMapInteracting]);
+    void tick();
+    const interval = setInterval(() => void tick(), POLL_INTERVAL_MS);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void tick();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [fetchVehicles]);
 
   // Clear selected vehicle if it's no longer in the vehicles list
   useEffect(() => {
@@ -374,7 +399,11 @@ export function VehicleMap({
       <Card>
         <CardContent className="flex flex-col items-center justify-center p-6">
           <p className="text-destructive mb-2">Kunde inte ladda karta</p>
-          <Button variant="outline" size="sm" onClick={fetchVehicles}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void fetchVehicles()}
+          >
             <RefreshCw className="mr-2 h-4 w-4" />
             Försök igen
           </Button>
@@ -468,7 +497,7 @@ export function VehicleMap({
               zoom={agencyZoom}
               locateKey={locateKey}
               agencyChangeKey={agencyChangeKey}
-              onInteractionChange={setIsMapInteracting}
+              onInteractionChange={handleInteractionChange}
               onViewportChange={setMapViewport}
             />
             <TileLayer
