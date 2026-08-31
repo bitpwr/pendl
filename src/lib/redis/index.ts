@@ -45,8 +45,6 @@ export const REDIS_KEYS = {
   STOP_DEPARTURES: "stopDepartures",
   // Last update timestamp
   LAST_REALTIME_UPDATE: "lastRealtimeUpdate",
-  // Vehicle positions by route: vehiclesByRoute:{routeId}
-  VEHICLES_BY_ROUTE: "vehiclesByRoute",
   // Vehicle lookup by trip: vehicleByTrip:{tripId}
   VEHICLE_BY_TRIP: "vehicleByTrip",
 } as const;

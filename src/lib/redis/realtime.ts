@@ -72,44 +72,6 @@ export async function getTripUpdates(
 }
 
 /**
- * Store a vehicle position in Redis
- */
-export async function storeVehiclePosition(
-  vehicle: VehiclePosition,
-): Promise<void> {
-  if (!vehicle.tripId) return;
-
-  const redis = getRedis();
-  const vehicleKey = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
-  const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
-
-  // Read previous value to clean stale trip->vehicle index if this vehicle
-  // switched trips.
-  const previousData = await redis.get(vehicleKey);
-  const previousVehicle = previousData
-    ? (JSON.parse(previousData) as VehiclePosition)
-    : null;
-
-  await redis.setex(vehicleKey, VEHICLE_POSITION_TTL, JSON.stringify(vehicle));
-  await redis.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
-
-  if (previousVehicle && previousVehicle.tripId !== vehicle.tripId) {
-    const oldTripKey = buildKey(
-      REDIS_KEYS.VEHICLE_BY_TRIP,
-      previousVehicle.tripId,
-    );
-    await redis.del(oldTripKey);
-  }
-
-  // Also add to route set if route is known
-  if (vehicle.routeId) {
-    const routeKey = buildKey(REDIS_KEYS.VEHICLES_BY_ROUTE, vehicle.routeId);
-    await redis.sadd(routeKey, vehicle.vehicleId);
-    await redis.expire(routeKey, VEHICLE_POSITION_TTL);
-  }
-}
-
-/**
  * Store multiple vehicle positions in a pipeline
  */
 export async function storeVehiclePositions(
@@ -120,30 +82,11 @@ export async function storeVehiclePositions(
   const redis = getRedis();
   const pipeline = redis.pipeline();
 
-  // Group vehicles by route
-  const vehiclesByRoute = new Map<string, string[]>();
-
   for (const vehicle of vehicles.filter((v) => v.tripId)) {
     const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicle.vehicleId);
     const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, vehicle.tripId);
     pipeline.setex(key, VEHICLE_POSITION_TTL, JSON.stringify(vehicle));
     pipeline.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
-
-    if (vehicle.routeId) {
-      if (!vehiclesByRoute.has(vehicle.routeId)) {
-        vehiclesByRoute.set(vehicle.routeId, []);
-      }
-      vehiclesByRoute.get(vehicle.routeId)!.push(vehicle.vehicleId);
-    }
-  }
-
-  // Update route vehicle sets
-  for (const [routeId, vehicleIds] of vehiclesByRoute) {
-    const routeKey = buildKey(REDIS_KEYS.VEHICLES_BY_ROUTE, routeId);
-    // Delete old set and add new members
-    pipeline.del(routeKey);
-    pipeline.sadd(routeKey, ...vehicleIds);
-    pipeline.expire(routeKey, VEHICLE_POSITION_TTL);
   }
 
   await pipeline.exec();
@@ -159,28 +102,6 @@ export async function getVehiclePosition(
   const key = buildKey(REDIS_KEYS.VEHICLE_POSITION, vehicleId);
   const data = await redis.get(key);
   return data ? JSON.parse(data) : null;
-}
-
-/**
- * Get all vehicles for a route
- */
-export async function getVehiclesByRoute(
-  routeId: string,
-): Promise<VehiclePosition[]> {
-  const redis = getRedis();
-  const routeKey = buildKey(REDIS_KEYS.VEHICLES_BY_ROUTE, routeId);
-  const vehicleIds = await redis.smembers(routeKey);
-
-  if (vehicleIds.length === 0) return [];
-
-  const keys = vehicleIds.map((id) =>
-    buildKey(REDIS_KEYS.VEHICLE_POSITION, id),
-  );
-  const values = await redis.mget(...keys);
-
-  return values
-    .filter((v): v is string => v !== null)
-    .map((v) => JSON.parse(v) as VehiclePosition);
 }
 
 /**
