@@ -201,36 +201,81 @@ async function getProtoType(): Promise<protobuf.Type> {
   return FeedMessageType;
 }
 
+// Per-feed cache validators, so repeated polls can be answered with a 304
+// instead of a full download. Trafiklab supports both ETag and Last-Modified.
+type FeedCacheEntry = {
+  etag?: string;
+  lastModified?: string;
+  headerTimestamp?: number;
+};
+
+const feedCache = new Map<string, FeedCacheEntry>();
+
 /**
- * Fetch and parse GTFS Realtime feed
+ * Fetch and parse GTFS Realtime feed.
+ *
+ * Returns null when the feed has not changed since the last call for this URL,
+ * either because the server answered 304 or because the feed header carries a
+ * timestamp we have already processed.
  */
-export async function fetchRealtimeFeed(url: string): Promise<FeedMessage> {
+export async function fetchRealtimeFeed(
+  url: string,
+): Promise<FeedMessage | null> {
   const request = new URL(url);
   if (GTFS_CONFIG.realtimeApiKey) {
     request.searchParams.set("key", GTFS_CONFIG.realtimeApiKey);
   }
 
-  const response = await fetch(request.toString(), {
-    headers: {
-      accept: "application/octet-stream",
-      "Accept-encoding": "br, gzip, deflate",
-    },
-  });
+  const cached = feedCache.get(url);
+  const headers: Record<string, string> = {
+    accept: "application/octet-stream",
+    "Accept-encoding": "br, gzip, deflate",
+  };
+
+  if (cached?.etag) {
+    headers["If-None-Match"] = cached.etag;
+  }
+  if (cached?.lastModified) {
+    headers["If-Modified-Since"] = cached.lastModified;
+  }
+
+  const response = await fetch(request.toString(), { headers });
+
+  if (response.status === 304) {
+    return null;
+  }
 
   if (!response.ok) {
     throw new Error(`Failed to fetch realtime feed: ${response.status}`);
   }
 
+  const etag = response.headers.get("etag") ?? undefined;
+  const lastModified = response.headers.get("last-modified") ?? undefined;
+
   const buffer = await response.arrayBuffer();
   const FeedMessage = await getProtoType();
   const message = FeedMessage.decode(new Uint8Array(buffer));
 
-  return FeedMessage.toObject(message, {
+  const feed = FeedMessage.toObject(message, {
     longs: Number,
     enums: Number,
     defaults: true,
     arrays: true,
   }) as FeedMessage;
+
+  // A 200 does not guarantee new content: the feed can be regenerated with an
+  // unchanged header timestamp, or be served without validators at all.
+  // `defaults: true` decodes a missing timestamp as 0, which must not be
+  // mistaken for a real value or every feed would look unchanged forever.
+  const headerTimestamp = feed.header?.timestamp || undefined;
+  const unchanged =
+    headerTimestamp !== undefined &&
+    cached?.headerTimestamp !== undefined &&
+    headerTimestamp === cached.headerTimestamp;
+
+  feedCache.set(url, { etag, lastModified, headerTimestamp });
+
+  return unchanged ? null : feed;
 }
 
 /**
@@ -238,11 +283,13 @@ export async function fetchRealtimeFeed(url: string): Promise<FeedMessage> {
  */
 export async function fetchTripUpdates(
   agencyTag: string,
-): Promise<TripUpdate[]> {
+): Promise<TripUpdate[] | null> {
   const url = getTripUpdatesUrl(agencyTag);
 
   trackTripUpdateDownload();
   const feed = await fetchRealtimeFeed(url);
+  if (!feed) return null;
+
   return feed.entity
     .filter((e) => e.tripUpdate)
     .map((e) => convertTripUpdate(e.tripUpdate!));
@@ -253,11 +300,13 @@ export async function fetchTripUpdates(
  */
 export async function fetchVehiclePositions(
   agencyTag: string,
-): Promise<VehiclePosition[]> {
+): Promise<VehiclePosition[] | null> {
   const url = getVehiclePositionsUrl(agencyTag);
 
   trackVehicleDownload();
   const feed = await fetchRealtimeFeed(url);
+  if (!feed) return null;
+
   return feed.entity
     .filter((e) => e.vehicle)
     .map((e) => convertVehiclePosition(e.vehicle!));
@@ -268,11 +317,13 @@ export async function fetchVehiclePositions(
  */
 export async function fetchServiceAlerts(
   agencyTag: string,
-): Promise<ServiceAlert[]> {
+): Promise<ServiceAlert[] | null> {
   const url = getServiceAlertsUrl(agencyTag);
 
   trackServiceAlertDownload();
   const feed = await fetchRealtimeFeed(url);
+  if (!feed) return null;
+
   return feed.entity
     .filter((e) => e.alert)
     .map((e, i) => convertServiceAlert(e.alert!, e.id || `alert-${i}`));

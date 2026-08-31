@@ -70,15 +70,21 @@ async function updateVehiclePositions(
 ): Promise<void> {
   const startedAt = now;
 
-  const vehiclePositions = await fetchVehiclePositions(agencyTag).catch(
-    (err) => {
-      console.error(
-        `Failed to fetch vehicle positions for ${agencyTag}:`,
-        err.message,
-      );
-      return [];
-    },
-  );
+  let vehiclePositions;
+  try {
+    vehiclePositions = await fetchVehiclePositions(agencyTag);
+  } catch (err) {
+    console.error(
+      `Failed to fetch vehicle positions for ${agencyTag}:`,
+      (err as Error).message,
+    );
+    return;
+  }
+
+  // Feed unchanged since the last tick - nothing to store.
+  if (vehiclePositions === null) {
+    return;
+  }
 
   await storeVehiclePositions(vehiclePositions);
   await setLastRealtimeUpdate();
@@ -95,13 +101,21 @@ async function updateTripUpdates(
 ): Promise<void> {
   const startedAt = now;
 
-  const tripUpdates = await fetchTripUpdates(agencyTag).catch((err) => {
+  let tripUpdates;
+  try {
+    tripUpdates = await fetchTripUpdates(agencyTag);
+  } catch (err) {
     console.error(
       `Failed to fetch trip updates for ${agencyTag}:`,
-      err.message,
+      (err as Error).message,
     );
-    return [];
-  });
+    return;
+  }
+
+  // Feed unchanged since the last tick - nothing to store.
+  if (tripUpdates === null) {
+    return;
+  }
 
   await storeTripUpdates(tripUpdates);
   await setLastRealtimeUpdate();
@@ -118,13 +132,21 @@ async function updateServiceAlerts(
 ): Promise<void> {
   const startedAt = now;
 
-  const serviceAlerts = await fetchServiceAlerts(agencyTag).catch((err) => {
+  let serviceAlerts;
+  try {
+    serviceAlerts = await fetchServiceAlerts(agencyTag);
+  } catch (err) {
     console.error(
       `Failed to fetch service alerts for ${agencyTag}:`,
-      err.message,
+      (err as Error).message,
     );
-    return [];
-  });
+    return;
+  }
+
+  // Feed unchanged since the last tick - nothing to store.
+  if (serviceAlerts === null) {
+    return;
+  }
 
   await storeServiceAlerts(serviceAlerts);
   await setLastRealtimeUpdate();
