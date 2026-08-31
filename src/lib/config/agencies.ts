@@ -46,6 +46,10 @@ export function getAgencyTag(agencyId: string): AgencyTag | undefined {
   return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.tag;
 }
 
+export function getAgencyIdByTag(tag: string): AgencyId | undefined {
+  return INCLUDED_AGENCIES.find((a) => a.tag === tag)?.id;
+}
+
 export function getAgencyName(agencyId: string): string | undefined {
   return INCLUDED_AGENCIES.find((a) => a.id === agencyId)?.name;
 }

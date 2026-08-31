@@ -47,6 +47,8 @@ export const REDIS_KEYS = {
   LAST_REALTIME_UPDATE: "lastRealtimeUpdate",
   // Vehicle lookup by trip: vehicleByTrip:{tripId}
   VEHICLE_BY_TRIP: "vehicleByTrip",
+  // Prebuilt /api/vehicles body per agency: vehiclesSnapshot:{agencyTag}
+  VEHICLE_SNAPSHOT: "vehiclesSnapshot",
 } as const;
 
 /**

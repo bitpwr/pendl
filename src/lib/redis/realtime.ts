@@ -93,6 +93,31 @@ export async function storeVehiclePositions(
 }
 
 /**
+ * Store the prebuilt map payload for an agency.
+ *
+ * Holds the finished JSON body so a request is a single GET with no parse,
+ * join or re-serialisation on the way out.
+ */
+export async function storeVehicleSnapshot(
+  agencyTag: string,
+  payload: string,
+): Promise<void> {
+  const redis = getRedis();
+  const key = buildKey(REDIS_KEYS.VEHICLE_SNAPSHOT, agencyTag);
+  await redis.setex(key, VEHICLE_POSITION_TTL, payload);
+}
+
+/**
+ * Get the prebuilt map payload for an agency, if one is still fresh
+ */
+export async function getVehicleSnapshot(
+  agencyTag: string,
+): Promise<string | null> {
+  const redis = getRedis();
+  return redis.get(buildKey(REDIS_KEYS.VEHICLE_SNAPSHOT, agencyTag));
+}
+
+/**
  * Get a vehicle position by vehicle ID
  */
 export async function getVehiclePosition(

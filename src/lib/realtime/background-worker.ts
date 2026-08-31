@@ -11,7 +11,9 @@ import {
   storeServiceAlerts,
   storeTripUpdates,
   storeVehiclePositions,
+  storeVehicleSnapshot,
 } from "@/lib/redis/realtime";
+import { buildVehicleSnapshot } from "./vehicle-snapshot";
 import {
   getAgencyTag,
   INCLUDED_AGENCIES,
@@ -87,6 +89,10 @@ async function updateVehiclePositions(
   }
 
   await storeVehiclePositions(vehiclePositions);
+
+  // Build the map payload here, once, rather than per request.
+  const snapshot = await buildVehicleSnapshot(agencyTag, vehiclePositions);
+  await storeVehicleSnapshot(agencyTag, snapshot);
   await setLastRealtimeUpdate();
 
   const duration = Date.now() - startedAt;
@@ -318,11 +324,12 @@ async function ensureWorkerRunning(
 
 export async function triggerVehiclePositions(
   agencyId?: string,
-): Promise<void> {
+): Promise<AgencyTag> {
   const tag = resolveTag(agencyId);
   const state = getWorkerState();
   state.vehicleConsumerActivity.set(tag, Date.now());
   await ensureWorkerRunning(state, tag);
+  return tag;
 }
 
 export async function triggerTripUpdates(agencyId?: string): Promise<void> {

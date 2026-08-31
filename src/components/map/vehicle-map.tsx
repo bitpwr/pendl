@@ -190,8 +190,6 @@ export function VehicleMap({
 
     try {
       const params = new URLSearchParams();
-      if (selectedRouteType !== null)
-        params.set("routeType", String(selectedRouteType));
       if (agencyId) params.set("agencyId", agencyId);
       const url = `/api/vehicles${params.size ? `?${params}` : ""}`;
 
@@ -206,11 +204,13 @@ export function VehicleMap({
       }
 
       setVehicles(data.vehicles || []);
-      setLastUpdated(new Date(data.updatedAt));
+      if (data.updatedAt) {
+        setLastUpdated(new Date(data.updatedAt));
+      }
     } catch (err) {
       setError(err instanceof Error ? err : new Error("Okänt fel"));
     }
-  }, [selectedRouteType, agencyId]);
+  }, [agencyId]);
 
   useEffect(() => {
     if (!isMapInteracting) {
@@ -291,13 +291,20 @@ export function VehicleMap({
     fetchTripShape();
   }, [selectedVehicle]);
 
+  // The API returns every vehicle for the agency, so the route type filter is
+  // applied here - instant, and it keeps one shared payload on the server.
+  const routeTypeVehicles = useMemo(() => {
+    if (selectedRouteType === null) return vehicles;
+    return vehicles.filter((v) => v.routeType === selectedRouteType);
+  }, [vehicles, selectedRouteType]);
+
   // Filter vehicles based on selection
   const displayedVehicles = useMemo(() => {
     if (selectedVehicle) {
-      return vehicles.filter((v) => v.id === selectedVehicle.id);
+      return routeTypeVehicles.filter((v) => v.id === selectedVehicle.id);
     }
-    return vehicles;
-  }, [vehicles, selectedVehicle]);
+    return routeTypeVehicles;
+  }, [routeTypeVehicles, selectedVehicle]);
 
   const visibleVehicleCount = useMemo(() => {
     if (!mapViewport) {
@@ -384,8 +391,8 @@ export function VehicleMap({
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg">
-              {vehicles.length > 0
-                ? `Visar ${vehicles.length} ${vehicleType(selectedRouteType)}`
+              {routeTypeVehicles.length > 0
+                ? `Visar ${routeTypeVehicles.length} ${vehicleType(selectedRouteType)}`
                 : "Positioner inte tillgängliga"}
             </CardTitle>
             {lastUpdated && (
