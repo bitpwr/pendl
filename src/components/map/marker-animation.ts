@@ -6,7 +6,7 @@ export type Position = [lat: number, lon: number];
  * Kept comfortably under the poll interval so a marker settles before the
  * next update arrives.
  */
-export const POSITION_ANIMATION_MS = 1200;
+export const POSITION_ANIMATION_MS = 1800;
 
 /**
  * Beyond this many degrees the jump is not a vehicle moving.

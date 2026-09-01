@@ -83,7 +83,6 @@ export default function VehicleMapInner({
     return zoom ?? config.zoom;
   });
   const [agencyChangeKey, setAgencyChangeKey] = useState(0);
-  const isFirstAgencyRender = useRef(true);
   const [selectedRouteType, setSelectedRouteType] = useState<RouteType | null>(
     null,
   );
@@ -91,7 +90,9 @@ export default function VehicleMapInner({
   const [userLocation, setUserLocation] = useState<[number, number] | null>(
     null,
   );
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(
+    null,
+  );
   const [tripShape, setTripShape] = useState<{
     vehicleId: string;
     coordinates: [number, number][];
@@ -147,20 +148,22 @@ export default function VehicleMapInner({
     isMapInteractingRef.current = isInteracting;
   }, []);
 
-  useEffect(() => {
-    if (isFirstAgencyRender.current) {
-      isFirstAgencyRender.current = false;
-      return;
-    }
+  // Adjusting state while rendering, rather than in an effect, so the map
+  // never paints a frame pointed at the previous agency.
+  const [renderedAgencyId, setRenderedAgencyId] = useState(agencyId);
+  if (agencyId !== renderedAgencyId) {
+    setRenderedAgencyId(agencyId);
+
     const config = getAgencyMapConfig(agencyId);
     setMapCenter(config.center);
     setAgencyZoom(config.zoom);
     setAgencyChangeKey((k) => k + 1);
+
     const available = getAgencyRouteTypes(agencyId);
     setSelectedRouteType((prev) =>
       prev !== null && !available.includes(prev) ? null : prev,
     );
-  }, [agencyId]);
+  }
 
   const fetchVehicles = useCallback(
     async (signal?: AbortSignal) => {
@@ -229,12 +232,16 @@ export default function VehicleMapInner({
     };
   }, [fetchVehicles]);
 
-  // Clear selected vehicle if it's no longer in the vehicles list
-  useEffect(() => {
-    if (selectedVehicle && !vehicles.some((v) => v.id === selectedVehicle.id)) {
-      setSelectedVehicle(null);
-    }
-  }, [vehicles, selectedVehicle]);
+  // Derived, so a vehicle leaving the feed deselects itself and the selection
+  // always carries that vehicle's current data.
+  const selectedVehicle = useMemo(
+    () => vehicles.find((v) => v.id === selectedVehicleId) ?? null,
+    [vehicles, selectedVehicleId],
+  );
+
+  const handleSelect = useCallback((vehicle: Vehicle | null) => {
+    setSelectedVehicleId(vehicle?.id ?? null);
+  }, []);
 
   const handleLocateMe = () => {
     if ("geolocation" in navigator) {
@@ -257,22 +264,20 @@ export default function VehicleMapInner({
     }
   };
 
-  // Fetch trip shape when a vehicle is selected
+  // Fetch trip shape when a vehicle is selected. A stale shape needs no
+  // clearing: it is only drawn when it matches the current selection.
+  const selectedTripId = selectedVehicle?.tripId;
   useEffect(() => {
-    if (!selectedVehicle) {
-      setTripShape(null);
-      return;
-    }
+    if (!selectedVehicleId || !selectedTripId) return;
 
-    const vehicleId = selectedVehicle.id;
+    const vehicleId = selectedVehicleId;
     const controller = new AbortController();
 
     const fetchTripShape = async () => {
       try {
-        const response = await fetch(
-          `/api/trips/${selectedVehicle.tripId}/shape`,
-          { signal: controller.signal },
-        );
+        const response = await fetch(`/api/trips/${selectedTripId}/shape`, {
+          signal: controller.signal,
+        });
         if (!response.ok) return;
 
         const data = await response.json();
@@ -298,7 +303,7 @@ export default function VehicleMapInner({
     fetchTripShape();
 
     return () => controller.abort();
-  }, [selectedVehicle]);
+  }, [selectedVehicleId, selectedTripId]);
 
   // The API returns every vehicle for the agency, so the route type filter is
   // applied here - instant, and it keeps one shared payload on the server.
@@ -327,7 +332,7 @@ export default function VehicleMapInner({
         <LightVehicleMarker
           key={vehicle.id}
           vehicle={vehicle}
-          onSelect={setSelectedVehicle}
+          onSelect={handleSelect}
           isSelected={false}
         />
       ));
@@ -337,7 +342,7 @@ export default function VehicleMapInner({
       <VehicleMarker
         key={vehicle.id}
         vehicle={vehicle}
-        onSelect={setSelectedVehicle}
+        onSelect={handleSelect}
         isSelected={selectedVehicle?.id === vehicle.id}
         agencyId={agencyId}
         zoom={mapViewport?.zoom ?? agencyZoom}
@@ -345,6 +350,7 @@ export default function VehicleMapInner({
     ));
   }, [
     displayedVehicles,
+    handleSelect,
     selectedVehicle?.id,
     useLightweightMarkers,
     agencyId,
