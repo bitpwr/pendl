@@ -15,22 +15,13 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Locate } from "lucide-react";
-import type { Marker as LeafletMarker } from "leaflet";
 import type { Vehicle } from "@/types/api";
 import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
 import { getAgencyMapConfig, getAgencyRouteTypes } from "@/lib/config/agencies";
 import { filterToViewport, type MapViewport } from "./viewport";
 import { useVehicleFeed } from "./use-vehicle-feed";
-import {
-  MAX_ANIMATED_DEGREES,
-  POSITION_ANIMATION_MS,
-  interpolate,
-  prefersReducedMotion,
-  samePosition,
-  shouldSnap,
-  type Position,
-} from "./marker-animation";
+import { useAnimatedMarker } from "./use-animated-marker";
 
 export interface VehicleMapInnerProps {
   center?: [number, number];
@@ -537,13 +528,10 @@ function VehicleMarkerComponent({
   agencyId,
   zoom,
 }: VehicleMarkerProps) {
-  const markerRef = useRef<LeafletMarker | null>(null);
-
-  // Leaflet owns this marker's position after mount. The prop below is pinned
-  // to where it first appeared so react-leaflet never calls setLatLng itself
-  // and fights the animation.
-  const [mountPosition] = useState<Position>(() => [vehicle.lat, vehicle.lon]);
-  const drawnPosition = useRef<Position>([vehicle.lat, vehicle.lon]);
+  const { markerRef, mountPosition } = useAnimatedMarker(
+    vehicle.lat,
+    vehicle.lon,
+  );
 
   // Get the color for this route type
   const bearing = vehicle.bearing ?? 0;
@@ -562,45 +550,8 @@ function VehicleMarkerComponent({
     if (isSelected) {
       markerRef.current?.openPopup();
     }
-  }, [isSelected]);
+  }, [isSelected, markerRef]);
 
-  // Slide to each new position rather than jumping. Updates arrive every
-  // couple of seconds, which is a visible hop at street zoom. This runs
-  // outside React: re-rendering every marker per frame would cost far more
-  // than the jump it smooths.
-  useEffect(() => {
-    const marker = markerRef.current;
-    if (!marker) return;
-
-    const from = drawnPosition.current;
-    const to: Position = [vehicle.lat, vehicle.lon];
-
-    if (samePosition(from, to)) return;
-
-    if (shouldSnap(from, to, MAX_ANIMATED_DEGREES) || prefersReducedMotion()) {
-      drawnPosition.current = to;
-      marker.setLatLng(to);
-      return;
-    }
-
-    const startedAt = performance.now();
-
-    const step = (now: number) => {
-      const progress = Math.min(1, (now - startedAt) / POSITION_ANIMATION_MS);
-      const next = interpolate(from, to, progress);
-
-      drawnPosition.current = next;
-      marker.setLatLng(next);
-
-      if (progress < 1) {
-        frame = requestAnimationFrame(step);
-      }
-    };
-
-    let frame = requestAnimationFrame(step);
-
-    return () => cancelAnimationFrame(frame);
-  }, [vehicle.lat, vehicle.lon]);
 
   return (
     <Marker

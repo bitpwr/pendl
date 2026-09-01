@@ -14,6 +14,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { RouteType, routeTypeColor, routeTypeName } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "@/components/map/vehicle-arrow-icon";
+import { useAnimatedMarker } from "@/components/map/use-animated-marker";
 import Link from "next/link";
 import { formatDepartureTime } from "@/lib/gtfs/time-utils";
 
@@ -199,6 +200,13 @@ interface VehicleMarkerProps {
 const VEHICLE_ICON_SIZE = 40;
 
 function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
+  // The trip page refreshes the position every 2s, which is a visible hop at
+  // the zoom this map opens at.
+  const { markerRef, mountPosition } = useAnimatedMarker(
+    vehicle.lat,
+    vehicle.lon,
+  );
+
   const bearing = vehicle.bearing ?? 0;
   const speedMps = vehicle.speed ?? 0;
   const color = routeTypeColor(routeType, parseInt(routeName));
@@ -211,7 +219,7 @@ function VehicleMarker({ vehicle, routeType, routeName }: VehicleMarkerProps) {
 
   return (
     <>
-      <Marker position={[vehicle.lat, vehicle.lon]} icon={icon}>
+      <Marker ref={markerRef} position={mountPosition} icon={icon}>
         <Popup>
           <div className="text-sm font-bold">
             {routeTypeName(routeType)} {routeName}
