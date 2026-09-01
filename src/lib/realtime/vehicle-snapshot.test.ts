@@ -5,25 +5,9 @@ import { RouteType } from "@/types/gtfs";
 vi.mock("@/lib/db", () => ({ query: vi.fn() }));
 
 import { query } from "@/lib/db";
-import { buildVehicleSnapshot } from "./vehicle-snapshot";
+import { buildVehicleList } from "./vehicle-snapshot";
 
 const queryMock = vi.mocked(query);
-
-type Snapshot = {
-  vehicles: Array<{
-    id: string;
-    tripId: string;
-    routeId: string;
-    routeName: string;
-    routeType: number;
-    headsign: string;
-    lat: number;
-    lon: number;
-    bearing?: number;
-    speed?: number;
-  }>;
-  updatedAt: string;
-};
 
 // The trip -> route cache is module state, so every test uses its own trip ids
 // rather than reaching in to clear it.
@@ -56,15 +40,15 @@ function routeRow(tripId: string, over: Record<string, unknown> = {}) {
   };
 }
 
-async function build(positions: VehiclePosition[]): Promise<Snapshot> {
-  return JSON.parse(await buildVehicleSnapshot("sl", positions));
+async function build(positions: VehiclePosition[]) {
+  return { vehicles: await buildVehicleList("sl", positions) };
 }
 
 beforeEach(() => {
   queryMock.mockReset();
 });
 
-describe("buildVehicleSnapshot", () => {
+describe("buildVehicleList", () => {
   it("joins route metadata onto each position", async () => {
     const trip = freshTrip();
     queryMock.mockResolvedValueOnce([routeRow(trip)]);
@@ -84,15 +68,6 @@ describe("buildVehicleSnapshot", () => {
       bearing: 90,
       speed: 12,
     });
-  });
-
-  it("stamps the payload with a build time", async () => {
-    const trip = freshTrip();
-    queryMock.mockResolvedValueOnce([routeRow(trip)]);
-
-    const { updatedAt } = await build([position(trip)]);
-
-    expect(Number.isNaN(Date.parse(updatedAt))).toBe(false);
   });
 
   it("drops vehicles whose trip has no route", async () => {
@@ -128,7 +103,7 @@ describe("buildVehicleSnapshot", () => {
     expect(vehicles[0].headsign).toBe("42");
   });
 
-  it("returns an empty payload without querying when there are no positions", async () => {
+  it("returns nothing without querying when there are no positions", async () => {
     const { vehicles } = await build([]);
 
     expect(vehicles).toEqual([]);
@@ -158,7 +133,7 @@ describe("buildVehicleSnapshot", () => {
   });
 });
 
-describe("buildVehicleSnapshot route cache", () => {
+describe("buildVehicleList route cache", () => {
   it("does not re-query a trip it has already resolved", async () => {
     const trip = freshTrip();
     queryMock.mockResolvedValueOnce([routeRow(trip)]);

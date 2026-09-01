@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Vehicle } from "@/types/api";
+import {
+  applyDelta,
+  type VehicleMessage,
+} from "@/lib/realtime/vehicle-delta";
 
 export const POLL_INTERVAL_MS = 2000;
 
@@ -55,16 +59,35 @@ export function useVehicleFeed(
   const pausedRef = useRef(isPaused);
   pausedRef.current = isPaused;
 
-  const apply = useCallback((payload: unknown) => {
+  // The set the deltas are applied to, kept outside React so a dropped
+  // update cannot desynchronise it from what was rendered.
+  const byId = useRef<Map<string, Vehicle>>(new Map());
+  const lastSeq = useRef(0);
+
+  // Pausing defers the render, never the bookkeeping: deltas build on each
+  // other, so skipping one would leave the set permanently wrong.
+  const publish = useCallback((updated: string | undefined) => {
     if (pausedRef.current?.()) return;
 
-    const data = payload as { vehicles?: Vehicle[]; updatedAt?: string };
-    setVehicles(data.vehicles ?? []);
-    if (data.updatedAt) {
-      setUpdatedAt(new Date(data.updatedAt));
-    }
+    setVehicles([...byId.current.values()]);
+    if (updated) setUpdatedAt(new Date(updated));
     setError(null);
   }, []);
+
+  const applySnapshot = useCallback(
+    (payload: unknown) => {
+      const data = payload as {
+        vehicles?: Vehicle[];
+        updatedAt?: string;
+        seq?: number;
+      };
+
+      byId.current = new Map((data.vehicles ?? []).map((v) => [v.id, v]));
+      lastSeq.current = data.seq ?? 0;
+      publish(data.updatedAt);
+    },
+    [publish],
+  );
 
   const fetchOnce = useCallback(
     async (signal?: AbortSignal) => {
@@ -75,13 +98,13 @@ export function useVehicleFeed(
         if (!response.ok) {
           throw new Error("Kunde inte hämta fordonspositioner");
         }
-        apply(await response.json());
+        applySnapshot(await response.json());
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err : new Error("Okänt fel"));
       }
     },
-    [agencyId, apply],
+    [agencyId, applySnapshot],
   );
 
   const refresh = useCallback(() => void fetchOnce(), [fetchOnce]);
@@ -100,11 +123,33 @@ export function useVehicleFeed(
 
       source.onmessage = (event) => {
         receivedAny = true;
+
+        let message: VehicleMessage;
         try {
-          apply(JSON.parse(event.data));
+          message = JSON.parse(event.data) as VehicleMessage;
         } catch {
           // A truncated frame is not worth tearing the stream down for.
+          return;
         }
+
+        if (message.type === "snapshot") {
+          applySnapshot(message);
+          return;
+        }
+
+        // Already covered by the snapshot this stream opened with.
+        if (message.seq <= lastSeq.current) return;
+
+        // A gap means an update was missed, and deltas are not cumulative,
+        // so the set can only be trusted after a fresh snapshot.
+        if (message.seq !== lastSeq.current + 1) {
+          void fetchOnce();
+          return;
+        }
+
+        byId.current = applyDelta(byId.current, message);
+        lastSeq.current = message.seq;
+        publish(message.updatedAt);
       };
 
       source.onerror = () => {
@@ -140,7 +185,7 @@ export function useVehicleFeed(
       document.removeEventListener("visibilitychange", onVisibilityChange);
       close();
     };
-  }, [transport, agencyId, apply]);
+  }, [transport, agencyId, applySnapshot, fetchOnce, publish]);
 
   // --- polling fallback --------------------------------------------------
   useEffect(() => {

@@ -86,15 +86,15 @@ async function resolveRoutes(
 }
 
 /**
- * Build the finished /api/vehicles response body for one agency.
+ * Build the vehicle list for one agency, route metadata joined on.
  *
- * This runs on the worker tick rather than per request, so the Redis reads,
- * the trips -> routes join and the serialisation happen once for all clients.
+ * This runs on the worker tick rather than per request, so the Redis reads
+ * and the trips -> routes join happen once for all clients.
  */
-export async function buildVehicleSnapshot(
+export async function buildVehicleList(
   agencyTag: string,
   positions: VehiclePosition[],
-): Promise<string> {
+): Promise<Vehicle[]> {
   const agencyId = getAgencyIdByTag(agencyTag);
   const tripIds = [...new Set(positions.map((p) => p.tripId))];
 
@@ -120,8 +120,5 @@ export async function buildVehicleSnapshot(
     });
   }
 
-  return JSON.stringify({
-    vehicles,
-    updatedAt: new Date().toISOString(),
-  });
+  return vehicles;
 }

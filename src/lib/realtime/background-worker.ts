@@ -13,8 +13,10 @@ import {
   storeVehiclePositions,
   storeVehicleSnapshot,
 } from "@/lib/redis/realtime";
-import { buildVehicleSnapshot } from "./vehicle-snapshot";
+import { buildVehicleList } from "./vehicle-snapshot";
 import { publish, subscribedTags } from "./broadcast";
+import { diffVehicles } from "./vehicle-delta";
+import type { Vehicle } from "@/types/api";
 import {
   getAgencyTag,
   INCLUDED_AGENCIES,
@@ -31,6 +33,7 @@ type RealtimeWorkerState = {
   tripUpdateConsumerActivity: Map<string, number>;
   serviceAlertConsumerActivity: Map<string, number>;
   vehicleUpdateInProgress: Set<string>;
+  publishedVehicles: Map<string, { seq: number; byId: Map<string, Vehicle> }>;
   tripUpdateInProgress: Set<string>;
   serviceAlertUpdateInProgress: Set<string>;
 };
@@ -51,6 +54,7 @@ function getWorkerState(): RealtimeWorkerState {
       tripUpdateConsumerActivity: new Map(),
       serviceAlertConsumerActivity: new Map(),
       vehicleUpdateInProgress: new Set(),
+      publishedVehicles: new Map(),
       tripUpdateInProgress: new Set(),
       serviceAlertUpdateInProgress: new Set(),
     };
@@ -92,16 +96,39 @@ async function updateVehiclePositions(
   await storeVehiclePositions(vehiclePositions);
 
   // Build the map payload here, once, rather than per request.
-  const snapshot = await buildVehicleSnapshot(agencyTag, vehiclePositions);
-  await storeVehicleSnapshot(agencyTag, snapshot);
+  const vehicles = await buildVehicleList(agencyTag, vehiclePositions);
+  const updatedAt = new Date().toISOString();
+
+  const state = getWorkerState();
+  const previous = state.publishedVehicles.get(agencyTag);
+  const seq = (previous?.seq ?? 0) + 1;
+
+  // The stored snapshot is what a fresh reader gets, so it stays whole.
+  await storeVehicleSnapshot(
+    agencyTag,
+    JSON.stringify({ type: "snapshot", seq, updatedAt, vehicles }),
+  );
   await setLastRealtimeUpdate();
 
-  // Hand it to any open streams rather than waiting to be asked.
-  publish(agencyTag, snapshot);
+  // Open streams already hold the previous set, so send only the change.
+  // Descriptive fields are the bulk of a vehicle and never change mid-trip.
+  publish(
+    agencyTag,
+    JSON.stringify(
+      previous
+        ? diffVehicles(previous.byId, vehicles, seq, updatedAt)
+        : { type: "snapshot", seq, updatedAt, vehicles },
+    ),
+  );
+
+  state.publishedVehicles.set(agencyTag, {
+    seq,
+    byId: new Map(vehicles.map((v) => [v.id, v])),
+  });
 
   const duration = Date.now() - startedAt;
   console.log(
-    `Updated vehicle positions [${agencyTag}]: ${vehiclePositions.length} vehicles (${duration}ms)`,
+    `Updated vehicle positions [${agencyTag}]: ${vehicles.length} vehicles (${duration}ms)`,
   );
 }
 
