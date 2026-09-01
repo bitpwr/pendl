@@ -130,22 +130,6 @@ export async function getVehiclePosition(
 }
 
 /**
- * Get all vehicle positions (for map view)
- */
-export async function getAllVehiclePositions(): Promise<VehiclePosition[]> {
-  const redis = getRedis();
-  const pattern = buildKey(REDIS_KEYS.VEHICLE_POSITION, "*");
-  const keys = await redis.keys(pattern);
-
-  if (keys.length === 0) return [];
-
-  const values = await redis.mget(...keys);
-  return values
-    .filter((v): v is string => v !== null)
-    .map((v) => JSON.parse(v) as VehiclePosition);
-}
-
-/**
  * Get vehicle position by trip ID
  */
 export async function getVehicleByTrip(
@@ -154,28 +138,21 @@ export async function getVehicleByTrip(
   const redis = getRedis();
   const tripKey = buildKey(REDIS_KEYS.VEHICLE_BY_TRIP, tripId);
 
-  // Fast path: O(1) tripId -> vehicleId lookup.
+  // O(1) tripId -> vehicleId lookup. storeVehiclePositions writes this index
+  // for every vehicle on every tick with the same TTL as the position itself,
+  // so a miss means the trip has no vehicle running rather than a lost entry.
   const vehicleId = await redis.get(tripKey);
-  if (vehicleId) {
-    const vehicle = await getVehiclePosition(vehicleId);
+  if (!vehicleId) return null;
 
-    // Guard against stale index entries.
-    if (vehicle?.tripId === tripId) {
-      return vehicle;
-    }
+  const vehicle = await getVehiclePosition(vehicleId);
 
-    await redis.del(tripKey);
+  // Guard against a stale index entry pointing at a vehicle that moved on.
+  if (vehicle?.tripId === tripId) {
+    return vehicle;
   }
 
-  // Fallback: scan all vehicles, then self-heal the index.
-  const vehicles = await getAllVehiclePositions();
-  const vehicle = vehicles.find((v) => v.tripId === tripId) || null;
-
-  if (vehicle) {
-    await redis.setex(tripKey, VEHICLE_POSITION_TTL, vehicle.vehicleId);
-  }
-
-  return vehicle;
+  await redis.del(tripKey);
+  return null;
 }
 
 /**
