@@ -23,9 +23,7 @@ export function TripMap({ height = "300px", ...props }: TripMapProps) {
   }
 
   return (
-    <Suspense
-      fallback={<Skeleton style={{ height }} className="rounded-lg" />}
-    >
+    <Suspense fallback={<Skeleton style={{ height }} className="rounded-lg" />}>
       <TripMapInner height={height} {...props} />
     </Suspense>
   );

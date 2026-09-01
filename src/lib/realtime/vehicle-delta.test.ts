@@ -147,9 +147,9 @@ describe("applyDelta", () => {
     const delta = diffVehicles(asMap(before), after, 2, AT);
     const result = applyDelta(asMap(before), delta);
 
-    expect([...result.values()].sort((x, y) => x.id.localeCompare(y.id))).toEqual(
-      after.sort((x, y) => x.id.localeCompare(y.id)),
-    );
+    expect(
+      [...result.values()].sort((x, y) => x.id.localeCompare(y.id)),
+    ).toEqual(after.sort((x, y) => x.id.localeCompare(y.id)));
   });
 
   it("keeps descriptive fields a move does not carry", () => {
@@ -167,7 +167,10 @@ describe("applyDelta", () => {
 
   it("drops removed vehicles", () => {
     const before = asMap([vehicle("a"), vehicle("b")]);
-    const result = applyDelta(before, diffVehicles(before, [vehicle("a")], 2, AT));
+    const result = applyDelta(
+      before,
+      diffVehicles(before, [vehicle("a")], 2, AT),
+    );
 
     expect(result.has("b")).toBe(false);
   });

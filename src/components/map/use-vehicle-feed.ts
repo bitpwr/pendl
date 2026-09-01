@@ -2,10 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Vehicle } from "@/types/api";
-import {
-  applyDelta,
-  type VehicleMessage,
-} from "@/lib/realtime/vehicle-delta";
+import { applyDelta, type VehicleMessage } from "@/lib/realtime/vehicle-delta";
 
 export const POLL_INTERVAL_MS = 2000;
 

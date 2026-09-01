@@ -1,10 +1,7 @@
 // GTFS Realtime Types
 
 export type TripScheduleRelationship =
-  | "SCHEDULED"
-  | "ADDED"
-  | "UNSCHEDULED"
-  | "CANCELED";
+  "SCHEDULED" | "ADDED" | "UNSCHEDULED" | "CANCELED";
 
 export interface TripUpdate {
   tripId: string;

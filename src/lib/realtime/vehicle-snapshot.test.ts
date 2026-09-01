@@ -149,7 +149,9 @@ describe("buildVehicleList route cache", () => {
     const known = freshTrip();
     const added = freshTrip();
     queryMock.mockResolvedValueOnce([routeRow(known)]);
-    queryMock.mockResolvedValueOnce([routeRow(added, { route_short_name: "7" })]);
+    queryMock.mockResolvedValueOnce([
+      routeRow(added, { route_short_name: "7" }),
+    ]);
 
     await build([position(known)]);
     const second = await build([position(known), position(added)]);

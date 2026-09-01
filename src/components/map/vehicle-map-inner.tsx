@@ -292,11 +292,7 @@ export default function VehicleMapInner({
       <Card>
         <CardContent className="flex flex-col items-center justify-center p-6">
           <p className="text-destructive mb-2">Kunde inte ladda karta</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refresh}
-          >
+          <Button variant="outline" size="sm" onClick={refresh}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Försök igen
           </Button>
@@ -551,7 +547,6 @@ function VehicleMarkerComponent({
       markerRef.current?.openPopup();
     }
   }, [isSelected, markerRef]);
-
 
   return (
     <Marker

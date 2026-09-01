@@ -42,7 +42,11 @@ export const POSITION_EPSILON = 1e-5;
 export const BEARING_EPSILON = 2;
 export const SPEED_EPSILON = 0.5;
 
-function changed(a: number | undefined, b: number | undefined, epsilon: number) {
+function changed(
+  a: number | undefined,
+  b: number | undefined,
+  epsilon: number,
+) {
   if (a === undefined || b === undefined) return a !== b;
   return Math.abs(a - b) >= epsilon;
 }
