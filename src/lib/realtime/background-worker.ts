@@ -14,6 +14,7 @@ import {
   storeVehicleSnapshot,
 } from "@/lib/redis/realtime";
 import { buildVehicleSnapshot } from "./vehicle-snapshot";
+import { publish, subscribedTags } from "./broadcast";
 import {
   getAgencyTag,
   INCLUDED_AGENCIES,
@@ -95,6 +96,9 @@ async function updateVehiclePositions(
   await storeVehicleSnapshot(agencyTag, snapshot);
   await setLastRealtimeUpdate();
 
+  // Hand it to any open streams rather than waiting to be asked.
+  publish(agencyTag, snapshot);
+
   const duration = Date.now() - startedAt;
   console.log(
     `Updated vehicle positions [${agencyTag}]: ${vehiclePositions.length} vehicles (${duration}ms)`,
@@ -167,18 +171,24 @@ async function runVehicleTick(forceTag?: string): Promise<void> {
   const state = getWorkerState();
   const now = Date.now();
 
-  const tagsToUpdate: string[] = [];
+  const tags = new Set<string>();
   if (forceTag) {
-    tagsToUpdate.push(forceTag);
+    tags.add(forceTag);
   } else {
     for (const [tag, lastActivity] of state.vehicleConsumerActivity) {
       if (now - lastActivity < GTFS_CONFIG.realtimeVehicleUpdateInterval * 2) {
-        tagsToUpdate.push(tag);
+        tags.add(tag);
       }
+    }
+
+    // A streaming client never polls, so its activity timestamp goes stale
+    // within two intervals. An open stream is the activity.
+    for (const tag of subscribedTags()) {
+      tags.add(tag);
     }
   }
 
-  for (const tag of tagsToUpdate) {
+  for (const tag of tags) {
     if (state.vehicleUpdateInProgress.has(tag)) continue;
     state.vehicleUpdateInProgress.add(tag);
     try {

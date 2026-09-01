@@ -21,6 +21,7 @@ import { routeTypeColor, routeTypeName, RouteType } from "@/types/gtfs";
 import { createVehicleLeafletIcon } from "./vehicle-arrow-icon";
 import { getAgencyMapConfig, getAgencyRouteTypes } from "@/lib/config/agencies";
 import { filterToViewport, type MapViewport } from "./viewport";
+import { useVehicleFeed } from "./use-vehicle-feed";
 import {
   MAX_ANIMATED_DEGREES,
   POSITION_ANIMATION_MS,
@@ -63,7 +64,6 @@ function vehicleTitle(vehicle: Vehicle): string {
 }
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
-const POLL_INTERVAL_MS = 2000;
 
 export default function VehicleMapInner({
   center,
@@ -71,9 +71,6 @@ export default function VehicleMapInner({
   height = "400px",
   agencyId,
 }: VehicleMapInnerProps) {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [error, setError] = useState<Error | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date>();
   const [mapCenter, setMapCenter] = useState<[number, number]>(() => {
     const config = getAgencyMapConfig(agencyId);
     return center ?? config.center;
@@ -148,6 +145,14 @@ export default function VehicleMapInner({
     isMapInteractingRef.current = isInteracting;
   }, []);
 
+  const isPaused = useCallback(() => isMapInteractingRef.current, []);
+  const {
+    vehicles,
+    updatedAt: lastUpdated,
+    error,
+    refresh,
+  } = useVehicleFeed(agencyId, { isPaused });
+
   // Adjusting state while rendering, rather than in an effect, so the map
   // never paints a frame pointed at the previous agency.
   const [renderedAgencyId, setRenderedAgencyId] = useState(agencyId);
@@ -164,73 +169,6 @@ export default function VehicleMapInner({
       prev !== null && !available.includes(prev) ? null : prev,
     );
   }
-
-  const fetchVehicles = useCallback(
-    async (signal?: AbortSignal) => {
-      setError(null);
-
-      try {
-        const params = new URLSearchParams();
-        if (agencyId) params.set("agencyId", agencyId);
-        const url = `/api/vehicles${params.size ? `?${params}` : ""}`;
-
-        const response = await fetch(url, { signal });
-        if (!response.ok) {
-          throw new Error("Kunde inte hämta fordonspositioner");
-        }
-
-        const data = await response.json();
-        if (isMapInteractingRef.current) {
-          return;
-        }
-
-        setVehicles(data.vehicles || []);
-        if (data.updatedAt) {
-          setLastUpdated(new Date(data.updatedAt));
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === "AbortError") {
-          return;
-        }
-        setError(err instanceof Error ? err : new Error("Okänt fel"));
-      }
-    },
-    [agencyId],
-  );
-
-  useEffect(() => {
-    const controller = new AbortController();
-    let inFlight = false;
-
-    // Paused while interacting and while the tab is hidden; skipped entirely
-    // if the previous request has not come back yet.
-    const tick = async () => {
-      if (inFlight) return;
-      if (isMapInteractingRef.current) return;
-      if (document.visibilityState === "hidden") return;
-
-      inFlight = true;
-      try {
-        await fetchVehicles(controller.signal);
-      } finally {
-        inFlight = false;
-      }
-    };
-
-    void tick();
-    const interval = setInterval(() => void tick(), POLL_INTERVAL_MS);
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") void tick();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      controller.abort();
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-    };
-  }, [fetchVehicles]);
 
   // Derived, so a vehicle leaving the feed deselects itself and the selection
   // always carries that vehicle's current data.
@@ -366,7 +304,7 @@ export default function VehicleMapInner({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => void fetchVehicles()}
+            onClick={refresh}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Försök igen
