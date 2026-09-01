@@ -257,17 +257,20 @@ export async function fetchRealtimeFeed(
   const FeedMessage = await getProtoType();
   const message = FeedMessage.decode(new Uint8Array(buffer));
 
+  // `arrays: true` still guarantees repeated fields decode as arrays.
+  // `defaults` is deliberately off: it materialises every optional scalar on
+  // every entity, which at ~2000 vehicles per tick is a lot of object graph
+  // for fields the converters already default themselves.
   const feed = FeedMessage.toObject(message, {
     longs: Number,
     enums: Number,
-    defaults: true,
     arrays: true,
   }) as FeedMessage;
 
   // A 200 does not guarantee new content: the feed can be regenerated with an
   // unchanged header timestamp, or be served without validators at all.
-  // `defaults: true` decodes a missing timestamp as 0, which must not be
-  // mistaken for a real value or every feed would look unchanged forever.
+  // A missing timestamp must not be mistaken for a real value, or every feed
+  // would look unchanged forever.
   const headerTimestamp = feed.header?.timestamp || undefined;
   const unchanged =
     headerTimestamp !== undefined &&

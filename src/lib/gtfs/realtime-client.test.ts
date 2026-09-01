@@ -1,15 +1,28 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import protobuf from "protobufjs";
-import { fetchRealtimeFeed, protoDefinition } from "./realtime-client";
+import {
+  fetchRealtimeFeed,
+  fetchVehiclePositions,
+  protoDefinition,
+} from "./realtime-client";
+
+vi.mock("@/lib/analytics/influx", () => ({
+  trackVehicleDownload: vi.fn(),
+  trackTripUpdateDownload: vi.fn(),
+  trackServiceAlertDownload: vi.fn(),
+}));
 
 const FeedMessage = protobuf
   .parse(protoDefinition)
   .root.lookupType("transit_realtime.FeedMessage");
 
-function encodeFeed(timestamp?: number): Uint8Array {
+function encodeFeed(
+  timestamp?: number,
+  entity: Record<string, unknown>[] = [],
+): Uint8Array {
   const payload: Record<string, unknown> = {
     header: { gtfsRealtimeVersion: "2.0" },
-    entity: [],
+    entity,
   };
   if (timestamp !== undefined) {
     (payload.header as Record<string, unknown>).timestamp = timestamp;
@@ -164,7 +177,8 @@ describe("fetchRealtimeFeed header timestamp gate", () => {
   });
 
   it("never treats a feed without a timestamp as unchanged", async () => {
-    // `defaults: true` decodes an absent timestamp as 0. Comparing that
+    // An absent timestamp arrives as undefined, and would arrive as 0 if
+    // proto defaults were ever switched back on. Either value compared
     // literally would freeze the feed after the first fetch.
     const url = freshUrl();
     fetchMock.mockResolvedValueOnce(okResponse(encodeFeed()));
@@ -185,5 +199,88 @@ describe("fetchRealtimeFeed header timestamp gate", () => {
     expect(await fetchRealtimeFeed(url)).not.toBeNull();
     expect(await fetchRealtimeFeed(url)).not.toBeNull();
     expect(await fetchRealtimeFeed(url)).toBeNull();
+  });
+});
+
+describe("fetchVehiclePositions decoding without proto defaults", () => {
+  // toObject runs without `defaults`, so absent optional fields arrive as
+  // undefined rather than their proto default. The converters have to supply
+  // those themselves.
+  it("fills in defaults the decoder no longer materialises", async () => {
+    fetchMock.mockResolvedValueOnce(
+      okResponse(
+        encodeFeed(1000, [
+          {
+            id: "entity-1",
+            vehicle: {
+              trip: { tripId: "trip-1" },
+              position: { latitude: 59.33, longitude: 18.07 },
+            },
+          },
+        ]),
+      ),
+    );
+
+    const positions = await fetchVehiclePositions("agency-defaults-1");
+
+    expect(positions).toEqual([
+      {
+        vehicleId: "",
+        tripId: "trip-1",
+        routeId: "",
+        latitude: expect.closeTo(59.33, 4),
+        longitude: expect.closeTo(18.07, 4),
+        bearing: undefined,
+        speed: undefined,
+        currentStopSequence: undefined,
+        // current_status defaults to IN_TRANSIT_TO in the schema.
+        currentStatus: "IN_TRANSIT_TO",
+        timestamp: expect.any(Number),
+      },
+    ]);
+  });
+
+  it("still reads the fields the feed does provide", async () => {
+    fetchMock.mockResolvedValueOnce(
+      okResponse(
+        encodeFeed(1000, [
+          {
+            id: "entity-1",
+            vehicle: {
+              trip: { tripId: "trip-2", routeId: "route-2" },
+              vehicle: { id: "veh-2" },
+              position: {
+                latitude: 59.5,
+                longitude: 18.5,
+                bearing: 180,
+                speed: 11,
+              },
+              currentStopSequence: 4,
+              currentStatus: 1,
+              timestamp: 1700000000,
+            },
+          },
+        ]),
+      ),
+    );
+
+    const positions = await fetchVehiclePositions("agency-defaults-2");
+
+    expect(positions?.[0]).toMatchObject({
+      vehicleId: "veh-2",
+      tripId: "trip-2",
+      routeId: "route-2",
+      bearing: 180,
+      speed: 11,
+      currentStopSequence: 4,
+      currentStatus: "STOPPED_AT",
+      timestamp: 1700000000,
+    });
+  });
+
+  it("returns an empty list for a feed with no entities", async () => {
+    fetchMock.mockResolvedValueOnce(okResponse(encodeFeed(1000)));
+
+    expect(await fetchVehiclePositions("agency-defaults-3")).toEqual([]);
   });
 });
