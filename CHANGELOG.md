@@ -1,3 +1,40 @@
+## [0.12.0] - 2026-09-01
+
+### ✨ Features
+
+- slide the trip map vehicle, sharing the animation with the map (`b4a02a0`)
+- collapse passed stops on trip page (`6c30ac5`)
+- push vehicle positions over SSE, with polling as fallback (`a7e60fc`)
+- slide vehicle markers between position updates (`25a5704`)
+- send vehicle updates as deltas over the stream (`2bb3e66`)
+
+### ⚡ Performance
+
+- cull vehicle markers to the viewport (`052bdee`)
+- stop scanning the keyspace when a trip has no vehicle (`012c4e4`)
+- decode realtime feeds without proto defaults (`92885af`)
+- serve /api/vehicles from a prebuilt per-agency snapshot (`fc48652`)
+- cache vehicle icons and snap bearings to buckets (`23af358`)
+- stabilise the vehicle map polling loop (`18b697c`)
+
+### ♻️ Refactoring
+
+- one lazy boundary for the trip map (`d491586`)
+- one lazy boundary for the map so Leaflet refs work (`4899e4d`)
+- derive the selected vehicle instead of syncing it in effects (`80595cf`)
+
+### 🧪 Testing
+
+- cover the realtime feed cache, snapshot builder and viewport filter (`afae326`)
+
+### 🧹 Maintenance
+
+- adjust realtime update hold off times (`f5c92c7`)
+- drop unused vehiclesByRoute index (`f5a9c33`)
+- formatted all files (`77ba08c`)
+- use conditional requests for gtfs realtime feeds (`60305dd`)
+- ensure files are formatted when doing a release (`214bc9c`)
+
 ## [0.11.2] - 2026-05-28
 
 ### ✨ Features
