@@ -120,7 +120,7 @@ function HomePageContent() {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-2xl font-bold mb-4">Hitta avgångar</h1>
+        <h1 className="text-2xl font-bold mb-4">Välj hållplats</h1>
         <div className="flex items-center gap-2 mb-3">
           <label htmlFor="agency-select" className="text-sm font-medium">
             Trafikområde:
