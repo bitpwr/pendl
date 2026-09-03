@@ -13,7 +13,7 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
-  const { agencyId, setAgency, agencies } = useAgency();
+  const { agencyId } = useAgency();
 
   const [searchResults, setSearchResults] = useState<AreaSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -121,23 +121,6 @@ function HomePageContent() {
     <div className="space-y-6">
       <section>
         <h1 className="text-2xl font-bold mb-4">Välj hållplats</h1>
-        <div className="flex items-center gap-2 mb-3">
-          <label htmlFor="agency-select" className="text-sm font-medium">
-            Trafikområde:
-          </label>
-          <select
-            id="agency-select"
-            value={agencyId}
-            onChange={(e) => setAgency(e.target.value as typeof agencyId)}
-            className="h-9 rounded-md border border-input bg-card px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {agencies.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.longName}
-              </option>
-            ))}
-          </select>
-        </div>
         <StopSearch
           onSearch={handleSearch}
           onNearby={handleNearby}

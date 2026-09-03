@@ -164,3 +164,12 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+@layer base {
+  /* Leaflet's panes (z-index 400) and controls (z-index 1000) live in the
+     root stacking context by default, so they paint over the sticky header
+     and its menu. Isolating the map container keeps them contained. */
+  .leaflet-container {
+    isolation: isolate;
+  }
+}

@@ -310,7 +310,7 @@ export default function VehicleMapInner({
           <div className="flex flex-col gap-1">
             <CardTitle className="text-lg">
               {routeTypeVehicles.length > 0
-                ? `Visar ${routeTypeVehicles.length} ${vehicleType(selectedRouteType)}`
+                ? `${routeTypeVehicles.length} aktiva ${vehicleType(selectedRouteType)}`
                 : "Positioner inte tillgängliga"}
             </CardTitle>
             {lastUpdated && (
