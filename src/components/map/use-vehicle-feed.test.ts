@@ -299,3 +299,51 @@ describe("useVehicleFeed applying deltas", () => {
     expect(result.current.vehicles[0].id).toBe("v2");
   });
 });
+
+describe("useVehicleFeed changing agency", () => {
+  it("drops the set the previous agency's stream built", async () => {
+    useStreams();
+    const { result, rerender } = renderHook(
+      ({ agency }) => useVehicleFeed(agency),
+      { initialProps: { agency: "sl" } },
+    );
+
+    act(() => FakeEventSource.latest().emit(snapshot));
+    await waitFor(() => expect(result.current.vehicles).toHaveLength(1));
+
+    rerender({ agency: "ul" });
+
+    expect(result.current.vehicles).toHaveLength(0);
+    expect(result.current.updatedAt).toBeUndefined();
+    expect(FakeEventSource.latest().url).toBe(
+      "/api/vehicles/stream?agencyId=ul",
+    );
+  });
+
+  it("resyncs on the new agency's first delta instead of ignoring it", async () => {
+    // Sequence numbers are counted per agency, so the one the previous
+    // stream left behind says nothing about this one's: a delta below it is
+    // a set that has to be fetched, not an update already covered.
+    useStreams();
+    const { result, rerender } = renderHook(
+      ({ agency }) => useVehicleFeed(agency),
+      { initialProps: { agency: "sl" } },
+    );
+
+    act(() =>
+      FakeEventSource.latest().emit({
+        ...snapshot,
+        seq: 812,
+        vehicles: [{ id: "s1", tripId: "t1", lat: 59.3, lon: 18.1 }],
+      }),
+    );
+    await waitFor(() => expect(result.current.vehicles).toHaveLength(1));
+
+    rerender({ agency: "ul" });
+    act(() => FakeEventSource.latest().emit(delta(4)));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/vehicles?agencyId=ul");
+    await waitFor(() => expect(result.current.vehicles[0].id).toBe("v1"));
+  });
+});

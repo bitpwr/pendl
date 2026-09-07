@@ -33,7 +33,11 @@ type RealtimeWorkerState = {
   tripUpdateConsumerActivity: Map<string, number>;
   serviceAlertConsumerActivity: Map<string, number>;
   vehicleUpdateInProgress: Set<string>;
-  publishedVehicles: Map<string, { seq: number; byId: Map<string, Vehicle> }>;
+  vehicleLastTick: Map<string, number>;
+  publishedVehicles: Map<
+    string,
+    { seq: number; byId: Map<string, Vehicle>; payload: string }
+  >;
   tripUpdateInProgress: Set<string>;
   serviceAlertUpdateInProgress: Set<string>;
 };
@@ -54,6 +58,7 @@ function getWorkerState(): RealtimeWorkerState {
       tripUpdateConsumerActivity: new Map(),
       serviceAlertConsumerActivity: new Map(),
       vehicleUpdateInProgress: new Set(),
+      vehicleLastTick: new Map(),
       publishedVehicles: new Map(),
       tripUpdateInProgress: new Set(),
       serviceAlertUpdateInProgress: new Set(),
@@ -76,6 +81,11 @@ async function updateVehiclePositions(
   now: number,
 ): Promise<void> {
   const startedAt = now;
+  const state = getWorkerState();
+
+  // Recorded before the fetch, and whatever its outcome, so a feed that is
+  // failing or quiet cannot make every new connection force a tick.
+  state.vehicleLastTick.set(agencyTag, now);
 
   let vehiclePositions;
   try {
@@ -88,8 +98,15 @@ async function updateVehiclePositions(
     return;
   }
 
-  // Feed unchanged since the last tick - nothing to store.
+  // Feed unchanged since the last tick - nothing new to publish. The stored
+  // snapshot still expires though, and a client opening a stream has only
+  // that to start from, so keep the last one alive rather than leaving the
+  // next connection with nothing to draw.
   if (vehiclePositions === null) {
+    const published = state.publishedVehicles.get(agencyTag);
+    if (published) {
+      await storeVehicleSnapshot(agencyTag, published.payload);
+    }
     return;
   }
 
@@ -99,15 +116,17 @@ async function updateVehiclePositions(
   const vehicles = await buildVehicleList(agencyTag, vehiclePositions);
   const updatedAt = new Date().toISOString();
 
-  const state = getWorkerState();
   const previous = state.publishedVehicles.get(agencyTag);
   const seq = (previous?.seq ?? 0) + 1;
 
   // The stored snapshot is what a fresh reader gets, so it stays whole.
-  await storeVehicleSnapshot(
-    agencyTag,
-    JSON.stringify({ type: "snapshot", seq, updatedAt, vehicles }),
-  );
+  const payload = JSON.stringify({
+    type: "snapshot",
+    seq,
+    updatedAt,
+    vehicles,
+  });
+  await storeVehicleSnapshot(agencyTag, payload);
   await setLastRealtimeUpdate();
 
   // Open streams already hold the previous set, so send only the change.
@@ -124,6 +143,7 @@ async function updateVehiclePositions(
   state.publishedVehicles.set(agencyTag, {
     seq,
     byId: new Map(vehicles.map((v) => [v.id, v])),
+    payload,
   });
 
   const duration = Date.now() - startedAt;
@@ -364,8 +384,18 @@ export async function triggerVehiclePositions(
 ): Promise<AgencyTag> {
   const tag = resolveTag(agencyId);
   const state = getWorkerState();
-  state.vehicleConsumerActivity.set(tag, Date.now());
+  const now = Date.now();
+  state.vehicleConsumerActivity.set(tag, now);
   await ensureWorkerRunning(state, tag);
+
+  // Switching agency reaches an already running worker that has not been
+  // ticking this one, so its stored snapshot is stale or gone. Wait for a
+  // tick rather than leaving the caller a whole interval short of data.
+  const lastTick = state.vehicleLastTick.get(tag) ?? 0;
+  if (now - lastTick > GTFS_CONFIG.realtimeVehicleUpdateInterval) {
+    await runVehicleTick(tag);
+  }
+
   return tag;
 }
 

@@ -61,6 +61,20 @@ export function useVehicleFeed(
   const byId = useRef<Map<string, Vehicle>>(new Map());
   const lastSeq = useRef(0);
 
+  // Nothing survives a change of agency: the held set belongs to the old one,
+  // and sequence numbers are counted per agency, so comparing the next
+  // agency's against the last one's would drop its updates - or worse, apply
+  // them to the wrong set. Reset during render, before the new stream opens.
+  const [feedAgency, setFeedAgency] = useState(agencyId);
+  if (feedAgency !== agencyId) {
+    setFeedAgency(agencyId);
+    byId.current = new Map();
+    lastSeq.current = 0;
+    setVehicles([]);
+    setUpdatedAt(undefined);
+    setError(null);
+  }
+
   // Pausing defers the render, never the bookkeeping: deltas build on each
   // other, so skipping one would leave the set permanently wrong.
   const publish = useCallback((updated: string | undefined) => {

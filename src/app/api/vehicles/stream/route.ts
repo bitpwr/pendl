@@ -49,7 +49,17 @@ export async function GET(request: NextRequest) {
         }
       };
 
+      // A delta means nothing to a client that has not yet been given the
+      // snapshot it builds on, and the subscription has to be in place before
+      // the snapshot is read or a tick landing in between would be lost. So
+      // ticks wait here until the opening snapshot has gone out.
+      let pending: string[] | null = [];
+
       const unsubscribe = subscribe(agencyTag, (payload) => {
+        if (pending) {
+          pending.push(payload);
+          return;
+        }
         send(`data: ${payload}\n\n`);
       });
 
@@ -61,10 +71,17 @@ export async function GET(request: NextRequest) {
         return;
       }
 
-      // Send whatever is current so the map draws before the next tick.
+      // Open with the full set so the map draws before the next tick, and so
+      // the deltas that follow have a base to apply to.
       const snapshot = await getVehicleSnapshot(agencyTag);
       if (snapshot) {
         send(`data: ${snapshot}\n\n`);
+      }
+
+      const queued = pending;
+      pending = null;
+      for (const payload of queued) {
+        send(`data: ${payload}\n\n`);
       }
     },
   });
