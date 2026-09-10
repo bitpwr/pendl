@@ -17,6 +17,49 @@ describe("createVehicleArrowIcon", () => {
   it("rotates about the center of the viewBox", () => {
     expect(createVehicleArrowIcon("#000", 90)).toContain("rotate(90 16 16)");
   });
+
+  it("draws no badge without a label", () => {
+    const html = createVehicleArrowIcon("#000", 0, 28);
+
+    expect(html).not.toContain("<circle");
+    expect(html).not.toContain("<text");
+  });
+
+  it("draws the label as black text on a white circle", () => {
+    const html = createVehicleArrowIcon("#000", 0, 28, "42");
+
+    expect(html).toContain('<circle cx="16" cy="16"');
+    expect(html).toContain('fill="#FFFFFFBB"');
+    expect(html).toContain('fill="#000000"');
+    expect(html).toContain(">42</text>");
+  });
+
+  it("widens the arrow body to sit behind the badge", () => {
+    const plain = createVehicleArrowIcon("#000", 0, 28);
+    const labelled = createVehicleArrowIcon("#000", 0, 28, "42");
+
+    expect(labelled).not.toContain('d="M 16 4 L 24 26 L 16 23 L 8 26 Z"');
+    expect(plain).toContain('d="M 16 4 L 24 26 L 16 23 L 8 26 Z"');
+  });
+
+  it("keeps the label out of the rotated group so it stays upright", () => {
+    const html = createVehicleArrowIcon("#000", 90, 28, "42");
+
+    expect(html.indexOf("<text")).toBeGreaterThan(html.indexOf("</g>"));
+  });
+
+  it("truncates a label too long for the badge", () => {
+    // routeName falls back to the route id, which can be very long.
+    const html = createVehicleArrowIcon("#000", 0, 28, "9011001001000000");
+
+    expect(html).toContain(">9011</text>");
+  });
+
+  it("escapes the label", () => {
+    const html = createVehicleArrowIcon("#000", 0, 28, "A&B");
+
+    expect(html).toContain(">A&amp;B</text>");
+  });
 });
 
 describe("createVehicleLeafletIcon caching", () => {
@@ -66,6 +109,14 @@ describe("createVehicleLeafletIcon caching", () => {
 
     expect(createVehicleLeafletIcon(L, "#777777", 0, 28)).not.toBe(base);
     expect(createVehicleLeafletIcon(L, "#666666", 0, 40)).not.toBe(base);
+  });
+
+  it("keeps labels apart", () => {
+    const a = createVehicleLeafletIcon(L, "#AAAAAA", 0, 28, "42");
+
+    expect(createVehicleLeafletIcon(L, "#AAAAAA", 0, 28, "43")).not.toBe(a);
+    expect(createVehicleLeafletIcon(L, "#AAAAAA", 0, 28)).not.toBe(a);
+    expect(createVehicleLeafletIcon(L, "#AAAAAA", 0, 28, "42")).toBe(a);
   });
 
   it("snaps the rendered rotation to the bucket", () => {

@@ -55,6 +55,8 @@ function vehicleTitle(vehicle: Vehicle): string {
 }
 
 const LIGHTWEIGHT_VISIBLE_MARKERS_THRESHOLD = 200;
+const LARGE_VEHICLE_ZOOM_LEVEL = 12;
+const MEDIUM_VEHICLE_ZOOM_LEVEL = 11;
 
 export default function VehicleMapInner({
   center,
@@ -535,11 +537,24 @@ function VehicleMarkerComponent({
 
   const color = routeTypeColor(vehicle.routeType, parseInt(vehicle.routeName));
 
-  // Create custom arrow icon
-  const size = isSelected ? 40 : zoom <= 12 ? 20 : 28;
+  // Create custom arrow icon. When zoomed in there is room to name the route inside
+  const size =
+    isSelected || zoom > LARGE_VEHICLE_ZOOM_LEVEL
+      ? 60
+      : zoom <= MEDIUM_VEHICLE_ZOOM_LEVEL
+        ? 25
+        : 30;
+  const showLabel = zoom > LARGE_VEHICLE_ZOOM_LEVEL;
   const icon = useMemo(
-    () => createVehicleLeafletIcon(L, color, bearing, size),
-    [color, bearing, size],
+    () =>
+      createVehicleLeafletIcon(
+        L,
+        color,
+        bearing,
+        size,
+        showLabel ? vehicle.routeName : undefined,
+      ),
+    [color, bearing, size, showLabel, vehicle.routeName],
   );
 
   useEffect(() => {
