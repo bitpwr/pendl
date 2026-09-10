@@ -1,3 +1,18 @@
+## [0.13.0] - 2026-09-10
+
+### ✨ Features
+
+- show vehicle names in icons when zoomed in (`17ea999`)
+
+### 🐛 Bug Fixes
+
+- send the whole vehicle set when the agency changes (`8d1232d`)
+
+### 💎 Styling
+
+- add a menu and an initial about page (`cbfae41`)
+- move traffic area selection to menu (`331bfa4`)
+
 ## [0.12.0] - 2026-09-01
 
 ### ✨ Features
