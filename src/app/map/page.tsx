@@ -5,7 +5,7 @@ import { VehicleMap } from "@/components/map/vehicle-map";
 import { useAgency } from "@/hooks/use-agency";
 
 export default function MapPage() {
-  const { agencyId, agencyName } = useAgency();
+  const { agencyId, agencyName, agencyLongName } = useAgency();
   const lastReportedAgency = useRef<string | null>(null);
 
   useEffect(() => {
@@ -33,10 +33,7 @@ export default function MapPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold">Karta</h1>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Se alla fordon i realtid på kartan.
-        </p>
+        <h1 className="text-2xl font-bold">Karta över {agencyLongName}</h1>
       </div>
       <VehicleMap height="calc(100vh - 172px)" agencyId={agencyId} />
     </div>

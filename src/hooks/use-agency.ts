@@ -58,6 +58,7 @@ export function useAgency() {
   return {
     agencyId,
     agencyName: agency.name,
+    agencyLongName: agency.longName,
     agencyTag: agency.tag,
     setAgency,
     agencies: INCLUDED_AGENCIES,

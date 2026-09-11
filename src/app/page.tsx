@@ -13,7 +13,7 @@ function HomePageContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
 
-  const { agencyId } = useAgency();
+  const { agencyId, agencyLongName } = useAgency();
 
   const [searchResults, setSearchResults] = useState<AreaSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -120,7 +120,9 @@ function HomePageContent() {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-2xl font-bold mb-4">Välj hållplats</h1>
+        <h1 className="text-2xl font-bold mb-4">
+          Välj hållplats i {agencyLongName}
+        </h1>
         <StopSearch
           onSearch={handleSearch}
           onNearby={handleNearby}
