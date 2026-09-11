@@ -569,7 +569,7 @@ function VehicleMarkerComponent({
       position={mountPosition}
       icon={icon}
       eventHandlers={{
-        click: () => onSelect(vehicle),
+        click: () => onSelect(isSelected ? null : vehicle),
         popupclose: () => onSelect(null),
       }}
     >
