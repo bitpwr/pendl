@@ -539,7 +539,7 @@ function VehicleMarkerComponent({
 
   // Create custom arrow icon. When zoomed in there is room to name the route inside
   const size =
-    isSelected || zoom > LARGE_VEHICLE_ZOOM_LEVEL
+    zoom > LARGE_VEHICLE_ZOOM_LEVEL
       ? 60
       : zoom <= MEDIUM_VEHICLE_ZOOM_LEVEL
         ? 25

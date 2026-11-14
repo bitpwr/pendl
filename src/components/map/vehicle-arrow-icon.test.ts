@@ -54,12 +54,6 @@ describe("createVehicleArrowIcon", () => {
 
     expect(html).toContain(">9011</text>");
   });
-
-  it("escapes the label", () => {
-    const html = createVehicleArrowIcon("#000", 0, 28, "A&B");
-
-    expect(html).toContain(">A&amp;B</text>");
-  });
 });
 
 describe("createVehicleLeafletIcon caching", () => {

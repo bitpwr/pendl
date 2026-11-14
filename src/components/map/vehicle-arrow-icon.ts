@@ -20,15 +20,6 @@ function snapBearing(bearing: number): number {
 /** Longest label that still fits inside the badge circle. */
 const MAX_LABEL_LENGTH = 4;
 
-function escapeXml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
-}
-
 function labelFontSize(length: number): number {
   if (length <= 3) return 5;
   return 4;
@@ -38,7 +29,7 @@ function labelFontSize(length: number): number {
  * The route badge is drawn outside the rotated group, so the text stays
  * upright however the vehicle is heading.
  */
-function routeBadge(color: string, label: string): string {
+function routeBadge(label: string): string {
   const text = label.slice(0, MAX_LABEL_LENGTH);
 
   return `
@@ -49,7 +40,7 @@ function routeBadge(color: string, label: string): string {
             fill="#000000"
             font-family="system-ui, sans-serif"
             font-weight="700"
-            font-size="${labelFontSize(text.length)}">${escapeXml(text)}</text>`;
+            font-size="${labelFontSize(text.length)}">${text}</text>`;
 }
 
 /**
@@ -66,7 +57,7 @@ export function createVehicleArrowIcon(
   size: number = 32,
   label?: string,
 ): string {
-  const badge = label ? routeBadge(color, label) : "";
+  const badge = label ? routeBadge(label) : "";
   const path = label
     ? `M 16 4 L 22 12 L 24 26 L 16 23 L 8 26 L 10 12 Z`
     : `M 16 4 L 24 26 L 16 23 L 8 26 Z`;
