@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
-    "gtfs:import": "npx tsx --env-file=.env.development scripts/import-gtfs.ts",
+    "gtfs:import": "npx tsx --env-file=.env.development scripts/import-gtfs-streaming.ts --use-existing",
     "format": "npx prettier --write \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "format:check": "npx prettier --check \"src/**/*.{ts,tsx}\" \"scripts/**/*.ts\"",
     "changelog": "bash scripts/generate-changelog.sh",
