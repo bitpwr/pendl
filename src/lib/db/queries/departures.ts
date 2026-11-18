@@ -1,5 +1,6 @@
 import { query } from "../index";
 import { RouteType, toRouteType } from "@/types/gtfs";
+import { getAgencyIdsWithSubAgencies } from "@/lib/config/agencies";
 
 const offsetMinutes = 15; // Add buffer to include recently departed trips that might be delayed
 
@@ -106,7 +107,7 @@ export async function getScheduledDeparturesForStops(
     .map((_, i) => `$${i + stopIdOffset}`)
     .join(", ");
 
-  const agencyFilter = agencyId ? `AND r.agency_id = $5` : "";
+  const agencyFilter = agencyId ? `AND r.agency_id = ANY($5::text[])` : "";
 
   const sql = `
     SELECT
@@ -174,13 +175,13 @@ export async function getScheduledDeparturesForStops(
 
   for (const window of windows) {
     const serviceDate = window.serviceDate.toISOString().split("T")[0];
-    const params: (string | number)[] = [
+    const params: (string | number | string[])[] = [
       window.startTime,
       window.endTime,
       serviceDate,
       limit,
     ];
-    if (agencyId) params.push(agencyId);
+    if (agencyId) params.push(getAgencyIdsWithSubAgencies(agencyId));
     params.push(...stopIds);
 
     const rows = await query<ScheduledDeparture & { routeTypeRaw: number }>(

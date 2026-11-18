@@ -1,4 +1,5 @@
 import { query, queryOne } from "../index";
+import { getAgencyIdsWithSubAgencies } from "@/lib/config/agencies";
 
 export interface AreaSearchResult {
   areaId: string;
@@ -33,12 +34,12 @@ export async function searchAreas(
     .map((word) => word + ":*")
     .join(" & ");
 
-  const params: (string | number)[] = [tsQuery];
+  const params: (string | number | string[])[] = [tsQuery];
   let agencyJoin = "";
 
   if (agencyId) {
-    params.push(agencyId);
-    agencyJoin = `JOIN area_agencies aa ON aa.area_id = a.area_id AND aa.agency_id = $${params.length}`;
+    params.push(getAgencyIdsWithSubAgencies(agencyId));
+    agencyJoin = `JOIN (SELECT DISTINCT area_id FROM area_agencies WHERE agency_id = ANY($${params.length}::text[])) aa ON aa.area_id = a.area_id`;
   }
 
   params.push(limit);
@@ -78,12 +79,16 @@ export async function findNearbyAreas(
   limit = 10,
   agencyId?: string,
 ): Promise<AreaSearchResult[]> {
-  const params: (string | number)[] = [latitude, longitude, radiusMeters];
+  const params: (string | number | string[])[] = [
+    latitude,
+    longitude,
+    radiusMeters,
+  ];
   let agencyJoin = "";
 
   if (agencyId) {
-    params.push(agencyId);
-    agencyJoin = `JOIN area_agencies aa ON aa.area_id = a.area_id AND aa.agency_id = $${params.length}`;
+    params.push(getAgencyIdsWithSubAgencies(agencyId));
+    agencyJoin = `JOIN (SELECT DISTINCT area_id FROM area_agencies WHERE agency_id = ANY($${params.length}::text[])) aa ON aa.area_id = a.area_id`;
   }
 
   params.push(limit);

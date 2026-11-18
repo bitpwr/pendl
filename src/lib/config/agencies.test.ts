@@ -4,6 +4,7 @@ import {
   INCLUDED_AGENCY_IDS,
   isIncludedAgency,
   getAgencyTag,
+  getAgencyIdsWithSubAgencies,
 } from "./agencies";
 
 describe("agencies config", () => {
@@ -38,5 +39,19 @@ describe("agencies config", () => {
 
   it("getAgencyTag should return undefined for an unknown agency", () => {
     expect(getAgencyTag("unknown-id")).toBeUndefined();
+  });
+
+  it("isIncludedAgency should return true for sub-agencies", () => {
+    expect(isIncludedAgency("500000000000000185")).toBe(true);
+  });
+
+  it("getAgencyIdsWithSubAgencies should include sub-agencies", () => {
+    expect(getAgencyIdsWithSubAgencies("505000000000000001")).toEqual([
+      "505000000000000001",
+      "500000000000000185",
+    ]);
+    expect(getAgencyIdsWithSubAgencies("505000000000000003")).toEqual([
+      "505000000000000003",
+    ]);
   });
 });

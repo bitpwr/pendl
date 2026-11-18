@@ -17,6 +17,12 @@ export const INCLUDED_AGENCIES = [
       RouteType.Tram,
       RouteType.Ferry,
     ],
+    // Sub-agencies whose routes/trips appear in the SL realtime feed but are
+    // operated by separate GTFS agency entries. These are imported into the DB
+    // but are not shown as selectable agencies in the UI.
+    // pendeltåg: 500000000000000185
+    // waxholmsbåtar: 500000000000000114
+    subAgencyIds: ["500000000000000185"],
   },
   {
     id: "505000000000000003",
@@ -39,7 +45,25 @@ export const INCLUDED_AGENCY_IDS = INCLUDED_AGENCIES.map((a) => a.id);
 export const INCLUDED_AGENCY_NAMES = INCLUDED_AGENCIES.map((a) => a.name);
 
 export function isIncludedAgency(agencyId: string): boolean {
-  return INCLUDED_AGENCIES.some((a) => a.id === agencyId);
+  return INCLUDED_AGENCIES.some(
+    (a) =>
+      a.id === agencyId ||
+      ("subAgencyIds" in a &&
+        (a.subAgencyIds as readonly string[]).includes(agencyId)),
+  );
+}
+
+/**
+ * Expand an agency ID to itself plus any configured sub-agency IDs, so that
+ * data operated by sub-agencies is implicitly included when the parent agency
+ * is selected.
+ */
+export function getAgencyIdsWithSubAgencies(agencyId: string): string[] {
+  const agency = INCLUDED_AGENCIES.find((a) => a.id === agencyId);
+  if (!agency) return [agencyId];
+  const subIds =
+    "subAgencyIds" in agency ? (agency.subAgencyIds as readonly string[]) : [];
+  return [agency.id, ...subIds];
 }
 
 export function getAgencyTag(agencyId: string): AgencyTag | undefined {
