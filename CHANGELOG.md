@@ -1,3 +1,22 @@
+## [0.14.0] - 2026-11-18
+
+### ✨ Features
+
+- add sub agency to include SL trains (`9866c5b`)
+
+### 🐛 Bug Fixes
+
+- vehicle selection is toggled when clicked on (`a068eac`)
+- remove escape xml in icons (`8c219ef`)
+
+### 💎 Styling
+
+- show selected agency in search and map pages (`4f674f9`)
+
+### 🧹 Maintenance
+
+- npm gtfs:import uses new import script (`b63d002`)
+
 ## [0.13.0] - 2026-09-10
 
 ### ✨ Features
